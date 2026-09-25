@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>App Portfolio</title>
+<meta name="robots" content="noindex">
+<style>
+  :root{
+    --bg:#f6f3ec; --card:#fff; --line:#e7e0cf; --ink:#141414;
+    --soft:#6b6b6b; --faint:#a09788; --accent:#0b6fd0; --good:#1b5e20;
+    --warn:#8a6100; --bad:#b3261e;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --mono:'SF Mono',Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme=light]){
+      --bg:#14120e; --card:#1d1a15; --line:#2f2a21; --ink:#f2ece0;
+      --soft:#a9a193; --faint:#6f685c; --accent:#5aa9f8; --good:#6fbf73;
+      --warn:#d9a441; --bad:#ef8279;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+       font-size:15px;line-height:1.5}
+  .wrap{max-width:1040px;margin:0 auto;padding:28px 20px 64px}
+  h1{font-size:26px;letter-spacing:-.4px;margin:0}
+  .sub{color:var(--faint);font-size:13px;margin-top:4px}
+  .totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+          gap:12px;margin:22px 0 26px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;
+        padding:14px 16px}
+  .stat b{display:block;font-size:26px;letter-spacing:-.5px;
+          font-variant-numeric:tabular-nums}
+  .stat span{color:var(--faint);font-size:11px;text-transform:uppercase;
+             letter-spacing:.08em}
+  .card{background:var(--card);border:1px solid var(--line);
+        border-left:4px solid var(--accent);border-radius:12px;
+        padding:18px 20px;margin-bottom:14px}
+  .head{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;
+        justify-content:space-between}
+  .name{font-size:18px;font-weight:700;letter-spacing:-.2px}
+  .name a{color:inherit;text-decoration:none;border-bottom:1px solid var(--line)}
+  .meta{color:var(--soft);font-size:13px;font-variant-numeric:tabular-nums}
+  .pill{display:inline-block;padding:2px 9px;border-radius:11px;color:#fff;
+        font-size:11px;font-weight:600;white-space:nowrap}
+  .chart{width:100%;height:112px;display:block;margin:14px 0 4px;overflow:visible}
+  .axis{color:var(--faint);font-size:10px;font-family:var(--mono);
+        display:flex;justify-content:space-between;margin-bottom:8px}
+  .rev{border-top:1px solid var(--line);margin-top:12px;padding-top:10px;
+       font-size:13px;color:var(--soft)}
+  .rev q{color:var(--ink)}
+  .err{background:var(--card);border:1px solid var(--bad);border-radius:12px;
+       padding:16px;color:var(--bad)}
+  footer{color:var(--faint);font-size:12px;margin-top:26px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>App Portfolio</h1>
+  <div class="sub" id="generated">Loading&hellip;</div>
+  <div class="totals" id="totals"></div>
+  <div id="apps"></div>
+  <footer>
+    Data from App Store Connect, refreshed daily by GitHub Actions.
+    Downloads are first-time installs; updates and re-downloads are excluded.
+  </footer>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const fmt = (n) => n.toLocaleString();
+
+// Colour a version state the way the daily email does, so the two read the
+// same way round.
+function stateColour(s = "") {
+  const u = s.toUpperCase();
+  if (u.includes("REJECT") || u.includes("INVALID")) return "var(--bad)";
+  if (u.includes("WAITING") || u.includes("REVIEW") || u.includes("PENDING")) return "var(--warn)";
+  if (u.includes("READY")) return "var(--good)";
+  return "var(--soft)";
+}
+
+/** Downloads as an area chart. Hand-drawn SVG rather than a charting
+ *  library: one file, no CDN, and nothing to break when a version bumps. */
+function chart(series, days) {
+  const keys = Object.keys(series).sort().slice(-days);
+  if (keys.length < 2) return '<div class="meta">Not enough history yet.</div>';
+
+  const vals = keys.map((k) => series[k]);
+  const peak = Math.max(...vals, 1);
+  const W = 1000, H = 112;
+  const x = (i) => (i / (keys.length - 1)) * W;
+  const y = (v) => H - (v / peak) * (H - 12) - 2;
+
+  const line = vals.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
+  const area = `${line}L${W},${H}L0,${H}Z`;
+  const last = vals[vals.length - 1];
+  const first = keys[0], latest = keys[keys.length - 1];
+
+  return `
+    <div class="axis"><span>${first}</span><span>peak ${fmt(peak)}/day</span><span>${latest}</span></div>
+    <svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"
+         aria-label="Daily downloads from ${first} to ${latest}, peak ${peak}">
+      <path d="${area}" fill="var(--accent)" opacity=".13"/>
+      <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2"
+            vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+      <circle cx="${W}" cy="${y(last)}" r="3.5" fill="var(--accent)"
+              vector-effect="non-scaling-stroke"/>
+    </svg>`;
+}
+
+const sumLast = (series, days) =>
+  Object.keys(series).sort().slice(-days).reduce((n, k) => n + series[k], 0);
+
+function render(d) {
+  $("#generated").textContent =
+    `${d.apps.length} apps · updated ${new Date(d.generated).toLocaleString()}`;
+
+  const all = {};
+  for (const a of d.apps)
+    for (const [k, v] of Object.entries(a.downloads || {})) all[k] = (all[k] || 0) + v;
+
+  const rated = d.apps.filter((a) => a.rating);
+  const avg = rated.length
+    ? (rated.reduce((n, a) => n + a.rating.average * a.rating.count, 0) /
+       rated.reduce((n, a) => n + a.rating.count, 0)).toFixed(2)
+    : "—";
+
+  $("#totals").innerHTML = [
+    ["Downloads, 7 days", fmt(sumLast(all, 7))],
+    ["Downloads, 30 days", fmt(sumLast(all, 30))],
+    ["Downloads, 365 days", fmt(sumLast(all, 365))],
+    ["Average rating", avg],
+  ].map(([label, v]) => `<div class="stat"><b>${v}</b><span>${label}</span></div>`).join("");
+
+  // Busiest first: a portfolio view should lead with what is moving.
+  const apps = [...d.apps].sort(
+    (a, b) => sumLast(b.downloads || {}, 30) - sumLast(a.downloads || {}, 30));
+
+  $("#apps").innerHTML = apps.map((a) => {
+    const dl = a.downloads || {};
+    const live = (a.versions || [])[0];
+    const r = a.rating;
+    const rev = (a.reviews || [])[0];
+    return `
+      <div class="card">
+        <div class="head">
+          <div class="name"><a href="${a.url}" rel="noopener">${a.name}</a></div>
+          <div class="meta">
+            ${fmt(sumLast(dl, 30))} in 30d · ${fmt(sumLast(dl, 7))} in 7d
+            ${r ? ` · ★ ${r.average} (${r.count})` : " · no ratings yet"}
+            ${live ? ` <span class="pill" style="background:${stateColour(live.state)}">v${live.version} ${live.state}</span>` : ""}
+          </div>
+        </div>
+        ${chart(dl, 365)}
+        ${rev ? `<div class="rev">${"★".repeat(rev.rating || 0)} <q>${rev.title || ""}</q> — ${rev.nickname || "anonymous"}, ${rev.date}</div>` : ""}
+      </div>`;
+  }).join("");
+}
+
+fetch("data/portfolio.json", { cache: "no-store" })
+  .then((r) => { if (!r.ok) throw new Error(`data/portfolio.json returned ${r.status}`); return r.json(); })
+  .then(render)
+  .catch((e) => {
+    $("#generated").textContent = "";
+    $("#apps").innerHTML = `<div class="err">Could not load the data file.<br>${e.message}</div>`;
+  });
+</script>
+</body>
+</html>

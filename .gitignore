@@ -1,0 +1,5 @@
+﻿data/*.tmp
+__pycache__/
+*.p8
+.env
+

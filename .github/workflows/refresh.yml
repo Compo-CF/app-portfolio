@@ -1,0 +1,54 @@
+name: Refresh portfolio data
+
+# Apple publishes a day's sales report the following morning Pacific, so this
+# runs once that has settled. Independent of the 7am Central daily email,
+# which runs from a separate machine.
+
+on:
+  schedule:
+    - cron: '30 14 * * *'   # 14:30 UTC — mid-morning Central, report is up
+  workflow_dispatch:
+    inputs:
+      backfill_days:
+        description: 'How many days of history to (re)fetch'
+        required: false
+        default: '7'
+
+permissions:
+  contents: write
+
+concurrency:
+  # Two runs committing the same data file would conflict for no benefit.
+  group: portfolio-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install --quiet "pyjwt[crypto]" requests
+
+      - name: Pull from App Store Connect
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          ASC_VENDOR_NUMBER: ${{ secrets.ASC_VENDOR_NUMBER }}
+          BACKFILL_DAYS: ${{ github.event.inputs.backfill_days || '7' }}
+        run: python scripts/fetch.py
+
+      - name: Commit if anything moved
+        run: |
+          git config user.name  "portfolio-bot"
+          git config user.email "actions@github.com"
+          git add data/portfolio.json
+          # Nothing new is the normal case on a quiet day and must not fail.
+          git diff --staged --quiet && echo "nothing new" && exit 0
+          git commit -m "Portfolio data $(date -u +%Y-%m-%d)"
+          git push
