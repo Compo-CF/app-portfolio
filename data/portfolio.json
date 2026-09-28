@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-27T18:35:19+00:00",
+ "generated": "2026-09-28T14:57:21+00:00",
  "apps": [
   {
    "id": "6773501518",
@@ -120,8 +120,16 @@
     "2026-09-23": 1,
     "2026-09-24": 1,
     "2026-09-25": 0,
-    "2026-09-26": 0
+    "2026-09-26": 0,
+    "2026-09-27": 1
    },
+   "revenue": {
+    "USD": {
+     "2026-07-22": 8.49,
+     "2026-08-23": 3.5
+    }
+   },
+   "iaps": 4,
    "rating": {
     "average": 5.0,
     "count": 7,
@@ -374,20 +382,49 @@
     "2026-09-23": 14,
     "2026-09-24": 36,
     "2026-09-25": 115,
-    "2026-09-26": 57
+    "2026-09-26": 57,
+    "2026-09-27": 21
    },
+   "revenue": {
+    "USD": {
+     "2026-07-19": 2.54,
+     "2026-08-20": 1.4,
+     "2026-08-21": 2.1,
+     "2026-09-14": 2.8,
+     "2026-09-15": 3.5,
+     "2026-09-21": 3.5,
+     "2026-09-22": 5.6,
+     "2026-09-23": 2.1,
+     "2026-09-24": 5.6,
+     "2026-09-25": 39.2,
+     "2026-09-26": 13.3,
+     "2026-09-27": 14.0
+    },
+    "KRW": {
+     "2026-09-27": 4900.0
+    }
+   },
+   "iaps": 10,
    "rating": {
-    "average": 5.0,
-    "count": 1,
+    "average": 3.5,
+    "count": 2,
     "histogram": {
      "1": 0,
-     "2": 0,
+     "2": 1,
      "3": 0,
      "4": 0,
      "5": 1
     }
    },
    "reviews": [
+    {
+     "rating": 2,
+     "title": "Can\u2019t reset?",
+     "body": "Basic idle gameplay loop. Scratches the brain fine. My only complaint is I can\u2019t prestige for some reason? It says I need 44m but I\u2019m well over 5b",
+     "nickname": "Billybob1234567 hi",
+     "date": "2026-09-26",
+     "territory": "USA"
+    },
     {
      "rating": 5,
      "title": "Well paced",
@@ -398,6 +435,11 @@
     }
    ],
    "versions": [
+    {
+     "version": "3.0.3",
+     "state": "WAITING_FOR_REVIEW",
+     "created": "2026-09-28"
+    },
     {
      "version": "3.0.2",
      "state": "READY_FOR_SALE",
@@ -442,14 +484,19 @@
      "version": "1.3",
      "state": "READY_FOR_SALE",
      "created": "2026-08-20"
-    },
-    {
-     "version": "1.2",
-     "state": "READY_FOR_SALE",
-     "created": "2026-07-21"
     }
    ],
    "builds": [
+    {
+     "version": "32",
+     "state": "VALID",
+     "uploaded": "2026-09-28"
+    },
+    {
+     "version": "31",
+     "state": "VALID",
+     "uploaded": "2026-09-28"
+    },
     {
      "version": "30",
      "state": "VALID",
@@ -464,16 +511,6 @@
      "version": "28",
      "state": "VALID",
      "uploaded": "2026-09-23"
-    },
-    {
-     "version": "27",
-     "state": "VALID",
-     "uploaded": "2026-09-23"
-    },
-    {
-     "version": "26",
-     "state": "VALID",
-     "uploaded": "2026-09-21"
     }
    ]
   },
@@ -596,11 +633,19 @@
     "2026-09-23": 0,
     "2026-09-24": 0,
     "2026-09-25": 0,
-    "2026-09-26": 0
+    "2026-09-26": 0,
+    "2026-09-27": 1
    },
+   "revenue": {},
+   "iaps": 0,
    "rating": null,
    "reviews": [],
    "versions": [
+    {
+     "version": "1.3",
+     "state": "WAITING_FOR_REVIEW",
+     "created": "2026-09-28"
+    },
     {
      "version": "1.2",
      "state": "READY_FOR_SALE",
@@ -618,6 +663,11 @@
     }
    ],
    "builds": [
+    {
+     "version": "20",
+     "state": "VALID",
+     "uploaded": "2026-09-28"
+    },
     {
      "version": "19",
      "state": "VALID",
@@ -637,11 +687,6 @@
      "version": "16",
      "state": "VALID",
      "uploaded": "2026-09-03"
-    },
-    {
-     "version": "15",
-     "state": "VALID",
-     "uploaded": "2026-09-01"
     }
    ]
   },
@@ -764,14 +809,23 @@
     "2026-09-23": 1,
     "2026-09-24": 0,
     "2026-09-25": 0,
-    "2026-09-26": 0
+    "2026-09-26": 0,
+    "2026-09-27": 1
    },
+   "revenue": {
+    "USD": {
+     "2026-07-10": 6.75,
+     "2026-07-15": 0.84,
+     "2026-08-07": 0.84
+    }
+   },
+   "iaps": 4,
    "rating": null,
    "reviews": [],
    "versions": [
     {
      "version": "1.5",
-     "state": "REJECTED",
+     "state": "WAITING_FOR_REVIEW",
      "created": "2026-09-25"
     },
     {
@@ -942,8 +996,11 @@
     "2026-09-23": 2,
     "2026-09-24": 0,
     "2026-09-25": 0,
-    "2026-09-26": 0
+    "2026-09-26": 0,
+    "2026-09-27": 0
    },
+   "revenue": {},
+   "iaps": 3,
    "rating": null,
    "reviews": [],
    "versions": [
@@ -1130,8 +1187,11 @@
     "2026-09-23": 0,
     "2026-09-24": 0,
     "2026-09-25": 0,
-    "2026-09-26": 0
+    "2026-09-26": 0,
+    "2026-09-27": 0
    },
+   "revenue": {},
+   "iaps": 0,
    "rating": null,
    "reviews": [],
    "versions": [
@@ -1288,8 +1348,11 @@
     "2026-09-23": 0,
     "2026-09-24": 0,
     "2026-09-25": 0,
-    "2026-09-26": 1
+    "2026-09-26": 1,
+    "2026-09-27": 2
    },
+   "revenue": {},
+   "iaps": 6,
    "rating": null,
    "reviews": [],
    "versions": [

@@ -69,6 +69,10 @@
   .rev{border-top:1px solid var(--line);margin-top:12px;padding-top:10px;
        font-size:13px;color:var(--soft)}
   .rev q{color:var(--ink)}
+  .tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;
+       font-weight:600;border:1px solid var(--line);color:var(--faint);
+       white-space:nowrap}
+  .money{color:var(--good);font-weight:700;font-variant-numeric:tabular-nums}
   .err{background:var(--card);border:1px solid var(--bad);border-radius:12px;
        padding:16px;color:var(--bad)}
   footer{color:var(--faint);font-size:12px;margin-top:26px}
@@ -83,6 +87,9 @@
   <footer>
     Data from App Store Connect, refreshed daily by GitHub Actions.
     Downloads are first-time installs; updates and re-downloads are excluded.
+    Proceeds are Apple's estimate from the daily sales reports, not what was
+    paid out, and <strong>exclude AdMob</strong> — ad income is a separate
+    account and appears nowhere on this page.
   </footer>
 </div>
 
@@ -181,6 +188,35 @@ function chart(series, days) {
 const sumLast = (series, days) =>
   Object.keys(series).sort().slice(-days).reduce((n, k) => n + series[k], 0);
 
+/** What an app earned, or why it earned nothing.
+ *
+ *  Three distinct states, and collapsing them is how a dashboard lies. An app
+ *  with no in-app purchases *cannot* take money through Apple, so a "$0.00"
+ *  beside it reads as a broken pipeline rather than the truth. An app that
+ *  sells something and took nothing is a real, different fact. And a failed
+ *  lookup is neither — better to say nothing than to guess.
+ *
+ *  Currencies are listed separately on purpose: adding dollars to euros
+ *  produces a confident, wrong number.
+ */
+function money(app) {
+  const totals = Object.entries(app.revenue || {})
+    .map(([cur, days]) => [cur, Object.values(days).reduce((n, v) => n + v, 0)])
+    .filter(([, v]) => Math.abs(v) >= 0.005);
+
+  if (totals.length) {
+    return totals
+      .map(([cur, v]) => `<span class="money">${v.toFixed(2)} ${cur}</span>`)
+      .join(" · ") + " estimated proceeds";
+  }
+  if (app.iaps === 0) return '<span class="tag">Free · no in-app purchases</span>';
+  if (app.iaps > 0) {
+    const n = `${app.iaps} in-app purchase${app.iaps === 1 ? "" : "s"}`;
+    return `<span class="tag">${n}</span> · no proceeds recorded in this window`;
+  }
+  return "";   // lookup failed; claim nothing
+}
+
 function render(d) {
   $("#generated").textContent =
     `${d.apps.length} apps · updated ${new Date(d.generated).toLocaleString()}`;
@@ -222,6 +258,7 @@ function render(d) {
           </div>
         </div>
         ${chart(dl, 365)}
+        ${money(a) ? `<div class="rev">${money(a)}</div>` : ""}
         ${rev ? `<div class="rev">${"★".repeat(rev.rating || 0)} <q>${rev.title || ""}</q> — ${rev.nickname || "anonymous"}, ${rev.date}</div>` : ""}
       </div>`;
   }).join("");

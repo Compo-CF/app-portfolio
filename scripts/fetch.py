@@ -132,8 +132,72 @@ def downloads_by_app(rows):
     return out
 
 
+def skus():
+    """App SKU -> Apple id, for attributing in-app purchase revenue.
+
+    An IAP row's "Apple Identifier" is the purchase's own id, not the app's,
+    and its "Parent Identifier" is the app's *SKU* rather than its numeric id.
+    Without this map every paid row keys to an id that is not in APPS and gets
+    dropped — which is exactly how this reported 0.00 across the whole
+    portfolio while Cosmica was selling bundles daily.
+    """
+    out = {}
+    for app_id, _ in APPS:
+        r = api(f"apps/{app_id}")
+        if "__error__" in r:
+            continue
+        sku = (r.get("data", {}).get("attributes", {}) or {}).get("sku")
+        if sku:
+            out[sku.strip()] = app_id
+    return out
+
+
+def revenue_by_app(rows, sku_map=None):
+    """Apple's proceeds per app, split by currency.
+
+    Deliberately not summed across currencies: adding dollars to euros
+    produces a confident, wrong number. "Developer Proceeds" is per unit, so
+    it is multiplied by Units — and refunds arrive as negative units, which
+    nets off correctly without special handling.
+
+    This is the estimate from the daily sales report, not the amount Apple
+    actually paid; the payouts live in the monthly financial reports and
+    settle differently after adjustments and conversion.
+    """
+    sku_map = sku_map or {}
+    out = {}
+    for row in rows:
+        # An in-app purchase names itself in "Apple Identifier" and its app in
+        # "Parent Identifier", as a SKU. Resolve to the app so the money lands
+        # against the thing that earned it.
+        parent = (row.get("Parent Identifier") or "").strip()
+        ident = sku_map.get(parent) if parent else (row.get("Apple Identifier") or "").strip()
+        if not ident:
+            continue
+        cur = (row.get("Currency of Proceeds") or "").strip() or "USD"
+        try:
+            amount = float(row.get("Developer Proceeds") or 0) * int(row.get("Units") or 0)
+        except ValueError:
+            continue
+        if amount:
+            out.setdefault(ident, {})
+            out[ident][cur] = round(out[ident].get(cur, 0.0) + amount, 2)
+    return out
+
+
 def app_detail(app_id):
     versions, rating, reviews, builds = [], None, [], []
+
+    # How many in-app purchases the app offers, which is what separates "this
+    # earned nothing" from "this cannot earn anything". A revenue row against
+    # a church app with no IAPs reads as a fault rather than a fact.
+    #
+    # Asked of App Store Connect rather than kept in a list here, so an app
+    # that gains a tip jar stops being labelled free without anyone editing
+    # this file. A failed call gives None, which the page treats as unknown
+    # and says nothing either way.
+    iap = api(f"apps/{app_id}/inAppPurchasesV2?limit=50")
+    iaps = None if "__error__" in iap else len(iap.get("data", []))
 
     for item in api(f"apps/{app_id}/appStoreVersions?limit=10").get("data", []):
         a = item["attributes"]
@@ -170,7 +234,7 @@ def app_detail(app_id):
             "uploaded": (a.get("uploadedDate") or "")[:10],
         })
 
-    return versions, rating, reviews, builds
+    return versions, rating, reviews, builds, iaps
 
 
 def main():
@@ -185,29 +249,55 @@ def main():
             existing = {}
     series = {app_id: dict(existing.get(app_id, {})) for app_id, _ in APPS}
 
+    prev_rev = {}
+    if OUT.exists():
+        try:
+            prev = json.loads(OUT.read_text(encoding="utf-8"))
+            prev_rev = {a["id"]: a.get("revenue", {}) for a in prev.get("apps", [])}
+        except (ValueError, KeyError):
+            prev_rev = {}
+    revenue = {
+        app_id: {c: dict(d) for c, d in prev_rev.get(app_id, {}).items()}
+        for app_id, _ in APPS
+    }
+
+    sku_map = skus()
+
     today = date.today()
     fetched = 0
     for back in range(1, days + 1):
         day = today - timedelta(days=back)
         key = day.isoformat()
-        # Already held, and old enough that Apple will not revise it.
-        if back > 3 and all(key in series[a] for a, _ in APPS):
+        # Already held, and old enough that Apple will not revise it. FORCE=1
+        # overrides, which is needed when a new field is added to the report
+        # parsing and the existing days have to be walked again.
+        if (
+            not os.environ.get("FORCE")
+            and back > 3
+            and all(key in series[a] for a, _ in APPS)
+        ):
             continue
-        counts = downloads_by_app(sales_rows(day))
+        rows = sales_rows(day)
+        counts = downloads_by_app(rows)
         if not counts:
             continue
         fetched += 1
+        money = revenue_by_app(rows, sku_map)
         for app_id, _ in APPS:
             series[app_id][key] = counts.get(app_id, 0)
+            for cur, amount in money.get(app_id, {}).items():
+                revenue[app_id].setdefault(cur, {})[key] = amount
 
     apps = []
     for app_id, name in APPS:
-        versions, rating, reviews, builds = app_detail(app_id)
+        versions, rating, reviews, builds, iaps = app_detail(app_id)
         apps.append({
             "id": app_id,
             "name": name,
             "url": f"https://apps.apple.com/app/id{app_id}",
             "downloads": dict(sorted(series[app_id].items())),
+            "revenue": {c: dict(sorted(d.items())) for c, d in revenue[app_id].items()},
+            "iaps": iaps,
             "rating": rating,
             "reviews": reviews,
             "versions": versions,
