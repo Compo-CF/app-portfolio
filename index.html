@@ -73,6 +73,11 @@
        font-weight:600;border:1px solid var(--line);color:var(--faint);
        white-space:nowrap}
   .money{color:var(--good);font-weight:700;font-variant-numeric:tabular-nums}
+  .droid{border-top:1px solid var(--line);margin-top:12px;padding-top:10px;
+         font-size:13px;color:var(--soft);display:flex;flex-wrap:wrap;
+         gap:4px 14px;align-items:baseline}
+  .droid b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .droid .asof{color:var(--faint);font-size:11.5px;font-family:var(--mono)}
   .err{background:var(--card);border:1px solid var(--bad);border-radius:12px;
        padding:16px;color:var(--bad)}
   footer{color:var(--faint);font-size:12px;margin-top:26px}
@@ -87,6 +92,11 @@
   <footer>
     Data from App Store Connect, refreshed daily by GitHub Actions.
     Downloads are first-time installs; updates and re-downloads are excluded.
+    The charts and totals are <strong>App Store only</strong>. Google Play is
+    reported separately per app, because Apple counts first-time downloads and
+    Play counts user installs — neither contains the other, so a combined
+    figure would have no definition. Play also publishes about a week behind
+    Apple, so each Play line states the last date it actually covers.
     Proceeds are Apple's estimate from the daily sales reports, not what was
     paid out, and <strong>exclude AdMob</strong> — ad income is a separate
     account and appears nowhere on this page.
@@ -211,6 +221,40 @@ const sumLast = (series, days) =>
  *  Currencies are listed separately on purpose: adding dollars to euros
  *  produces a confident, wrong number.
  */
+/** Google Play, kept as its own line rather than folded into the chart above.
+ *
+ *  Two reasons not to merge them. The metrics are not the same thing — Apple
+ *  counts first-time downloads, Play counts user installs, and neither is a
+ *  subset of the other — so one combined total would be a number with no
+ *  definition. And Play publishes about a week behind Apple, so a merged
+ *  series would slope downward at the right-hand end purely because half the
+ *  data had not arrived.
+ *
+ *  Active devices has no iOS counterpart at all: Apple reports installs and
+ *  updates as events and never reports deletions, so an installed base cannot
+ *  be derived from it. Play states it, so it is shown where it exists.
+ */
+function android(app) {
+  const d = app.android;
+  if (!d) return "";                       // not published on Play
+  const days = Object.keys(d.installs || {}).sort();
+  if (!days.length) return "";
+
+  const total = days.reduce((n, k) => n + d.installs[k], 0);
+  const recent = days.slice(-30).reduce((n, k) => n + d.installs[k], 0);
+  const live = Object.keys(d.active || {}).sort()
+    .map((k) => d.active[k]).filter((v) => v);
+  const latest = days[days.length - 1];
+
+  return `<div class="droid">
+    <span>Google Play</span>
+    <span><b>${fmt(recent)}</b> installs in 30d</span>
+    <span><b>${fmt(total)}</b> total</span>
+    ${live.length ? `<span><b>${fmt(live[live.length - 1])}</b> active devices</span>` : ""}
+    <span class="asof">through ${latest}</span>
+  </div>`;
+}
+
 function money(app) {
   const totals = Object.entries(app.revenue || {})
     .map(([cur, days]) => [cur, Object.values(days).reduce((n, v) => n + v, 0)])
@@ -244,9 +288,9 @@ function render(d) {
     : "—";
 
   $("#totals").innerHTML = [
-    ["Downloads, 7 days", fmt(sumLast(all, 7))],
-    ["Downloads, 30 days", fmt(sumLast(all, 30))],
-    ["Downloads, 365 days", fmt(sumLast(all, 365))],
+    ["App Store, 7 days", fmt(sumLast(all, 7))],
+    ["App Store, 30 days", fmt(sumLast(all, 30))],
+    ["App Store, 365 days", fmt(sumLast(all, 365))],
     ["Average rating", avg],
   ].map(([label, v]) => `<div class="stat"><b>${v}</b><span>${label}</span></div>`).join("");
 
@@ -264,12 +308,13 @@ function render(d) {
         <div class="head">
           <div class="name"><a href="${a.url}" rel="noopener">${a.name}</a></div>
           <div class="meta">
-            ${fmt(sumLast(dl, 30))} in 30d · ${fmt(sumLast(dl, 7))} in 7d
+            App Store · ${fmt(sumLast(dl, 30))} in 30d · ${fmt(sumLast(dl, 7))} in 7d
             ${r ? ` · ★ ${r.average} (${r.count})` : " · no ratings yet"}
             ${live ? ` <span class="pill" style="background:${stateColour(live.state)}">v${live.version} ${live.state}</span>` : ""}
           </div>
         </div>
         ${chart(dl, 365)}
+        ${android(a)}
         ${money(a) ? `<div class="rev">${money(a)}</div>` : ""}
         ${rev ? `<div class="rev">${"★".repeat(rev.rating || 0)} <q>${rev.title || ""}</q> — ${rev.nickname || "anonymous"}, ${rev.date}</div>` : ""}
       </div>`;

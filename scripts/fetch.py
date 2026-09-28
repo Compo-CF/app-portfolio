@@ -21,6 +21,8 @@ from pathlib import Path
 import jwt
 import requests
 
+import play
+
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "portfolio.json"
 ASC = "https://api.appstoreconnect.apple.com/v1"
@@ -261,6 +263,31 @@ def main():
         for app_id, _ in APPS
     }
 
+    # Play data, merged onto whatever is already committed rather than
+    # replacing it. Google keeps a limited window, and an empty result means
+    # "could not read the bucket" — usually missing credentials in CI — which
+    # must never overwrite a real history with nothing.
+    prev_droid = {}
+    if OUT.exists():
+        try:
+            prev = json.loads(OUT.read_text(encoding="utf-8"))
+            prev_droid = {a["id"]: (a.get("android") or {}) for a in prev.get("apps", [])}
+        except (ValueError, KeyError):
+            prev_droid = {}
+
+    android = {}
+    for app_id, _ in APPS:
+        held = prev_droid.get(app_id) or {}
+        android[app_id] = {
+            "installs": dict(held.get("installs") or {}),
+            "active": dict(held.get("active") or {}),
+        }
+    for app_id, entry in play.installs().items():
+        if app_id not in android:
+            continue
+        android[app_id]["installs"].update(entry["installs"])
+        android[app_id]["active"].update(entry["active"])
+
     sku_map = skus()
 
     today = date.today()
@@ -298,6 +325,12 @@ def main():
             "downloads": dict(sorted(series[app_id].items())),
             "revenue": {c: dict(sorted(d.items())) for c, d in revenue[app_id].items()},
             "iaps": iaps,
+            # Android lives beside iOS rather than in a parallel app list, and
+            # stays absent for apps that are not on Play at all — an empty
+            # series would read as "nobody installed it".
+            "android": (android[app_id]
+                        if android[app_id]["installs"] or android[app_id]["active"]
+                        else None),
             "rating": rating,
             "reviews": reviews,
             "versions": versions,
