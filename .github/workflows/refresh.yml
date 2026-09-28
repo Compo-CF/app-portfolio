@@ -16,6 +16,9 @@ on:
 
 permissions:
   contents: write
+  # Lets the runner mint the OIDC token Google exchanges for credentials.
+  # Without it the auth step fails with a bare "unable to get token".
+  id-token: write
 
 concurrency:
   # Two runs committing the same data file would conflict for no benefit.
@@ -32,14 +35,38 @@ jobs:
         with:
           python-version: '3.12'
 
-      - run: pip install --quiet "pyjwt[crypto]" requests
+      - run: pip install --quiet "pyjwt[crypto]" requests google-cloud-storage
 
-      - name: Pull from App Store Connect
+      # Google Play install figures come from a Cloud Storage bucket, which
+      # needs a service account — a user login cannot run here.
+      #
+      # No key file. The account's org policy forbids service-account keys
+      # (constraints/iam.disableServiceAccountKeyCreation), and that is the
+      # better arrangement anyway: this repository is public, so a long-lived
+      # credential in it would be the weakest thing here. Instead GitHub mints
+      # a short-lived OIDC token and Google exchanges it, which is why the job
+      # needs id-token: write above. The provider is pinned to this repository
+      # by an attribute condition, so a token from anywhere else is refused.
+      #
+      # continue-on-error because Android is an extra: if the exchange breaks,
+      # the iOS refresh should still run. play.py then reads nothing and the
+      # committed Android history is left alone rather than zeroed.
+      - name: Authenticate to Google Cloud
+        id: play
+        continue-on-error: true
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: app-portfolio-tooling
+          workload_identity_provider: projects/919354515893/locations/global/workloadIdentityPools/github/providers/github
+          service_account: play-reports-reader@app-portfolio-tooling.iam.gserviceaccount.com
+
+      - name: Pull from App Store Connect and Google Play
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
           ASC_VENDOR_NUMBER: ${{ secrets.ASC_VENDOR_NUMBER }}
+          PLAY_PROJECT: app-portfolio-tooling
           BACKFILL_DAYS: ${{ github.event.inputs.backfill_days || '7' }}
         run: python scripts/fetch.py
 

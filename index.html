@@ -78,6 +78,16 @@
          gap:4px 14px;align-items:baseline}
   .droid b{color:var(--ink);font-variant-numeric:tabular-nums}
   .droid .asof{color:var(--faint);font-size:11.5px;font-family:var(--mono)}
+  /* Dragging is offered from a grip rather than the whole card: the card is
+     full of links and text, and a card-wide drag would fight both. */
+  .grip{cursor:grab;touch-action:none;user-select:none;color:var(--faint);
+        font-size:16px;line-height:1;padding:3px 7px;border-radius:7px;
+        border:1px solid transparent;align-self:center}
+  .grip:hover{color:var(--soft);border-color:var(--line)}
+  .card.dragging{opacity:.5}
+  .card.dragging .grip{cursor:grabbing}
+  .reset{background:none;border:0;padding:0;font:inherit;font-size:12px;
+         color:var(--accent);cursor:pointer;text-decoration:underline}
   .err{background:var(--card);border:1px solid var(--bad);border-radius:12px;
        padding:16px;color:var(--bad)}
   footer{color:var(--faint);font-size:12px;margin-top:26px}
@@ -87,6 +97,7 @@
 <div class="wrap">
   <h1>App Portfolio</h1>
   <div class="sub" id="generated">Loading&hellip;</div>
+  <div class="sub" id="order-note"></div>
   <div class="totals" id="totals"></div>
   <div id="apps"></div>
   <footer>
@@ -255,6 +266,98 @@ function android(app) {
   </div>`;
 }
 
+/* ---- card order, dragged by hand and remembered per browser ------------- */
+
+const ORDER_KEY = "portfolio.order";
+
+/** The saved order, or null. Wrapped because storage throws outright in a
+ *  private window rather than returning nothing, and a dashboard that blanks
+ *  itself over a preference is a bad trade. */
+function loadOrder() {
+  try {
+    const raw = localStorage.getItem(ORDER_KEY);
+    const ids = raw && JSON.parse(raw);
+    return Array.isArray(ids) && ids.length ? ids : null;
+  } catch { return null; }
+}
+
+function saveOrder(ids) {
+  try { localStorage.setItem(ORDER_KEY, JSON.stringify(ids)); } catch { /* ignore */ }
+}
+
+function clearOrder() {
+  try { localStorage.removeItem(ORDER_KEY); } catch { /* ignore */ }
+}
+
+/** Drag-to-reorder, from the grip only.
+ *
+ *  Pointer events rather than HTML5 drag-and-drop: the same code then works
+ *  for touch, which native dragging does not, and this page is read on a
+ *  phone as often as a desktop. The grip carries touch-action: none so a
+ *  drag on it does not scroll the page instead.
+ *
+ *  The card moves in the DOM as the pointer passes each neighbour's midpoint,
+ *  so what you see during the drag is the result, with no placeholder to
+ *  reconcile afterwards.
+ */
+function enableReorder(container) {
+  let card = null;
+
+  container.addEventListener("pointerdown", (e) => {
+    const grip = e.target.closest(".grip");
+    if (!grip || e.button > 0) return;
+    card = grip.closest(".card");
+    if (!card) return;
+    grip.setPointerCapture(e.pointerId);
+    card.classList.add("dragging");
+    e.preventDefault();               // no text selection mid-drag
+  });
+
+  container.addEventListener("pointermove", (e) => {
+    if (!card) return;
+    // Snapshot first: container.children is live, and inserting into it while
+    // iterating skips elements — which showed up as a drag that crawled two
+    // places and stopped however far the pointer travelled.
+    const others = [...container.children].filter((c) => c !== card);
+
+    // Sit before the first card whose midpoint is below the pointer; past all
+    // of them, sit last. Stated as a position rather than a swap, so it is
+    // idempotent and a fast drag cannot outrun it.
+    const before = others.find((c) => {
+      const box = c.getBoundingClientRect();
+      return e.clientY < box.top + box.height / 2;
+    });
+
+    if (before) {
+      if (card.nextElementSibling !== before) container.insertBefore(card, before);
+    } else if (container.lastElementChild !== card) {
+      container.appendChild(card);
+    }
+  });
+
+  const drop = () => {
+    if (!card) return;
+    card.classList.remove("dragging");
+    card = null;
+    saveOrder([...container.children].map((c) => c.dataset.id));
+    renderResetControl();
+  };
+  container.addEventListener("pointerup", drop);
+  container.addEventListener("pointercancel", drop);
+}
+
+/** Offered only once an order has been saved — otherwise it is a control that
+ *  undoes nothing. */
+function renderResetControl() {
+  const host = $("#order-note");
+  if (!host) return;
+  host.innerHTML = loadOrder()
+    ? 'Custom order · <button class="reset" type="button">reset to busiest first</button>'
+    : "";
+  const button = host.querySelector(".reset");
+  if (button) button.onclick = () => { clearOrder(); location.reload(); };
+}
+
 function money(app) {
   const totals = Object.entries(app.revenue || {})
     .map(([cur, days]) => [cur, Object.values(days).reduce((n, v) => n + v, 0)])
@@ -294,9 +397,23 @@ function render(d) {
     ["Average rating", avg],
   ].map(([label, v]) => `<div class="stat"><b>${v}</b><span>${label}</span></div>`).join("");
 
-  // Busiest first: a portfolio view should lead with what is moving.
+  // Busiest first: a portfolio view should lead with what is moving. A saved
+  // order overrides it, and anything the saved order has never heard of —
+  // a newly published app — sorts to the end rather than vanishing.
   const apps = [...d.apps].sort(
     (a, b) => sumLast(b.downloads || {}, 30) - sumLast(a.downloads || {}, 30));
+  const saved = loadOrder();
+  if (saved) {
+    // Stable sort, so apps absent from the saved order keep busiest-first
+    // among themselves instead of landing in arbitrary positions.
+    apps.sort((a, b) => {
+      const ia = saved.indexOf(a.id), ib = saved.indexOf(b.id);
+      if (ia === -1 && ib === -1) return 0;
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+  }
 
   $("#apps").innerHTML = apps.map((a) => {
     const dl = a.downloads || {};
@@ -304,9 +421,12 @@ function render(d) {
     const r = a.rating;
     const rev = (a.reviews || [])[0];
     return `
-      <div class="card">
+      <div class="card" data-id="${a.id}">
         <div class="head">
-          <div class="name"><a href="${a.url}" rel="noopener">${a.name}</a></div>
+          <div class="name">
+            <span class="grip" title="Drag to reorder" aria-hidden="true">⠿</span>
+            <a href="${a.url}" rel="noopener">${a.name}</a>
+          </div>
           <div class="meta">
             App Store · ${fmt(sumLast(dl, 30))} in 30d · ${fmt(sumLast(dl, 7))} in 7d
             ${r ? ` · ★ ${r.average} (${r.count})` : " · no ratings yet"}
@@ -319,6 +439,9 @@ function render(d) {
         ${rev ? `<div class="rev">${"★".repeat(rev.rating || 0)} <q>${rev.title || ""}</q> — ${rev.nickname || "anonymous"}, ${rev.date}</div>` : ""}
       </div>`;
   }).join("");
+
+  enableReorder($("#apps"));
+  renderResetControl();
 }
 
 fetch("data/portfolio.json", { cache: "no-store" })
