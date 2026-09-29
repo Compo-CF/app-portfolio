@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-29T12:51:25+00:00",
+ "generated": "2026-09-29T12:58:00+00:00",
  "apps": [
   {
    "id": "6773501518",
@@ -943,7 +943,7 @@
    "versions": [
     {
      "version": "1.5",
-     "state": "IN_REVIEW",
+     "state": "READY_FOR_SALE",
      "created": "2026-09-25"
     },
     {
