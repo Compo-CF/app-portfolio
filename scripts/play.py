@@ -28,6 +28,10 @@ import re
 PACKAGES = {
     "com.compofelice.goodshepherd": "6804512540",
     "com.compofelice.stiereats": "6773501518",
+    # Draft, internal testing only, so Google publishes no report for it yet
+    # and it contributes nothing. Listed now so that the day it ships, the
+    # figures start arriving without anyone remembering this file exists.
+    "com.compofelice.woodlandstrailguide_flutter": "6785576912",
 }
 
 BUCKET = os.environ.get("PLAY_BUCKET", "pubsite_prod_6691100777752209003")
