@@ -67,6 +67,30 @@ def _rows(blob):
     return []
 
 
+def _whoami():
+    """Which identity the request was actually made as.
+
+    A 403 says the caller was refused; it does not say who the caller was.
+    Under Workload Identity Federation there are two candidates — the
+    federated principal GitHub presents, and the service account it is meant
+    to impersonate — and only the service account has been granted anything
+    in Play Console. If impersonation silently fails to engage, the symptom is
+    an ordinary 403 and the cause is invisible. Naming the identity separates
+    "not propagated yet" from "asking as the wrong principal".
+
+    Identifiers only. Never a token.
+    """
+    try:
+        import google.auth
+        creds, project = google.auth.default()
+        who = (getattr(creds, "service_account_email", None)
+               or getattr(creds, "_target_principal", None)   # impersonated
+               or type(creds).__name__)
+        return f"{who} (quota project {project or 'unset'})"
+    except Exception as e:                           # noqa: BLE001
+        return f"unknown ({type(e).__name__})"
+
+
 def _int(row, column):
     try:
         return int((row.get(column) or "0").strip() or 0)
@@ -104,6 +128,7 @@ def installs():
         # The message matters here: "Project was not passed" means PLAY_PROJECT
         # is unset, which looks identical to a permissions failure without it.
         print(f"  play: bucket unreadable ({type(e).__name__}: {str(e)[:120]})")
+        print(f"  play: acting as {_whoami()}")
         return {}
 
     out = {}
