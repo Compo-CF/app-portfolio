@@ -22,6 +22,7 @@ import csv
 import io
 import os
 import re
+from datetime import date
 
 # Apple's id is the key the dashboard already uses, so Play data merges into
 # the record that is there rather than creating a parallel set of apps.
@@ -69,6 +70,34 @@ def _rows(blob):
         if "Date" in text[:200]:
             return list(csv.DictReader(io.StringIO(text)))
     return []
+
+
+def _by_name(bucket, months=14):
+    """The reports fetched by their exact paths, skipping any that are absent.
+
+    Needs only storage.objects.get, where listing needs storage.objects.list.
+    Every name is `installs_<package>_<YYYYMM>_overview.csv`, so nothing has
+    to be discovered — a month that does not exist simply 404s and is passed
+    over, which also covers apps that had not shipped yet.
+
+    Costs one request per package-month, all small, and the window is short
+    because the account itself is new.
+    """
+    today = date.today()
+    found = []
+    for package in PACKAGES:
+        for back in range(months):
+            year, month = divmod((today.year * 12 + today.month - 1) - back, 12)
+            name = f"{PREFIX}installs_{package}_{year}{month + 1:02d}_overview.csv"
+            blob = bucket.blob(name)
+            try:
+                if blob.exists():
+                    found.append(blob)
+            except Exception:                        # noqa: BLE001
+                # Forbidden rather than missing: reading is barred too, so
+                # there is nothing to be gained from the remaining months.
+                return found
+    return found
 
 
 def _whoami():
@@ -127,13 +156,30 @@ def installs():
 
     try:
         client = storage.Client(project=PROJECT) if PROJECT else storage.Client()
-        blobs = list(client.list_blobs(BUCKET, prefix=PREFIX))
     except Exception as e:                           # noqa: BLE001 — any auth
-        # The message matters here: "Project was not passed" means PLAY_PROJECT
-        # is unset, which looks identical to a permissions failure without it.
-        print(f"  play: bucket unreadable ({type(e).__name__}: {str(e)[:120]})")
-        print(f"  play: acting as {_whoami()}")
+        print(f"  play: no credentials ({type(e).__name__}: {str(e)[:120]})")
         return {}
+
+    bucket = client.bucket(BUCKET)
+    try:
+        blobs = list(client.list_blobs(BUCKET, prefix=PREFIX))
+    except Exception as e:                           # noqa: BLE001
+        # Listing and reading are separate permissions. Play's grant is not
+        # documented to include storage.objects.list, and a 403 here does not
+        # mean the files are unreadable — only that the bucket cannot be
+        # enumerated. Every name is predictable, so address them directly
+        # rather than giving up.
+        #
+        # The message matters: "Project was not passed" means PLAY_PROJECT is
+        # unset, which looks identical to a permissions failure without it.
+        print(f"  play: cannot list the bucket ({type(e).__name__}: {str(e)[:90]})")
+        print(f"  play: acting as {_whoami()}")
+        print("  play: trying the files by name instead")
+        blobs = _by_name(bucket)
+        if not blobs:
+            print("  play: no reports readable by name either")
+            return {}
+        print(f"  play: {len(blobs)} report(s) readable without listing")
 
     out = {}
     for blob in blobs:
