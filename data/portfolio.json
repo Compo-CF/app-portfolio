@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-29T18:30:48+00:00",
+ "generated": "2026-09-29T19:33:58+00:00",
  "apps": [
   {
    "id": "6773501518",
@@ -1474,7 +1474,7 @@
     "2026-09-27": 2
    },
    "revenue": {},
-   "iaps": 6,
+   "iaps": 9,
    "iapUnits": {},
    "android": null,
    "rating": null,
