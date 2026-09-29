@@ -86,6 +86,8 @@
   .grip:hover{color:var(--soft);border-color:var(--line)}
   .card.dragging{opacity:.5}
   .card.dragging .grip{cursor:grabbing}
+  .section{font-size:12px;font-weight:700;letter-spacing:.09em;
+           text-transform:uppercase;color:var(--faint);margin:26px 0 10px}
   .reset{background:none;border:0;padding:0;font:inherit;font-size:12px;
          color:var(--accent);cursor:pointer;text-decoration:underline}
   .err{background:var(--card);border:1px solid var(--bad);border-radius:12px;
@@ -99,6 +101,7 @@
   <div class="sub" id="generated">Loading&hellip;</div>
   <div class="sub" id="order-note"></div>
   <div class="totals" id="totals"></div>
+  <div id="money"></div>
   <div id="apps"></div>
   <footer>
     Data from App Store Connect, refreshed daily by GitHub Actions.
@@ -158,7 +161,7 @@ function scaleFor(peak) {
 
 /** Downloads as an area chart. Hand-drawn SVG rather than a charting
  *  library: one file, no CDN, and nothing to break when a version bumps. */
-function chart(series, days) {
+function chart(series, days, show = fmt) {
   const keys = Object.keys(series).sort().slice(-days);
   if (keys.length < 2) return '<div class="meta">Not enough history yet.</div>';
 
@@ -191,13 +194,13 @@ function chart(series, days) {
   const label = (v, leftPct, cls = "") => {
     const nudge = leftPct > 86 ? "translate(-100%,-150%)" : "translate(-50%,-150%)";
     return `<span class="dlabel ${cls}" style="left:${leftPct.toFixed(2)}%;
-            top:${pct(v)}%;transform:${nudge}">${fmt(v)}</span>`;
+            top:${pct(v)}%;transform:${nudge}">${show(v)}</span>`;
   };
 
   return `
     <div class="plot">
       <div class="yaxis">
-        ${ticks.map((t) => `<span style="top:${pct(t)}%">${fmt(t)}</span>`).join("")}
+        ${ticks.map((t) => `<span style="top:${pct(t)}%">${show(t)}</span>`).join("")}
       </div>
       <div class="canvas">
         <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"
@@ -264,6 +267,94 @@ function android(app) {
     ${live.length ? `<span><b>${fmt(live[live.length - 1])}</b> active devices</span>` : ""}
     <span class="asof">through ${latest}</span>
   </div>`;
+}
+
+/* ---- money over time ---------------------------------------------------- */
+
+const money0 = (n) => "$" + Math.round(n).toLocaleString();
+
+/** Daily figures for every app added together, keyed by date. */
+function combined(apps, pick) {
+  const out = {};
+  for (const app of apps)
+    for (const [day, value] of Object.entries(pick(app) || {}))
+      out[day] = (out[day] || 0) + value;
+  return out;
+}
+
+/** Every day between two dates, so a sparse series plots honestly.
+ *
+ *  Purchases are rare. Plotted only on the days they happened, three sales in
+ *  a month become a line sloping between them, which reads as steady trade.
+ *  The written-in zeros are the truth: mostly nothing, occasionally something.
+ */
+function daily(series, from, to, carry = false) {
+  const out = {};
+  let total = 0;
+  const day = new Date(from + "T00:00:00Z");
+  const last = new Date(to + "T00:00:00Z");
+  while (day <= last) {
+    const key = day.toISOString().slice(0, 10);
+    total += series[key] || 0;
+    out[key] = carry ? Math.round(total * 100) / 100 : (series[key] || 0);
+    day.setUTCDate(day.getUTCDate() + 1);
+  }
+  return out;
+}
+
+/** The two money charts: what has accumulated, and what is selling.
+ *
+ *  USD only on the cumulative line. Proceeds arrive in the currency of the
+ *  region that bought, and adding won to dollars would produce a number with
+ *  no meaning — so other currencies are named beside it rather than folded in.
+ *
+ *  Purchases are counted in units, not money, because they answer a different
+ *  question: how many people bought, as against what it was worth.
+ */
+function renderMoney(apps) {
+  const host = $("#money");
+  if (!host) return;
+
+  const usd = combined(apps, (a) => (a.revenue || {}).USD);
+  const units = combined(apps, (a) => a.iapUnits);
+  if (!Object.keys(usd).length && !Object.keys(units).length) {
+    host.innerHTML = "";
+    return;
+  }
+
+  // Span taken from downloads, which every app has, so both charts share an
+  // x-axis with the rest of the page instead of starting at the first sale.
+  const span = Object.keys(combined(apps, (a) => a.downloads)).sort();
+  const from = span[0], to = span[span.length - 1];
+  const earned = Object.values(usd).reduce((n, v) => n + v, 0);
+  const sold = Object.values(units).reduce((n, v) => n + v, 0);
+
+  const others = {};
+  for (const app of apps)
+    for (const [cur, days] of Object.entries(app.revenue || {}))
+      if (cur !== "USD")
+        others[cur] = (others[cur] || 0) + Object.values(days).reduce((n, v) => n + v, 0);
+
+  host.innerHTML = `
+    <div class="card">
+      <div class="head">
+        <div class="name">Cumulative proceeds</div>
+        <div class="meta"><span class="money">${earned.toFixed(2)} USD</span> to date${
+          Object.keys(others).length
+            ? " · plus " + Object.entries(others)
+                .map(([c, v]) => `<span class="money">${v.toLocaleString()} ${c}</span>`)
+                .join(" · ")
+            : ""}</div>
+      </div>
+      ${chart(daily(usd, from, to, true), 365, money0)}
+    </div>
+    <div class="card">
+      <div class="head">
+        <div class="name">In-app purchases</div>
+        <div class="meta"><b>${fmt(sold)}</b> bought across the portfolio</div>
+      </div>
+      ${chart(daily(units, from, to), 365)}
+    </div>`;
 }
 
 /* ---- card order, dragged by hand and remembered per browser ------------- */
@@ -402,6 +493,8 @@ function render(d) {
   // a newly published app — sorts to the end rather than vanishing.
   const apps = [...d.apps].sort(
     (a, b) => sumLast(b.downloads || {}, 30) - sumLast(a.downloads || {}, 30));
+  renderMoney(d.apps);
+
   const saved = loadOrder();
   if (saved) {
     // Stable sort, so apps absent from the saved order keep busiest-first

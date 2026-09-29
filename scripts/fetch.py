@@ -165,9 +165,15 @@ def revenue_by_app(rows, sku_map=None):
     This is the estimate from the daily sales report, not the amount Apple
     actually paid; the payouts live in the monthly financial reports and
     settle differently after adjustments and conversion.
+
+    Returns proceeds and purchase counts, because they answer different
+    questions. Units say how many people bought; proceeds say what it was
+    worth. Six tip-jar taps and one bundle can total the same money, and only
+    the unit count tells them apart — so both are kept rather than one being
+    inferred from the other.
     """
     sku_map = sku_map or {}
-    out = {}
+    out, units = {}, {}
     for row in rows:
         # An in-app purchase names itself in "Apple Identifier" and its app in
         # "Parent Identifier", as a SKU. Resolve to the app so the money lands
@@ -178,13 +184,19 @@ def revenue_by_app(rows, sku_map=None):
             continue
         cur = (row.get("Currency of Proceeds") or "").strip() or "USD"
         try:
-            amount = float(row.get("Developer Proceeds") or 0) * int(row.get("Units") or 0)
+            sold = int(row.get("Units") or 0)
+            amount = float(row.get("Developer Proceeds") or 0) * sold
         except ValueError:
             continue
+        # Only a row with a parent is a purchase. A bare app row is the free
+        # download itself, and counting those as purchases would report every
+        # install as a sale.
+        if parent and sold:
+            units[ident] = units.get(ident, 0) + sold
         if amount:
             out.setdefault(ident, {})
             out[ident][cur] = round(out[ident].get(cur, 0.0) + amount, 2)
-    return out
+    return out, units
 
 
 def app_detail(app_id):
@@ -263,6 +275,15 @@ def main():
         for app_id, _ in APPS
     }
 
+    prev_units = {}
+    if OUT.exists():
+        try:
+            prev = json.loads(OUT.read_text(encoding="utf-8"))
+            prev_units = {a["id"]: (a.get("iapUnits") or {}) for a in prev.get("apps", [])}
+        except (ValueError, KeyError):
+            prev_units = {}
+    iap_units = {app_id: dict(prev_units.get(app_id, {})) for app_id, _ in APPS}
+
     # Play data, merged onto whatever is already committed rather than
     # replacing it. Google keeps a limited window, and an empty result means
     # "could not read the bucket" — usually missing credentials in CI — which
@@ -309,11 +330,13 @@ def main():
         if not counts:
             continue
         fetched += 1
-        money = revenue_by_app(rows, sku_map)
+        money, sold = revenue_by_app(rows, sku_map)
         for app_id, _ in APPS:
             series[app_id][key] = counts.get(app_id, 0)
             for cur, amount in money.get(app_id, {}).items():
                 revenue[app_id].setdefault(cur, {})[key] = amount
+            if sold.get(app_id):
+                iap_units[app_id][key] = sold[app_id]
 
     apps = []
     for app_id, name in APPS:
@@ -325,6 +348,7 @@ def main():
             "downloads": dict(sorted(series[app_id].items())),
             "revenue": {c: dict(sorted(d.items())) for c, d in revenue[app_id].items()},
             "iaps": iaps,
+            "iapUnits": dict(sorted(iap_units[app_id].items())),
             # Android lives beside iOS rather than in a parallel app list, and
             # stays absent for apps that are not on Play at all — an empty
             # series would read as "nobody installed it".

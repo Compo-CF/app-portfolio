@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-28T20:40:12+00:00",
+ "generated": "2026-09-29T12:51:25+00:00",
  "apps": [
   {
    "id": "6773501518",
@@ -130,6 +130,10 @@
     }
    },
    "iaps": 4,
+   "iapUnits": {
+    "2026-07-22": 1,
+    "2026-08-23": 1
+   },
    "android": {
     "installs": {
      "2026-08-24": 2,
@@ -467,6 +471,20 @@
     }
    },
    "iaps": 10,
+   "iapUnits": {
+    "2026-07-19": 1,
+    "2026-08-20": 1,
+    "2026-08-21": 1,
+    "2026-09-14": 2,
+    "2026-09-15": 2,
+    "2026-09-21": 1,
+    "2026-09-22": 2,
+    "2026-09-23": 1,
+    "2026-09-24": 2,
+    "2026-09-25": 13,
+    "2026-09-26": 4,
+    "2026-09-27": 5
+   },
    "android": null,
    "rating": {
     "average": 3.5,
@@ -500,7 +518,7 @@
    "versions": [
     {
      "version": "3.0.3",
-     "state": "IN_REVIEW",
+     "state": "READY_FOR_SALE",
      "created": "2026-09-28"
     },
     {
@@ -701,6 +719,7 @@
    },
    "revenue": {},
    "iaps": 0,
+   "iapUnits": {},
    "android": {
     "installs": {
      "2026-09-09": 3,
@@ -736,7 +755,7 @@
    "versions": [
     {
      "version": "1.3",
-     "state": "WAITING_FOR_REVIEW",
+     "state": "READY_FOR_SALE",
      "created": "2026-09-28"
     },
     {
@@ -913,13 +932,18 @@
     }
    },
    "iaps": 4,
+   "iapUnits": {
+    "2026-07-10": 5,
+    "2026-07-15": 1,
+    "2026-08-07": 1
+   },
    "android": null,
    "rating": null,
    "reviews": [],
    "versions": [
     {
      "version": "1.5",
-     "state": "WAITING_FOR_REVIEW",
+     "state": "IN_REVIEW",
      "created": "2026-09-25"
     },
     {
@@ -1095,6 +1119,7 @@
    },
    "revenue": {},
    "iaps": 3,
+   "iapUnits": {},
    "android": null,
    "rating": null,
    "reviews": [],
@@ -1287,6 +1312,7 @@
    },
    "revenue": {},
    "iaps": 0,
+   "iapUnits": {},
    "android": null,
    "rating": null,
    "reviews": [],
@@ -1449,6 +1475,7 @@
    },
    "revenue": {},
    "iaps": 6,
+   "iapUnits": {},
    "android": null,
    "rating": null,
    "reviews": [],
