@@ -18,6 +18,31 @@ reach the client.
 Download history accumulates in the committed JSON, so it will eventually
 reach further back than the year Apple itself keeps.
 
+## `data/portfolio.json` belongs to the Action
+
+The scheduled job is its only writer. Running `scripts/fetch.py` locally is
+how you test a parser change, but **do not commit what it produces** — a
+local commit and a scheduled one touching the same file collide, and the
+resolution is never interesting because the file is derived.
+
+```sh
+python scripts/fetch.py          # regenerate, look at it
+git checkout data/portfolio.json # then throw it away
+```
+
+Push the parser change on its own, then run the workflow to put the new
+fields live:
+
+```sh
+gh workflow run refresh.yml
+```
+
+The job survives a race from the other direction. If something lands while
+it is running, its push is rejected, and it resets onto the new head and
+regenerates instead of forcing its own copy over the top — which matters,
+because a run that started before a parser change would otherwise overwrite
+the new fields with output from the old code.
+
 ## Secrets
 
 Set these as repository secrets; they are never committed:

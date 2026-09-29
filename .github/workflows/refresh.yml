@@ -71,11 +71,49 @@ jobs:
         run: python scripts/fetch.py
 
       - name: Commit if anything moved
+        # The same credentials as the fetch step, because the retry below
+        # regenerates the file and would otherwise run without them — a
+        # silent downgrade to an empty result on exactly the run that raced.
+        # GOOGLE_APPLICATION_CREDENTIALS is already exported by the auth step.
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          ASC_VENDOR_NUMBER: ${{ secrets.ASC_VENDOR_NUMBER }}
+          PLAY_PROJECT: app-portfolio-tooling
+          BACKFILL_DAYS: ${{ github.event.inputs.backfill_days || '7' }}
         run: |
           git config user.name  "portfolio-bot"
           git config user.email "actions@github.com"
-          git add data/portfolio.json
-          # Nothing new is the normal case on a quiet day and must not fail.
-          git diff --staged --quiet && echo "nothing new" && exit 0
-          git commit -m "Portfolio data $(date -u +%Y-%m-%d)"
-          git push
+
+          # A push can be rejected because something landed between this job's
+          # checkout and now — in practice a parser change pushed by hand
+          # while the schedule was running. The concurrency group above only
+          # serialises this workflow against itself; it cannot know about a
+          # person.
+          #
+          # On rejection, move onto whatever is now on the branch and
+          # regenerate, rather than replaying this run's file over the top.
+          # fetch.py merges onto the committed data, so regenerating keeps
+          # both the accumulated history and any field a newer parser has
+          # started writing. Forcing our copy over would silently drop them.
+          for attempt in 1 2 3; do
+            git add data/portfolio.json
+            # Nothing new is the normal case on a quiet day and must not fail.
+            if git diff --staged --quiet; then echo "nothing new"; exit 0; fi
+
+            git commit -q -m "Portfolio data $(date -u +%Y-%m-%d)"
+            if git push -q 2>/dev/null; then
+              echo "pushed on attempt $attempt"
+              exit 0
+            fi
+
+            echo "::notice::Push raced with another commit — rebuilding on top of ${GITHUB_REF_NAME}."
+            git reset -q --hard HEAD~1
+            git fetch -q origin "$GITHUB_REF_NAME"
+            git reset -q --hard "origin/$GITHUB_REF_NAME"
+            python scripts/fetch.py
+          done
+
+          echo "::error::Could not land the data after 3 attempts."
+          exit 1
