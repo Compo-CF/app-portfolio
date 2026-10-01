@@ -28,6 +28,15 @@ OUT = ROOT / "data" / "portfolio.json"
 ASC = "https://api.appstoreconnect.apple.com/v1"
 
 # App ids are public — they appear in every App Store URL.
+#
+# The account carries two apps this list deliberately omits, so that the gap
+# does not read as an oversight to whoever next compares the two:
+#
+#   Pit Clock: BBQ Smoke Timer (6811207479) — deprecated, not shipping
+#   Chirp Meter Dashboard      (6776745788) — Centric-internal, not part of
+#                                             this portfolio
+#
+# Neither is "not yet". Leave them out.
 APPS = [
     ("6773501518", "S-Tier Eats"),
     ("6784340038", "Cosmica: Idle Universe"),
