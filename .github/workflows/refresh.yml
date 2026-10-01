@@ -74,6 +74,13 @@ jobs:
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
           ASC_VENDOR_NUMBER: ${{ secrets.ASC_VENDOR_NUMBER }}
           PLAY_PROJECT: app-portfolio-tooling
+          # AdMob cannot use the Play service account — its accounts belong to
+          # a Google user, not a Cloud project. Absent these, admob.py returns
+          # nothing and the committed ad history is left alone.
+          ADMOB_PUBLISHER_ID: ${{ secrets.ADMOB_PUBLISHER_ID }}
+          ADMOB_CLIENT_ID: ${{ secrets.ADMOB_CLIENT_ID }}
+          ADMOB_CLIENT_SECRET: ${{ secrets.ADMOB_CLIENT_SECRET }}
+          ADMOB_REFRESH_TOKEN: ${{ secrets.ADMOB_REFRESH_TOKEN }}
           FORCE: ${{ inputs.force && '1' || '' }}
           BACKFILL_DAYS: ${{ github.event.inputs.backfill_days || '7' }}
         run: python scripts/fetch.py
@@ -89,6 +96,13 @@ jobs:
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
           ASC_VENDOR_NUMBER: ${{ secrets.ASC_VENDOR_NUMBER }}
           PLAY_PROJECT: app-portfolio-tooling
+          # AdMob cannot use the Play service account — its accounts belong to
+          # a Google user, not a Cloud project. Absent these, admob.py returns
+          # nothing and the committed ad history is left alone.
+          ADMOB_PUBLISHER_ID: ${{ secrets.ADMOB_PUBLISHER_ID }}
+          ADMOB_CLIENT_ID: ${{ secrets.ADMOB_CLIENT_ID }}
+          ADMOB_CLIENT_SECRET: ${{ secrets.ADMOB_CLIENT_SECRET }}
+          ADMOB_REFRESH_TOKEN: ${{ secrets.ADMOB_REFRESH_TOKEN }}
           FORCE: ${{ inputs.force && '1' || '' }}
           BACKFILL_DAYS: ${{ github.event.inputs.backfill_days || '7' }}
         run: |

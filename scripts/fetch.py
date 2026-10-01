@@ -21,6 +21,7 @@ from pathlib import Path
 import jwt
 import requests
 
+import admob
 import play
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -400,6 +401,20 @@ def main():
         android[app_id]["installs"].update(entry["installs"])
         android[app_id]["active"].update(entry["active"])
 
+    # Ad income, kept at the top level rather than per app: AdMob names apps
+    # its own way and a guessed mapping would credit one app's earnings to
+    # another. Merged onto what is committed, so a run without credentials
+    # leaves the history alone instead of erasing it.
+    prev_ads = {}
+    if OUT.exists():
+        try:
+            prev = json.loads(OUT.read_text(encoding="utf-8"))
+            prev_ads = dict(prev.get("admob") or {})
+        except (ValueError, KeyError):
+            prev_ads = {}
+    ads = dict(prev_ads)
+    ads.update(admob.earnings())
+
     sku_map = skus()
 
     today = date.today()
@@ -467,6 +482,7 @@ def main():
     OUT.write_text(
         json.dumps({
             "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "admob": dict(sorted(ads.items())),
             "apps": apps,
         }, indent=1),
         encoding="utf-8",

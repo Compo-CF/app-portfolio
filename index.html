@@ -219,8 +219,9 @@
     figure would have no definition. Play also publishes about a week behind
     Apple, so each Play line states the last date it actually covers.
     Proceeds are Apple's estimate from the daily sales reports, not what was
-    paid out, and <strong>exclude AdMob</strong> — ad income is a separate
-    account and appears nowhere on this page.
+    paid out. Ad income is reported separately under Payments and never added
+    to them: different accounts, different payment schedules, and a combined
+    total would reconcile against neither statement.
     <br><br>
     <strong>Currencies are listed separately and never added together.</strong>
     Apple reports proceeds in the currency of the region a sale came from, so
@@ -438,7 +439,8 @@ function daily(series, from, to, carry = false) {
  *  Purchases are counted in units, not money, because they answer a different
  *  question: how many people bought, as against what it was worth.
  */
-function renderMoney(apps) {
+function renderMoney(data) {
+  const apps = data.apps || [];
   const host = $("#money");
   if (!host) return;
 
@@ -481,6 +483,41 @@ function renderMoney(apps) {
         <div class="meta"><b>${fmt(sold)}</b> bought across the portfolio</div>
       </div>
       ${chart(daily(units, from, to), 365)}
+    </div>
+    ${adsCard(data, from, to)}`;
+}
+
+/** Ad income, which Apple's reports do not contain.
+ *
+ *  Kept apart from App Store proceeds rather than added to them. They are
+ *  different money from different accounts, paid on different schedules, and
+ *  a combined total would reconcile against neither statement.
+ *
+ *  Account-wide, because AdMob names apps its own way and a guessed mapping
+ *  would credit one app's earnings to another.
+ */
+function adsCard(data, from, to) {
+  const ads = data.admob || {};
+  const days = Object.keys(ads);
+  if (!days.length) {
+    return `<div class="card"><div class="head">
+        <div class="name">Ad income</div>
+        <div class="meta">not connected</div>
+      </div>
+      <div class="empty">AdMob is a separate account and is not wired up, so
+        the proceeds above are in-app purchases only. For apps carrying ads
+        that may be most of what they earn.</div>
+    </div>`;
+  }
+  const total = Object.values(ads).reduce((n, v) => n + v, 0);
+  return `
+    <div class="card">
+      <div class="head">
+        <div class="name">Ad income</div>
+        <div class="meta"><span class="money">${total.toFixed(2)} USD</span>
+          estimated, AdMob</div>
+      </div>
+      ${chart(daily(ads, from, to, true), 365, money0)}
     </div>`;
 }
 
@@ -1086,7 +1123,7 @@ function render(d) {
   // a newly published app — sorts to the end rather than vanishing.
   const apps = [...d.apps].sort(
     (a, b) => sumLast(b.downloads || {}, 30) - sumLast(a.downloads || {}, 30));
-  renderMoney(d.apps);
+  renderMoney(d);
   renderCumulative(d.apps);
   renderPayments(d.apps);
   renderReviews(d.apps);
