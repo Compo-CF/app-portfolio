@@ -36,6 +36,7 @@ APPS = [
     ("6773332173", "The Woodlands Fishing Guide"),
     ("6796323432", "Houston BBQ Guide"),
     ("6797896315", "Pupduko"),
+    ("6809621921", "Fiber Field Kit"),
     # Waiting for review at the time of adding. Listed early on purpose: the
     # download series only accumulates from the day an app appears here, so
     # adding it before launch means day one is captured rather than
