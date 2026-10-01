@@ -77,6 +77,20 @@
   .rev{border-top:1px solid var(--line);margin-top:12px;padding-top:10px;
        font-size:13px;color:var(--soft)}
   .rev q{color:var(--ink)}
+  .stat em{display:block;font-style:normal;color:var(--faint);font-size:11px;
+           margin-top:5px;line-height:1.35;letter-spacing:0;text-transform:none}
+  .months{border:1px solid var(--line);border-radius:12px;overflow:hidden;
+          background:var(--card)}
+  .mrow{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(0,1fr));
+        gap:8px;padding:9px 14px;font-size:13.5px;
+        font-variant-numeric:tabular-nums;border-bottom:1px solid var(--line)}
+  .mrow:last-child{border-bottom:0}
+  .mrow span:not(:first-child),.mrow b{text-align:right}
+  .mrow.head{color:var(--faint);font-size:11px;text-transform:uppercase;
+             letter-spacing:.07em;font-weight:700}
+  .mrow.partial{color:var(--soft)}
+  .mrow i{font-style:normal;color:var(--faint);font-size:11px}
+  .caveat{color:var(--faint);font-size:12px;line-height:1.5;margin:10px 2px 0}
   .tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;
        font-weight:600;border:1px solid var(--line);color:var(--faint);
        white-space:nowrap}
@@ -202,6 +216,7 @@
     <div id="cumulative"></div>
   </div>
   <div role="tabpanel" id="panel-payments" aria-labelledby="tab-payments" hidden>
+    <div id="kpis"></div>
     <div id="money"></div>
     <div id="payments"></div>
   </div>
@@ -490,6 +505,97 @@ function renderMoney(data) {
     </div>
     ${adsCard(data, from, to)}`;
 }
+
+// AdMob holds earnings until the balance passes this, then pays monthly.
+// Below it, a month of earning produces no deposit at all — which is the
+// single most useful thing this section can tell you.
+const ADMOB_THRESHOLD = 100;
+
+const byMonth = (series) => {
+  const out = {};
+  for (const [day, v] of Object.entries(series || {}))
+    out[day.slice(0, 7)] = (out[day.slice(0, 7)] || 0) + v;
+  return out;
+};
+
+/** What is likely to actually arrive, as against what was earned.
+ *
+ *  These are different numbers and the rest of the page only showed the
+ *  second. Both Apple and Google hold money behind a threshold and pay on a
+ *  lag, so a good month does not mean a deposit — and in AdMob's case months
+ *  of earning may mean no deposit for the best part of a year.
+ *
+ *  USD only, deliberately. The foreign currencies are real money but they
+ *  settle separately and at Apple's own rate, so folding them into a figure
+ *  labelled "expect this" would be inventing precision.
+ */
+function renderPayouts(data) {
+  const host = $("#kpis");
+  if (!host) return;
+
+  const apps = data.apps || [];
+  const appleDaily = combined(apps, (a) => (a.revenue || {}).USD);
+  const adsDaily = data.admob || {};
+  const apple = byMonth(appleDaily), ads = byMonth(adsDaily);
+
+  const months = [...new Set([...Object.keys(apple), ...Object.keys(ads)])].sort();
+  if (!months.length) { host.innerHTML = ""; return; }
+
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  const complete = months.filter((m) => m < thisMonth);
+  const lastFull = complete[complete.length - 1];
+
+  // Run rate from the last 90 days rather than the whole history: an app
+  // released in July should not be averaged against the months before it
+  // existed.
+  const recent = (series) => Object.entries(series)
+    .filter(([d]) => daysSince(d) <= 90)
+    .reduce((n, [, v]) => n + v, 0);
+  const perDay = (recent(appleDaily) + recent(adsDaily)) / 90;
+
+  const adsEarned = Object.values(adsDaily).reduce((n, v) => n + v, 0);
+  const adsPerMonth = recent(adsDaily) / 3;
+  const monthsToPayout = adsPerMonth > 0
+    ? Math.ceil((ADMOB_THRESHOLD - adsEarned) / adsPerMonth) : null;
+
+  const tile = (label, value, note) => `
+    <div class="stat"><b>${value}</b><span>${label}</span>
+      ${note ? `<em>${note}</em>` : ""}</div>`;
+
+  host.innerHTML = `
+    <div class="totals">
+      ${tile("Per week", money2(perDay * 7), "last 90 days")}
+      ${tile("Per month", money2(perDay * 30), "last 90 days")}
+      ${tile(lastFull ? `${lastFull} earned` : "Last full month",
+             money2((apple[lastFull] || 0) + (ads[lastFull] || 0)),
+             "Apple pays this about a month after the month closes")}
+      ${tile("AdMob toward payout", money2(adsEarned),
+             adsEarned >= ADMOB_THRESHOLD
+               ? "over the $100 threshold"
+               : monthsToPayout
+                 ? `$100 threshold — roughly ${monthsToPayout} more months at this rate`
+                 : "$100 threshold")}
+    </div>
+
+    <div class="section">By month</div>
+    <div class="months">
+      <div class="mrow head"><span>Month</span><span>App Store</span>
+        <span>AdMob</span><span>Total</span></div>
+      ${months.slice().reverse().map((m) => `
+        <div class="mrow${m === thisMonth ? " partial" : ""}">
+          <span>${m}${m === thisMonth ? " <i>so far</i>" : ""}</span>
+          <span>${money2(apple[m] || 0)}</span>
+          <span>${money2(ads[m] || 0)}</span>
+          <b>${money2((apple[m] || 0) + (ads[m] || 0))}</b>
+        </div>`).join("")}
+    </div>
+    <div class="caveat">Estimates in USD, not deposits. Apple reports proceeds
+      before adjustments and pays about a month after each month closes, once
+      its own minimum is met. AdMob holds earnings until $100. Foreign-currency
+      proceeds are real but settle separately and are not included above.</div>`;
+}
+
+const money2 = (n) => "$" + n.toFixed(2);
 
 /** Ad income, which Apple's reports do not contain.
  *
@@ -1131,6 +1237,7 @@ function render(d) {
   const apps = [...d.apps].sort(
     (a, b) => sumLast(b.downloads || {}, 30) - sumLast(a.downloads || {}, 30));
   renderMoney(d);
+  renderPayouts(d);
   renderCumulative(d.apps);
   renderPayments(d.apps);
   renderReviews(d.apps);
