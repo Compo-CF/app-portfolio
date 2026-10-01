@@ -90,7 +90,16 @@ def earnings(days=120):
         return {}
 
     if r.status_code != 200:
-        print(f"  admob: report refused ({r.status_code})")
+        # Google says why, and the reasons need different fixes: the API not
+        # enabled on the project, a publisher id that is not this user's, or
+        # a scope that was never granted. A bare status code sends you
+        # guessing. Safe to show — it names APIs and projects, not secrets.
+        try:
+            reason = (r.json().get("error") or {}).get("message", "")
+        except ValueError:
+            reason = ""
+        print(f"  admob: report refused ({r.status_code})"
+              + (f" — {reason[:200]}" if reason else ""))
         return {}
 
     out = {}
