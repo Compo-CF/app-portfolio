@@ -229,7 +229,11 @@ def app_detail(app_id):
             "count": len(scores),
             "histogram": {str(n): scores.count(n) for n in range(1, 6)},
         }
-    for r in data[:5]:
+    # Enough for a page that lists them all, rather than the single most
+    # recent the cards used to show. Apple hands back 200; these are a few
+    # hundred bytes each and the whole portfolio has fewer than a dozen, so
+    # the cap exists only to stop a hit app bloating the file indefinitely.
+    for r in data[:100]:
         a = r["attributes"]
         reviews.append({
             "rating": a.get("rating"),

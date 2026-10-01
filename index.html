@@ -86,6 +86,32 @@
   .grip:hover{color:var(--soft);border-color:var(--line)}
   .card.dragging{opacity:.5}
   .card.dragging .grip{cursor:grabbing}
+  .tabs{display:flex;flex-wrap:wrap;gap:4px;margin:20px 0 18px;
+        border-bottom:1px solid var(--line)}
+  .tabs button{appearance:none;background:none;border:0;border-bottom:2px solid transparent;
+               margin-bottom:-1px;padding:9px 14px;font:inherit;font-size:14px;
+               font-weight:600;color:var(--soft);cursor:pointer;border-radius:8px 8px 0 0}
+  .tabs button:hover{color:var(--ink);background:var(--card)}
+  .tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+  .tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  /* Four labels wrap to two rows on a phone. Tightened rather than made
+     scrollable: with only four, a scroll strip hides some of them, and a tab
+     you cannot see is a tab you will not use. */
+  @media (max-width:430px){
+    .tabs{gap:2px}
+    .tabs button{padding:9px 9px;font-size:13.5px}
+  }
+  .empty{color:var(--faint);font-size:14px;padding:22px 2px}
+  .rv{background:var(--card);border:1px solid var(--line);border-radius:12px;
+      padding:14px 16px;margin-bottom:10px}
+  .rv .top{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;
+           margin-bottom:6px}
+  .rv .app{font-weight:700;font-size:13px}
+  .rv .stars{color:var(--warn);letter-spacing:1px}
+  .rv .when{color:var(--faint);font-size:12px;font-family:var(--mono);
+            margin-left:auto}
+  .rv q{display:block;font-weight:600;margin-bottom:5px}
+  .rv p{margin:0;color:var(--soft);font-size:14px;line-height:1.5}
   .section{font-size:12px;font-weight:700;letter-spacing:.09em;
            text-transform:uppercase;color:var(--faint);margin:26px 0 10px}
   .reset{background:none;border:0;padding:0;font:inherit;font-size:12px;
@@ -100,9 +126,32 @@
   <h1>App Portfolio</h1>
   <div class="sub" id="generated">Loading&hellip;</div>
   <div class="sub" id="order-note"></div>
-  <div class="totals" id="totals"></div>
-  <div id="money"></div>
-  <div id="apps"></div>
+
+  <div class="tabs" role="tablist" aria-label="Portfolio views">
+    <button role="tab" id="tab-installs" aria-controls="panel-installs"
+            aria-selected="true">Installs</button>
+    <button role="tab" id="tab-cumulative" aria-controls="panel-cumulative"
+            aria-selected="false">Cumulative</button>
+    <button role="tab" id="tab-payments" aria-controls="panel-payments"
+            aria-selected="false">Payments</button>
+    <button role="tab" id="tab-reviews" aria-controls="panel-reviews"
+            aria-selected="false">Reviews</button>
+  </div>
+
+  <div role="tabpanel" id="panel-installs" aria-labelledby="tab-installs">
+    <div class="totals" id="totals"></div>
+    <div id="apps"></div>
+  </div>
+  <div role="tabpanel" id="panel-cumulative" aria-labelledby="tab-cumulative" hidden>
+    <div id="cumulative"></div>
+  </div>
+  <div role="tabpanel" id="panel-payments" aria-labelledby="tab-payments" hidden>
+    <div id="money"></div>
+    <div id="payments"></div>
+  </div>
+  <div role="tabpanel" id="panel-reviews" aria-labelledby="tab-reviews" hidden>
+    <div id="reviews"></div>
+  </div>
   <footer>
     Data from App Store Connect, refreshed daily by GitHub Actions.
     Downloads are first-time installs; updates and re-downloads are excluded.
@@ -357,6 +406,178 @@ function renderMoney(apps) {
     </div>`;
 }
 
+/* ---- the other three panels -------------------------------------------- */
+
+/** Cumulative installs, one card per app.
+ *
+ *  Not one chart with every app on it. Cosmica has taken thousands and Good
+ *  Shepherd a few dozen; on a shared axis the church app is a flat line along
+ *  the bottom, which is both useless and faintly insulting to the thing it
+ *  represents. Each app gets its own scale, and the totals in the headers are
+ *  what you compare.
+ */
+function renderCumulative(apps) {
+  const host = $("#cumulative");
+  if (!host) return;
+
+  const ranked = [...apps].sort(
+    (a, b) => total(b.downloads) - total(a.downloads));
+
+  const span = Object.keys(combined(apps, (a) => a.downloads)).sort();
+  const from = span[0], to = span[span.length - 1];
+
+  host.innerHTML = `
+    <div class="card">
+      <div class="head">
+        <div class="name">Every app together</div>
+        <div class="meta"><b>${fmt(total(combined(apps, (a) => a.downloads)))}</b>
+          first-time installs since ${from}</div>
+      </div>
+      ${chart(daily(combined(apps, (a) => a.downloads), from, to, true), 365)}
+    </div>
+    <div class="section">By app</div>
+    ` + ranked.map((a) => {
+      const run = total(a.downloads);
+      return `
+      <div class="card">
+        <div class="head">
+          <div class="name"><a href="${a.url}" rel="noopener">${a.name}</a></div>
+          <div class="meta"><b>${fmt(run)}</b> total</div>
+        </div>
+        ${run ? chart(daily(a.downloads || {}, from, to, true), 365)
+              : '<div class="empty">No installs yet.</div>'}
+      </div>`;
+    }).join("");
+}
+
+const total = (series) =>
+  Object.values(series || {}).reduce((n, v) => n + v, 0);
+
+/** Payments per app over time, cumulative and in USD.
+ *
+ *  Only apps that have taken money appear. A chart of a flat zero says
+ *  nothing an empty section does not say more briefly, and the Installs tab
+ *  already marks which apps cannot earn at all.
+ */
+function renderPayments(apps) {
+  const host = $("#payments");
+  if (!host) return;
+
+  const span = Object.keys(combined(apps, (a) => a.downloads)).sort();
+  const from = span[0], to = span[span.length - 1];
+
+  const earners = apps
+    .map((a) => ({ app: a, usd: (a.revenue || {}).USD || {} }))
+    .filter((e) => total(e.usd) > 0)
+    .sort((x, y) => total(y.usd) - total(x.usd));
+
+  if (!earners.length) {
+    host.innerHTML = '<div class="empty">No app has taken a payment yet.</div>';
+    return;
+  }
+
+  host.innerHTML = '<div class="section">By app</div>' + earners.map(({ app, usd }) => {
+    const other = Object.entries(app.revenue || {}).filter(([c]) => c !== "USD");
+    return `
+      <div class="card">
+        <div class="head">
+          <div class="name"><a href="${app.url}" rel="noopener">${app.name}</a></div>
+          <div class="meta">
+            <span class="money">${total(usd).toFixed(2)} USD</span>${
+              other.length
+                ? " · " + other.map(([c, days]) =>
+                    `<span class="money">${total(days).toLocaleString()} ${c}</span>`).join(" · ")
+                : ""}
+            ${app.iapUnits ? ` · <b>${fmt(total(app.iapUnits))}</b> purchases` : ""}
+          </div>
+        </div>
+        ${chart(daily(usd, from, to, true), 365, money0)}
+      </div>`;
+  }).join("");
+}
+
+/** Every review, newest first, across every app.
+ *
+ *  Sorted by date rather than grouped by app: what you want from this page is
+ *  "what has anyone said lately", and grouping buries a new one-star under
+ *  whichever app happens to sort first.
+ */
+function renderReviews(apps) {
+  const host = $("#reviews");
+  if (!host) return;
+
+  const all = [];
+  for (const app of apps)
+    for (const r of app.reviews || []) all.push({ ...r, app: app.name });
+  all.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+
+  if (!all.length) {
+    host.innerHTML = '<div class="empty">No reviews yet.</div>';
+    return;
+  }
+
+  const rated = apps.filter((a) => a.rating);
+  const avg = rated.length
+    ? (rated.reduce((n, a) => n + a.rating.average * a.rating.count, 0) /
+       rated.reduce((n, a) => n + a.rating.count, 0)).toFixed(2)
+    : "—";
+
+  host.innerHTML =
+    `<div class="section">${fmt(all.length)} reviews · ★ ${avg} average</div>` +
+    all.map((r) => `
+      <div class="rv">
+        <div class="top">
+          <span class="app">${r.app}</span>
+          <span class="stars">${"★".repeat(r.rating || 0)}${"☆".repeat(5 - (r.rating || 0))}</span>
+          <span class="when">${r.date || ""}${r.territory ? " · " + r.territory : ""}</span>
+        </div>
+        ${r.title ? `<q>${r.title}</q>` : ""}
+        ${r.body ? `<p>${r.body}</p>` : ""}
+        <div class="meta">— ${r.nickname || "anonymous"}</div>
+      </div>`).join("");
+}
+
+/* ---- tabs --------------------------------------------------------------- */
+
+const TAB_KEY = "portfolio.tab";
+
+/** Which panel is showing, remembered per browser.
+ *
+ *  Panels are hidden rather than unmounted, so the charts inside keep their
+ *  layout and nothing has to be redrawn when you switch back.
+ */
+function enableTabs() {
+  const tabs = [...document.querySelectorAll('[role="tab"]')];
+  if (!tabs.length) return;
+
+  const show = (tab) => {
+    for (const t of tabs) {
+      const on = t === tab;
+      t.setAttribute("aria-selected", String(on));
+      const panel = document.getElementById(t.getAttribute("aria-controls"));
+      if (panel) panel.hidden = !on;
+    }
+    try { localStorage.setItem(TAB_KEY, tab.id); } catch { /* ignore */ }
+  };
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => show(tab));
+    // Arrow keys move between tabs, which is what a tablist is expected to do.
+    tab.addEventListener("keydown", (e) => {
+      const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+      if (!step) return;
+      e.preventDefault();
+      const next = tabs[(tabs.indexOf(tab) + step + tabs.length) % tabs.length];
+      next.focus();
+      show(next);
+    });
+  });
+
+  let saved = null;
+  try { saved = document.getElementById(localStorage.getItem(TAB_KEY)); } catch { /* ignore */ }
+  show(saved && tabs.includes(saved) ? saved : tabs[0]);
+}
+
 /* ---- card order, dragged by hand and remembered per browser ------------- */
 
 const ORDER_KEY = "portfolio.order";
@@ -494,6 +715,9 @@ function render(d) {
   const apps = [...d.apps].sort(
     (a, b) => sumLast(b.downloads || {}, 30) - sumLast(a.downloads || {}, 30));
   renderMoney(d.apps);
+  renderCumulative(d.apps);
+  renderPayments(d.apps);
+  renderReviews(d.apps);
 
   const saved = loadOrder();
   if (saved) {
@@ -535,6 +759,7 @@ function render(d) {
 
   enableReorder($("#apps"));
   renderResetControl();
+  enableTabs();
 }
 
 fetch("data/portfolio.json", { cache: "no-store" })
