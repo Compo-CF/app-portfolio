@@ -291,13 +291,28 @@ def app_detail(app_id):
             "territory": a.get("territory"),
         })
 
-    for item in api(f"builds?filter[app]={app_id}&sort=-uploadedDate&limit=5").get("data", []):
+    for i, item in enumerate(api(f"builds?filter[app]={app_id}"
+                                 "&sort=-uploadedDate&limit=5").get("data", [])):
         a = item["attributes"]
-        builds.append({
-            "version": a.get("version"),
+        entry = {
+            "version": a.get("version"),           # build number, not 2.6
             "state": a.get("processingState"),
             "uploaded": (a.get("uploadedDate") or "")[:10],
-        })
+        }
+        # Only for the newest, which is the one that can be stranded — two
+        # extra calls per app rather than ten.
+        #
+        # "version" here is CFBundleVersion: 90, or 20260930.639. Comparing it
+        # against a versionString like 2.6 is meaningless, so ask instead
+        # whether the build is attached to a version record at all. An
+        # unattached build processes cleanly, appears in TestFlight, and can
+        # never reach review — which is exactly the failure worth catching.
+        if i == 0:
+            pre = api(f"builds/{item['id']}/preReleaseVersion").get("data")
+            att = api(f"builds/{item['id']}/appStoreVersion").get("data")
+            entry["marketing"] = pre["attributes"].get("version") if pre else None
+            entry["attached"] = att["attributes"].get("versionString") if att else None
+        builds.append(entry)
 
     return versions, rating, reviews, builds, iaps
 
@@ -346,6 +361,19 @@ def main():
             prev_cc = {}
     countries = {app_id: {d: dict(v) for d, v in prev_cc.get(app_id, {}).items()}
                  for app_id, _ in APPS}
+
+    # A daily snapshot of the rating, because Apple only ever reports the
+    # current one. Without keeping it, "is this recovering?" is unanswerable
+    # — a 2-star review drops the average visibly and nothing records when,
+    # or whether it came back.
+    prev_rat = {}
+    if OUT.exists():
+        try:
+            prev = json.loads(OUT.read_text(encoding="utf-8"))
+            prev_rat = {a["id"]: (a.get("ratingHistory") or {}) for a in prev.get("apps", [])}
+        except (ValueError, KeyError):
+            prev_rat = {}
+    rating_history = {app_id: dict(prev_rat.get(app_id, {})) for app_id, _ in APPS}
 
     # Play data, merged onto whatever is already committed rather than
     # replacing it. Google keeps a limited window, and an empty result means
@@ -407,6 +435,12 @@ def main():
     apps = []
     for app_id, name in APPS:
         versions, rating, reviews, builds, iaps = app_detail(app_id)
+
+        # Keyed by the day it was observed, so re-running overwrites rather
+        # than appending a second reading for the same date.
+        if rating:
+            rating_history[app_id][today.isoformat()] = {
+                "avg": rating["average"], "count": rating["count"]}
         apps.append({
             "id": app_id,
             "name": name,
@@ -423,6 +457,7 @@ def main():
                         if android[app_id]["installs"] or android[app_id]["active"]
                         else None),
             "rating": rating,
+            "ratingHistory": dict(sorted(rating_history[app_id].items())),
             "reviews": reviews,
             "versions": versions,
             "builds": builds,

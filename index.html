@@ -64,6 +64,14 @@
           border-radius:4px;white-space:nowrap;
           font-variant-numeric:tabular-nums}
   .dlabel.peak{color:var(--soft)}
+  /* A release tick: a full-height hairline with its version at the foot.
+     Behind the line and the labels on purpose — it is context for the shape,
+     not a thing to read first. */
+  .mark{position:absolute;top:0;bottom:0;width:0;pointer-events:none}
+  .mark i{position:absolute;top:0;bottom:0;left:0;width:1px;
+          background:var(--faint);opacity:.5}
+  .mark b{position:absolute;bottom:-2px;left:3px;font:9.5px/1 var(--mono);
+          font-weight:600;color:var(--faint);white-space:nowrap}
   .axis{color:var(--faint);font-size:10px;font-family:var(--mono);
         display:flex;justify-content:space-between;margin:0 0 8px 42px}
   .rev{border-top:1px solid var(--line);margin-top:12px;padding-top:10px;
@@ -102,6 +110,14 @@
     .tabs button{padding:9px 9px;font-size:13.5px}
   }
   .empty{color:var(--faint);font-size:14px;padding:22px 2px}
+  .alert{border:1px solid var(--line);border-left:4px solid var(--warn);
+         background:var(--card);border-radius:10px;padding:11px 14px;
+         margin-bottom:8px}
+  .alert.bad{border-left-color:var(--bad)}
+  .alert .what{font-size:14px;font-weight:600}
+  .alert .who{color:var(--faint);font-weight:700;font-size:12px;
+              text-transform:uppercase;letter-spacing:.06em;margin-right:6px}
+  .alert .why{color:var(--soft);font-size:13px;margin-top:3px;line-height:1.45}
   .mapbar{display:flex;align-items:center;gap:9px;margin:0 0 12px;
           font-size:13px;color:var(--soft)}
   .mapbar select{appearance:none;background:var(--card);color:var(--ink);
@@ -157,6 +173,8 @@
   <div class="sub" id="generated">Loading&hellip;</div>
   <div class="sub" id="order-note"></div>
 
+  <div id="attention"></div>
+
   <div class="tabs" role="tablist" aria-label="Portfolio views">
     <button role="tab" id="tab-installs" aria-controls="panel-installs"
             aria-selected="true">Installs</button>
@@ -164,6 +182,8 @@
             aria-selected="false">Cumulative</button>
     <button role="tab" id="tab-payments" aria-controls="panel-payments"
             aria-selected="false">Payments</button>
+    <button role="tab" id="tab-ratings" aria-controls="panel-ratings"
+            aria-selected="false">Ratings</button>
     <button role="tab" id="tab-map" aria-controls="panel-map"
             aria-selected="false">Map</button>
     <button role="tab" id="tab-reviews" aria-controls="panel-reviews"
@@ -180,6 +200,9 @@
   <div role="tabpanel" id="panel-payments" aria-labelledby="tab-payments" hidden>
     <div id="money"></div>
     <div id="payments"></div>
+  </div>
+  <div role="tabpanel" id="panel-ratings" aria-labelledby="tab-ratings" hidden>
+    <div id="ratings"></div>
   </div>
   <div role="tabpanel" id="panel-map" aria-labelledby="tab-map" hidden>
     <div id="map"></div>
@@ -245,7 +268,19 @@ function scaleFor(peak) {
 
 /** Downloads as an area chart. Hand-drawn SVG rather than a charting
  *  library: one file, no CDN, and nothing to break when a version bumps. */
-function chart(series, days, show = fmt) {
+/** Release ticks for a chart: {date, label} for each version that shipped.
+ *
+ *  Answers a question the shape alone cannot. A spike is either something you
+ *  did or something that happened to you, and a month later nobody remembers
+ *  which. A mark under the line settles it.
+ */
+function releaseMarks(app) {
+  return (app.versions || [])
+    .filter((v) => v.created && v.version)
+    .map((v) => ({ date: v.created, label: "v" + v.version }));
+}
+
+function chart(series, days, show = fmt, marks = []) {
   const keys = Object.keys(series).sort().slice(-days);
   if (keys.length < 2) return '<div class="meta">Not enough history yet.</div>';
 
@@ -297,6 +332,14 @@ function chart(series, days, show = fmt) {
           <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2"
                 vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
         </svg>
+        ${marks.filter((m) => m.date >= first && m.date <= latest).map((m) => {
+          // Positioned by where the date falls in the window, not by index,
+          // so a release on a day with no report still lands correctly.
+          const at = keys.findIndex((k) => k >= m.date);
+          const pctX = ((at < 0 ? keys.length - 1 : at) / (keys.length - 1)) * 100;
+          return `<span class="mark" style="left:${pctX.toFixed(2)}%"
+                    title="${m.label} — ${m.date}"><i></i><b>${m.label}</b></span>`;
+        }).join("")}
         <span class="dot" style="left:100%;top:${pct(last)}%"></span>
         ${showPeak ? label(peak, peakPct, "peak") : ""}
         ${peak > 0 ? label(last, 100) : ""}
@@ -479,7 +522,7 @@ function renderCumulative(apps) {
           <div class="name"><a href="${a.url}" rel="noopener">${a.name}</a></div>
           <div class="meta"><b>${fmt(run)}</b> total</div>
         </div>
-        ${run ? chart(daily(a.downloads || {}, from, to, true), 365)
+        ${run ? chart(daily(a.downloads || {}, from, to, true), 365, fmt, releaseMarks(a))
               : '<div class="empty">No installs yet.</div>'}
       </div>`;
     }).join("");
@@ -526,7 +569,7 @@ function renderPayments(apps) {
             ${app.iapUnits ? ` · <b>${fmt(total(app.iapUnits))}</b> purchases` : ""}
           </div>
         </div>
-        ${chart(daily(usd, from, to, true), 365, money0)}
+        ${chart(daily(usd, from, to, true), 365, money0, releaseMarks(app))}
       </div>`;
   }).join("");
 }
@@ -570,6 +613,143 @@ function renderReviews(apps) {
         ${r.body ? `<p>${r.body}</p>` : ""}
         <div class="meta">— ${r.nickname || "anonymous"}</div>
       </div>`).join("");
+}
+
+/* ---- what needs looking at ---------------------------------------------- */
+
+/** Version strings compared the way a person reads them: 1.10 after 1.9. */
+function newerVersion(a, b) {
+  const pa = String(a || "0").split(".").map(Number);
+  const pb = String(b || "0").split(".").map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] || 0) - (pb[i] || 0);
+    if (d) return d > 0;
+  }
+  return false;
+}
+
+const daysSince = (date) =>
+  Math.floor((Date.now() - new Date(date + "T00:00:00Z")) / 86400000);
+
+/** Things that will not fix themselves.
+ *
+ *  Every rule here is a failure that has actually happened rather than one
+ *  worth imagining. The first is the expensive one: a build can process
+ *  cleanly, sit in TestFlight, and never reach review because no version
+ *  record exists to attach it to. Nothing warns you; the build list looks
+ *  like progress. That stranded a release for a fortnight.
+ */
+function attention(apps) {
+  const items = [];
+
+  for (const app of apps) {
+    const build = (app.builds || [])[0];
+    const live = (app.versions || [])
+      .slice()
+      .sort((x, y) => (newerVersion(x.version, y.version) ? -1 : 1))[0];
+
+    // "attached" is the version record this build belongs to, or null.
+    // Asked of Apple rather than inferred, because builds[].version is
+    // CFBundleVersion — 90, or 20260930.639 — and comparing that against a
+    // versionString like 2.6 flags every app on the account.
+    if (build && build.attached === null && build.state === "VALID") {
+      const label = build.marketing ? `${build.marketing} (${build.version})`
+                                    : build.version;
+      items.push({
+        level: "bad", app: app.name,
+        what: `Build ${label} is not attached to any version`,
+        why: "It processed and is in TestFlight, but uploading a build does not "
+           + "create the version record it needs. Until one exists and this is "
+           + "attached to it, the build cannot reach review.",
+      });
+    }
+
+    if (live && /PREPARE_FOR_SUBMISSION/.test(live.state || "") && live.created) {
+      const age = daysSince(live.created);
+      if (age >= 14) {
+        items.push({
+          level: "warn", app: app.name,
+          what: `v${live.version} unsubmitted for ${age} days`,
+          why: "Sitting in Prepare for Submission. Either submit it or it is not real.",
+        });
+      }
+    }
+
+    for (const r of (app.reviews || []).slice(0, 20)) {
+      if ((r.rating || 5) <= 2 && daysSince(r.date) <= 30) {
+        items.push({
+          level: "warn", app: app.name,
+          what: `${r.rating}★ review ${daysSince(r.date)} days ago`,
+          why: `${r.title ? `"${r.title}" — ` : ""}${r.nickname || "anonymous"}. `
+             + "Apple lets you reply to this.",
+        });
+      }
+    }
+  }
+
+  // Blocking things first; the rest in the order found.
+  items.sort((a, b) => (a.level === "bad" ? -1 : 0) - (b.level === "bad" ? -1 : 0));
+  return items;
+}
+
+function renderAttention(apps) {
+  const host = $("#attention");
+  if (!host) return;
+  const items = attention(apps);
+  if (!items.length) { host.innerHTML = ""; return; }
+
+  host.innerHTML = items.map((i) => `
+    <div class="alert ${i.level}">
+      <div class="what"><span class="who">${i.app}</span> ${i.what}</div>
+      <div class="why">${i.why}</div>
+    </div>`).join("");
+}
+
+/* ---- ratings over time --------------------------------------------------- */
+
+/** How the average has moved, for apps that have been rated.
+ *
+ *  Apple reports only the current figure, so this is built from daily
+ *  snapshots and starts the day the dashboard began keeping them — short at
+ *  first, and honest about that rather than pretending to history it does
+ *  not have.
+ */
+function renderRatings(apps) {
+  const host = $("#ratings");
+  if (!host) return;
+
+  const rated = apps
+    .map((a) => ({ app: a, hist: a.ratingHistory || {} }))
+    .filter((r) => Object.keys(r.hist).length)
+    .sort((x, y) => (y.app.rating?.count || 0) - (x.app.rating?.count || 0));
+
+  if (!rated.length) {
+    host.innerHTML = '<div class="empty">No ratings recorded yet.</div>';
+    return;
+  }
+
+  host.innerHTML = rated.map(({ app, hist }) => {
+    const days = Object.keys(hist).sort();
+    const series = {};
+    for (const d of days) series[d] = hist[d].avg;
+    const now = hist[days[days.length - 1]];
+    const first = hist[days[0]];
+    const moved = (now.avg - first.avg).toFixed(2);
+
+    return `
+      <div class="card">
+        <div class="head">
+          <div class="name"><a href="${app.url}" rel="noopener">${app.name}</a></div>
+          <div class="meta">★ <b>${now.avg}</b> from ${fmt(now.count)}
+            ${now.count === 1 ? "rating" : "ratings"}${
+              days.length > 1 && moved !== "0.00"
+                ? ` · ${moved > 0 ? "+" : ""}${moved} since ${days[0]}` : ""}</div>
+        </div>
+        ${days.length > 1
+          ? chart(series, 365, (v) => v.toFixed(1), releaseMarks(app))
+          : `<div class="empty">Tracking from ${days[0]}. A line needs a second day.</div>`}
+      </div>`;
+  }).join("");
 }
 
 /* ---- where the installs came from --------------------------------------- */
@@ -911,6 +1091,8 @@ function render(d) {
   renderPayments(d.apps);
   renderReviews(d.apps);
   renderMap(d.apps);
+  renderRatings(d.apps);
+  renderAttention(d.apps);
 
   const saved = loadOrder();
   if (saved) {
@@ -943,7 +1125,7 @@ function render(d) {
             ${live ? ` <span class="pill" style="background:${stateColour(live.state)}">v${live.version} ${live.state}</span>` : ""}
           </div>
         </div>
-        ${chart(dl, 365)}
+        ${chart(dl, 365, fmt, releaseMarks(a))}
         ${android(a)}
         ${money(a) ? `<div class="rev">${money(a)}</div>` : ""}
         ${rev ? `<div class="rev">${"★".repeat(rev.rating || 0)} <q>${rev.title || ""}</q> — ${rev.nickname || "anonymous"}, ${rev.date}</div>` : ""}
