@@ -114,6 +114,10 @@
          background:var(--card);border-radius:10px;padding:11px 14px;
          margin-bottom:8px}
   .alert.bad{border-left-color:var(--bad)}
+  /* Not coloured as a severity: this is a statement of where a build is,
+     and a warm stripe beside it would read as a problem again. */
+  .alert.info{border-left-color:var(--line)}
+  .alert.info .what{font-weight:600;color:var(--soft)}
   .alert .what{font-size:14px;font-weight:600}
   .alert .who{color:var(--faint);font-weight:700;font-size:12px;
               text-transform:uppercase;letter-spacing:.06em;margin-right:6px}
@@ -692,12 +696,14 @@ function attention(apps) {
     if (build && build.attached === null && build.state === "VALID") {
       const label = build.marketing ? `${build.marketing} (${build.version})`
                                     : build.version;
+      // Stated, not alarmed about. An unattached build is a build in
+      // TestFlight, and nothing in the API distinguishes one parked there on
+      // purpose from one forgotten — so claiming it is a problem is guessing
+      // at intent. Saying where it is lets the reader judge.
       items.push({
-        level: "bad", app: app.name,
-        what: `Build ${label} is not attached to any version`,
-        why: "It processed and is in TestFlight, but uploading a build does not "
-           + "create the version record it needs. Until one exists and this is "
-           + "attached to it, the build cannot reach review.",
+        level: "info", app: app.name,
+        what: `Build ${label} is in TestFlight`,
+        why: "Not attached to a version record, so it is not queued for review.",
       });
     }
 
@@ -724,8 +730,9 @@ function attention(apps) {
     }
   }
 
-  // Blocking things first; the rest in the order found.
-  items.sort((a, b) => (a.level === "bad" ? -1 : 0) - (b.level === "bad" ? -1 : 0));
+  // Things to act on first, things merely worth knowing last.
+  const rank = { bad: 0, warn: 1, info: 2 };
+  items.sort((a, b) => rank[a.level] - rank[b.level]);
   return items;
 }
 
