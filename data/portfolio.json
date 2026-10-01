@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-30T19:33:55+00:00",
+ "generated": "2026-10-01T12:03:24+00:00",
  "apps": [
   {
    "id": "6773501518",
@@ -248,6 +248,22 @@
      "body": "The Houston area has been needing an app like this. One that actually gives apples to apples comparisons on restaurants. Unique and will only get better with time.  Great work!",
      "nickname": "angle333113",
      "date": "2026-06-17",
+     "territory": "USA"
+    },
+    {
+     "rating": 5,
+     "title": "Excellent Restaurant Guide",
+     "body": "This is well thought out and perfect for everyone whether you\u2019re a native or visiting, this gives some honest feedback back that Google, Yelp, and others don\u2019t quite get right. Excellent restaurant guide for all!  Well done Anthony.",
+     "nickname": "Not Always There",
+     "date": "2026-06-17",
+     "territory": "USA"
+    },
+    {
+     "rating": 5,
+     "title": "Foodie paradise",
+     "body": "This app is amazing. Shows every restaurant in the area and ranks them by others and foodie experts. Very easy to use and search.",
+     "nickname": "RHD9547",
+     "date": "2026-06-15",
      "territory": "USA"
     }
    ],
@@ -532,7 +548,7 @@
    "versions": [
     {
      "version": "3.0.4",
-     "state": "WAITING_FOR_REVIEW",
+     "state": "READY_FOR_SALE",
      "created": "2026-09-30"
     },
     {
