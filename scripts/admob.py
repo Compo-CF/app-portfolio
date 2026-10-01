@@ -53,6 +53,26 @@ def _access_token():
     return r.json().get("access_token")
 
 
+def _error_message(response):
+    """Google's reason for refusing, from either shape it arrives in.
+
+    networkReport:generate streams a JSON array, so a failure comes back as
+    [{"error": {...}}] rather than the bare object the rest of Google's APIs
+    return. Assuming the object shape raises AttributeError on a list and
+    turns a handled refusal into a crashed job — which is exactly what it did
+    the first time.
+    """
+    try:
+        body = response.json()
+    except ValueError:
+        return ""
+    if isinstance(body, list):
+        body = next((x for x in body if isinstance(x, dict) and "error" in x), {})
+    if not isinstance(body, dict):
+        return ""
+    return ((body.get("error") or {}).get("message") or "")
+
+
 def earnings(days=120):
     """Estimated earnings per day across the whole AdMob account.
 
@@ -94,10 +114,7 @@ def earnings(days=120):
         # enabled on the project, a publisher id that is not this user's, or
         # a scope that was never granted. A bare status code sends you
         # guessing. Safe to show — it names APIs and projects, not secrets.
-        try:
-            reason = (r.json().get("error") or {}).get("message", "")
-        except ValueError:
-            reason = ""
+        reason = _error_message(r)
         print(f"  admob: report refused ({r.status_code})"
               + (f" — {reason[:200]}" if reason else ""))
         return {}
