@@ -169,6 +169,38 @@ def skus():
     return out
 
 
+def downloads_by_country(rows):
+    """First-time installs per app, split by the storefront they came from.
+
+    Returned for the one day of rows handed in, and stored keyed by that
+    date. Keying by date rather than keeping a running total is what makes a
+    re-fetch safe: re-reading a day overwrites it, where adding to a total
+    would count it twice and silently double the map.
+
+    Sparse on purpose — a day with no installs for an app records nothing, so
+    this stays small despite being per-day.
+
+    Same product-type rule as downloads_by_app — codes starting with 1 are
+    first installs, and updates and re-downloads are somebody who already
+    had it.
+    """
+    out = {}
+    for row in rows:
+        ident = (row.get("Apple Identifier") or "").strip()
+        ptype = (row.get("Product Type Identifier") or "").strip()
+        country = (row.get("Country Code") or "").strip().upper()
+        if not ident or not country or not ptype.startswith("1"):
+            continue
+        try:
+            units = int(row.get("Units") or 0)
+        except ValueError:
+            continue
+        if units:
+            out.setdefault(ident, {})
+            out[ident][country] = out[ident].get(country, 0) + units
+    return out
+
+
 def revenue_by_app(rows, sku_map=None):
     """Apple's proceeds per app, split by currency.
 
@@ -303,6 +335,18 @@ def main():
             prev_units = {}
     iap_units = {app_id: dict(prev_units.get(app_id, {})) for app_id, _ in APPS}
 
+    # Country totals accumulate the same way downloads do, so the picture
+    # reaches further back than the window Apple still serves.
+    prev_cc = {}
+    if OUT.exists():
+        try:
+            prev = json.loads(OUT.read_text(encoding="utf-8"))
+            prev_cc = {a["id"]: (a.get("countries") or {}) for a in prev.get("apps", [])}
+        except (ValueError, KeyError):
+            prev_cc = {}
+    countries = {app_id: {d: dict(v) for d, v in prev_cc.get(app_id, {}).items()}
+                 for app_id, _ in APPS}
+
     # Play data, merged onto whatever is already committed rather than
     # replacing it. Google keeps a limited window, and an empty result means
     # "could not read the bucket" — usually missing credentials in CI — which
@@ -350,12 +394,15 @@ def main():
             continue
         fetched += 1
         money, sold = revenue_by_app(rows, sku_map)
+        by_country = downloads_by_country(rows)
         for app_id, _ in APPS:
             series[app_id][key] = counts.get(app_id, 0)
             for cur, amount in money.get(app_id, {}).items():
                 revenue[app_id].setdefault(cur, {})[key] = amount
             if sold.get(app_id):
                 iap_units[app_id][key] = sold[app_id]
+            if by_country.get(app_id):
+                countries[app_id][key] = by_country[app_id]
 
     apps = []
     for app_id, name in APPS:
@@ -368,6 +415,7 @@ def main():
             "revenue": {c: dict(sorted(d.items())) for c, d in revenue[app_id].items()},
             "iaps": iaps,
             "iapUnits": dict(sorted(iap_units[app_id].items())),
+            "countries": dict(sorted(countries[app_id].items())),
             # Android lives beside iOS rather than in a parallel app list, and
             # stays absent for apps that are not on Play at all — an empty
             # series would read as "nobody installed it".
