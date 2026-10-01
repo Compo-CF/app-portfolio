@@ -102,6 +102,25 @@
     .tabs button{padding:9px 9px;font-size:13.5px}
   }
   .empty{color:var(--faint);font-size:14px;padding:22px 2px}
+  .worldmap{width:100%;height:auto;display:block;margin:14px 0 4px}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;
+          font-size:11.5px;color:var(--faint);font-family:var(--mono)}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .legend i{width:11px;height:11px;border-radius:3px;background:var(--accent)}
+  .legend i.none{background:var(--line);opacity:1}
+  .ccrow{display:grid;grid-template-columns:30px minmax(0,1fr) 2fr auto 46px;
+         gap:10px;align-items:center;padding:7px 2px;font-size:13.5px;
+         border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+  .ccrow:last-child{border-bottom:0}
+  .cc{font-family:var(--mono);font-size:11.5px;color:var(--faint)}
+  .ccname{color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ccbar{background:var(--line);border-radius:4px;height:7px;overflow:hidden}
+  .ccbar i{display:block;height:100%;background:var(--accent);border-radius:4px}
+  .ccpct{color:var(--faint);font-size:12px;text-align:right}
+  @media (max-width:520px){
+    .ccrow{grid-template-columns:28px minmax(0,1fr) auto 44px}
+    .ccbar{display:none}
+  }
   .rv{background:var(--card);border:1px solid var(--line);border-radius:12px;
       padding:14px 16px;margin-bottom:10px}
   .rv .top{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;
@@ -134,6 +153,8 @@
             aria-selected="false">Cumulative</button>
     <button role="tab" id="tab-payments" aria-controls="panel-payments"
             aria-selected="false">Payments</button>
+    <button role="tab" id="tab-map" aria-controls="panel-map"
+            aria-selected="false">Map</button>
     <button role="tab" id="tab-reviews" aria-controls="panel-reviews"
             aria-selected="false">Reviews</button>
   </div>
@@ -148,6 +169,9 @@
   <div role="tabpanel" id="panel-payments" aria-labelledby="tab-payments" hidden>
     <div id="money"></div>
     <div id="payments"></div>
+  </div>
+  <div role="tabpanel" id="panel-map" aria-labelledby="tab-map" hidden>
+    <div id="map"></div>
   </div>
   <div role="tabpanel" id="panel-reviews" aria-labelledby="tab-reviews" hidden>
     <div id="reviews"></div>
@@ -537,6 +561,108 @@ function renderReviews(apps) {
       </div>`).join("");
 }
 
+/* ---- where the installs came from --------------------------------------- */
+
+// 96% of installs come from one country. On a linear fill the other eleven
+// are indistinguishable from empty ocean, which would make the map a picture
+// of nothing. Discrete bands by order of magnitude keep a single install
+// visible while still showing which country dominates, and the legend states
+// the bands so the shading cannot be read as a smooth scale.
+const BANDS = [
+  { min: 1000, fill: 0.95, label: "1,000+" },
+  { min: 100, fill: 0.70, label: "100–999" },
+  { min: 10, fill: 0.46, label: "10–99" },
+  { min: 1, fill: 0.24, label: "1–9" },
+];
+
+const bandFor = (n) => BANDS.find((b) => n >= b.min);
+
+/** Installs by country, summed across every app and every day held. */
+function byCountry(apps) {
+  const out = {};
+  for (const app of apps)
+    for (const day of Object.values(app.countries || {}))
+      for (const [code, n] of Object.entries(day))
+        out[code] = (out[code] || 0) + n;
+  return out;
+}
+
+function countryTable(counts, total, names) {
+  const ranked = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const top = ranked[0][1];
+  return '<div class="section">By country</div>' + ranked.map(([code, n]) => `
+    <div class="ccrow">
+      <span class="cc">${code}</span>
+      <span class="ccname">${names[code] || code}</span>
+      <span class="ccbar"><i style="width:${Math.max(1, (n / top) * 100)}%"></i></span>
+      <b>${fmt(n)}</b>
+      <span class="ccpct">${(100 * n / total).toFixed(1)}%</span>
+    </div>`).join("");
+}
+
+/** A choropleth, with the numbers underneath.
+ *
+ *  The map answers "is this only the United States?" at a glance. It cannot
+ *  answer "how many from Germany" — eleven of the twelve countries are too
+ *  small to read as shapes — so the ranked list carries the figures, and the
+ *  two together say more than either alone.
+ *
+ *  Outlines are fetched rather than inlined: 86KB that never changes, so it
+ *  caches independently of the data that changes daily.
+ */
+async function renderMap(apps) {
+  const host = $("#map");
+  if (!host) return;
+
+  const counts = byCountry(apps);
+  const total = Object.values(counts).reduce((n, v) => n + v, 0);
+  if (!total) {
+    host.innerHTML = '<div class="empty">No installs recorded yet.</div>';
+    return;
+  }
+
+  let world;
+  try {
+    const res = await fetch("data/world.json", { cache: "force-cache" });
+    if (!res.ok) throw new Error(String(res.status));
+    world = await res.json();
+  } catch {
+    // The figures are the point; the outlines are only how they are
+    // arranged. Losing the second must not cost the first.
+    host.innerHTML = countryTable(counts, total, {});
+    return;
+  }
+
+  const names = world.names || {};
+  const seen = Object.keys(counts).length;
+  const shapes = Object.entries(world.paths).map(([code, d]) => {
+    const n = counts[code] || 0;
+    const band = bandFor(n);
+    return `<path d="${d}" fill="${band ? "var(--accent)" : "var(--line)"}"
+      fill-opacity="${band ? band.fill : 1}" stroke="var(--bg)" stroke-width="0.5"
+      vector-effect="non-scaling-stroke"><title>${names[code] || code}${
+        band ? ` — ${fmt(n)} installs` : ""}</title></path>`;
+  }).join("");
+
+  host.innerHTML = `
+    <div class="card">
+      <div class="head">
+        <div class="name">Installs by country</div>
+        <div class="meta"><b>${fmt(total)}</b> across ${seen}
+          ${seen === 1 ? "country" : "countries"}</div>
+      </div>
+      <svg class="worldmap" viewBox="${world.viewBox}" role="img"
+           aria-label="World map shading the ${seen} countries installs came from">
+        ${shapes}
+      </svg>
+      <div class="legend">
+        ${BANDS.map((b) => `<span><i style="opacity:${b.fill}"></i>${b.label}</span>`).join("")}
+        <span><i class="none"></i>none</span>
+      </div>
+    </div>
+    ${countryTable(counts, total, names)}`;
+}
+
 /* ---- tabs --------------------------------------------------------------- */
 
 const TAB_KEY = "portfolio.tab";
@@ -718,6 +844,7 @@ function render(d) {
   renderCumulative(d.apps);
   renderPayments(d.apps);
   renderReviews(d.apps);
+  renderMap(d.apps);
 
   const saved = loadOrder();
   if (saved) {

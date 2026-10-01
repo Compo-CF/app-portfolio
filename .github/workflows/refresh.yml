@@ -13,6 +13,13 @@ on:
         description: 'How many days of history to (re)fetch'
         required: false
         default: '7'
+      # fetch.py skips a day it already holds, which is right on an ordinary
+      # run and wrong immediately after adding a field: the new key would
+      # exist only for days fetched since. Forcing re-reads fills the history.
+      force:
+        description: 'Re-read days already held (needed after adding a field)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -67,6 +74,7 @@ jobs:
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
           ASC_VENDOR_NUMBER: ${{ secrets.ASC_VENDOR_NUMBER }}
           PLAY_PROJECT: app-portfolio-tooling
+          FORCE: ${{ inputs.force && '1' || '' }}
           BACKFILL_DAYS: ${{ github.event.inputs.backfill_days || '7' }}
         run: python scripts/fetch.py
 
@@ -81,6 +89,7 @@ jobs:
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
           ASC_VENDOR_NUMBER: ${{ secrets.ASC_VENDOR_NUMBER }}
           PLAY_PROJECT: app-portfolio-tooling
+          FORCE: ${{ inputs.force && '1' || '' }}
           BACKFILL_DAYS: ${{ github.event.inputs.backfill_days || '7' }}
         run: |
           git config user.name  "portfolio-bot"
