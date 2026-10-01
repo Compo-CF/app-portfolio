@@ -1,5 +1,6 @@
 {
- "generated": "2026-10-01T19:07:58+00:00",
+ "generated": "2026-10-01T19:41:43+00:00",
+ "admob": {},
  "apps": [
   {
    "id": "6773501518",
@@ -404,6 +405,12 @@
      "5": 7
     }
    },
+   "ratingHistory": {
+    "2026-10-01": {
+     "avg": 5.0,
+     "count": 7
+    }
+   },
    "reviews": [
     {
      "rating": 5,
@@ -518,7 +525,9 @@
     {
      "version": "90",
      "state": "VALID",
-     "uploaded": "2026-10-01"
+     "uploaded": "2026-10-01",
+     "marketing": "2.6",
+     "attached": null
     },
     {
      "version": "89",
@@ -950,6 +959,12 @@
      "5": 1
     }
    },
+   "ratingHistory": {
+    "2026-10-01": {
+     "avg": 3.5,
+     "count": 2
+    }
+   },
    "reviews": [
     {
      "rating": 2,
@@ -1024,7 +1039,9 @@
     {
      "version": "33",
      "state": "VALID",
-     "uploaded": "2026-09-30"
+     "uploaded": "2026-09-30",
+     "marketing": "3.0.4",
+     "attached": "3.0.4"
     },
     {
      "version": "32",
@@ -1224,6 +1241,7 @@
     }
    },
    "rating": null,
+   "ratingHistory": {},
    "reviews": [],
    "versions": [
     {
@@ -1251,7 +1269,9 @@
     {
      "version": "20",
      "state": "VALID",
-     "uploaded": "2026-09-28"
+     "uploaded": "2026-09-28",
+     "marketing": "1.3.0",
+     "attached": "1.3"
     },
     {
      "version": "19",
@@ -1579,6 +1599,7 @@
    },
    "android": null,
    "rating": null,
+   "ratingHistory": {},
    "reviews": [],
    "versions": [
     {
@@ -1611,7 +1632,9 @@
     {
      "version": "2",
      "state": "VALID",
-     "uploaded": "2026-09-23"
+     "uploaded": "2026-09-23",
+     "marketing": "1.5",
+     "attached": "1.5"
     },
     {
      "version": "1",
@@ -1917,6 +1940,7 @@
    },
    "android": null,
    "rating": null,
+   "ratingHistory": {},
    "reviews": [],
    "versions": [
     {
@@ -1959,7 +1983,9 @@
     {
      "version": "12",
      "state": "VALID",
-     "uploaded": "2026-08-08"
+     "uploaded": "2026-08-08",
+     "marketing": "1.7",
+     "attached": "1.7"
     },
     {
      "version": "11",
@@ -2114,6 +2140,7 @@
    "countries": {},
    "android": null,
    "rating": null,
+   "ratingHistory": {},
    "reviews": [],
    "versions": [
     {
@@ -2126,7 +2153,9 @@
     {
      "version": "16",
      "state": "VALID",
-     "uploaded": "2026-09-04"
+     "uploaded": "2026-09-04",
+     "marketing": "1.0",
+     "attached": null
     },
     {
      "version": "13",
@@ -2327,6 +2356,7 @@
    },
    "android": null,
    "rating": null,
+   "ratingHistory": {},
    "reviews": [],
    "versions": [
     {
@@ -2349,7 +2379,9 @@
     {
      "version": "8",
      "state": "VALID",
-     "uploaded": "2026-09-29"
+     "uploaded": "2026-09-29",
+     "marketing": "3.0.0",
+     "attached": "3.0"
     },
     {
      "version": "7",
@@ -2499,6 +2531,7 @@
    },
    "android": null,
    "rating": null,
+   "ratingHistory": {},
    "reviews": [],
    "versions": [
     {
@@ -2516,7 +2549,9 @@
     {
      "version": "4",
      "state": "VALID",
-     "uploaded": "2026-09-17"
+     "uploaded": "2026-09-17",
+     "marketing": "1.1.0",
+     "attached": "1.1"
     },
     {
      "version": "3",
@@ -2652,6 +2687,7 @@
    "countries": {},
    "android": null,
    "rating": null,
+   "ratingHistory": {},
    "reviews": [],
    "versions": [
     {
@@ -2664,7 +2700,9 @@
     {
      "version": "20260930.639",
      "state": "VALID",
-     "uploaded": "2026-09-30"
+     "uploaded": "2026-09-30",
+     "marketing": "1.1.0",
+     "attached": null
     },
     {
      "version": "20260929.1334",
