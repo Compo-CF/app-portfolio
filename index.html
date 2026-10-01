@@ -102,6 +102,17 @@
     .tabs button{padding:9px 9px;font-size:13.5px}
   }
   .empty{color:var(--faint);font-size:14px;padding:22px 2px}
+  .mapbar{display:flex;align-items:center;gap:9px;margin:0 0 12px;
+          font-size:13px;color:var(--soft)}
+  .mapbar select{appearance:none;background:var(--card);color:var(--ink);
+                 border:1px solid var(--line);border-radius:9px;
+                 padding:7px 30px 7px 11px;font:inherit;font-size:13.5px;
+                 font-weight:600;cursor:pointer;max-width:min(100%,280px);
+                 background-image:linear-gradient(45deg,transparent 50%,var(--soft) 50%),
+                                  linear-gradient(135deg,var(--soft) 50%,transparent 50%);
+                 background-position:calc(100% - 15px) 53%,calc(100% - 10px) 53%;
+                 background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+  .mapbar select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
   .worldmap{width:100%;height:auto;display:block;margin:14px 0 4px}
   .legend{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;
           font-size:11.5px;color:var(--faint);font-family:var(--mono)}
@@ -577,13 +588,20 @@ const BANDS = [
 
 const bandFor = (n) => BANDS.find((b) => n >= b.min);
 
-/** Installs by country, summed across every app and every day held. */
-function byCountry(apps) {
+/** Installs by country, summed across every day held.
+ *
+ *  Across every app, or one of them when `only` names an id. Recomputed from
+ *  the daily records rather than kept as a second total, so the map and the
+ *  Installs tab cannot disagree about the same number.
+ */
+function byCountry(apps, only) {
   const out = {};
-  for (const app of apps)
+  for (const app of apps) {
+    if (only && app.id !== only) continue;
     for (const day of Object.values(app.countries || {}))
       for (const [code, n] of Object.entries(day))
         out[code] = (out[code] || 0) + n;
+  }
   return out;
 }
 
@@ -610,44 +628,37 @@ function countryTable(counts, total, names) {
  *  Outlines are fetched rather than inlined: 86KB that never changes, so it
  *  caches independently of the data that changes daily.
  */
-async function renderMap(apps) {
-  const host = $("#map");
-  if (!host) return;
+const MAP_KEY = "portfolio.mapApp";
 
-  const counts = byCountry(apps);
+/** The map and its figures for one selection — everything or a single app. */
+function drawMap(apps, world, only) {
+  const counts = byCountry(apps, only);
   const total = Object.values(counts).reduce((n, v) => n + v, 0);
-  if (!total) {
-    host.innerHTML = '<div class="empty">No installs recorded yet.</div>';
-    return;
-  }
-
-  let world;
-  try {
-    const res = await fetch("data/world.json", { cache: "force-cache" });
-    if (!res.ok) throw new Error(String(res.status));
-    world = await res.json();
-  } catch {
-    // The figures are the point; the outlines are only how they are
-    // arranged. Losing the second must not cost the first.
-    host.innerHTML = countryTable(counts, total, {});
-    return;
-  }
-
-  const names = world.names || {};
+  const names = (world && world.names) || {};
   const seen = Object.keys(counts).length;
-  const shapes = Object.entries(world.paths).map(([code, d]) => {
+  const chosen = only && apps.find((a) => a.id === only);
+
+  if (!total) {
+    return `<div class="empty">No installs recorded for
+      ${chosen ? chosen.name : "any app"} yet.</div>`;
+  }
+
+  // Bands are absolute, not relative to the selection. A country keeps the
+  // same shade whichever app is showing, so switching compares like with
+  // like instead of rescaling under you.
+  const shapes = world ? Object.entries(world.paths).map(([code, d]) => {
     const n = counts[code] || 0;
     const band = bandFor(n);
     return `<path d="${d}" fill="${band ? "var(--accent)" : "var(--line)"}"
       fill-opacity="${band ? band.fill : 1}" stroke="var(--bg)" stroke-width="0.5"
       vector-effect="non-scaling-stroke"><title>${names[code] || code}${
         band ? ` — ${fmt(n)} installs` : ""}</title></path>`;
-  }).join("");
+  }).join("") : "";
 
-  host.innerHTML = `
+  const map = world ? `
     <div class="card">
       <div class="head">
-        <div class="name">Installs by country</div>
+        <div class="name">${chosen ? chosen.name : "Installs by country"}</div>
         <div class="meta"><b>${fmt(total)}</b> across ${seen}
           ${seen === 1 ? "country" : "countries"}</div>
       </div>
@@ -659,8 +670,63 @@ async function renderMap(apps) {
         ${BANDS.map((b) => `<span><i style="opacity:${b.fill}"></i>${b.label}</span>`).join("")}
         <span><i class="none"></i>none</span>
       </div>
+    </div>` : "";
+
+  return map + countryTable(counts, total, names);
+}
+
+/** A choropleth, with the numbers underneath.
+ *
+ *  The map answers "is this only the United States?" at a glance. It cannot
+ *  answer "how many from Germany" — most of these countries are too small to
+ *  read as shapes — so the ranked list carries the figures, and the two
+ *  together say more than either alone.
+ *
+ *  Outlines are fetched rather than inlined: 86KB that never changes, so it
+ *  caches independently of the data that changes daily. Fetched once and held,
+ *  because changing the selection must not re-request them.
+ */
+async function renderMap(apps) {
+  const host = $("#map");
+  if (!host) return;
+
+  let world = null;
+  try {
+    const res = await fetch("data/world.json", { cache: "force-cache" });
+    if (!res.ok) throw new Error(String(res.status));
+    world = await res.json();
+  } catch {
+    // The figures are the point; the outlines are only how they are
+    // arranged. Losing the second must not cost the first.
+  }
+
+  // Only apps that have been installed somewhere. Offering one that has not
+  // would be a menu entry whose whole result is an empty map.
+  const choices = apps
+    .filter((a) => Object.keys(byCountry([a], a.id)).length)
+    .sort((a, b) => sumLast(b.downloads || {}, 99999) - sumLast(a.downloads || {}, 99999));
+
+  let only = "";
+  try {
+    const saved = localStorage.getItem(MAP_KEY);
+    if (saved && choices.some((a) => a.id === saved)) only = saved;
+  } catch { /* ignore */ }
+
+  host.innerHTML = `
+    <div class="mapbar">
+      <label for="map-app">Showing</label>
+      <select id="map-app">
+        <option value="">All apps</option>
+        ${choices.map((a) => `<option value="${a.id}"${a.id === only ? " selected" : ""}>${a.name}</option>`).join("")}
+      </select>
     </div>
-    ${countryTable(counts, total, names)}`;
+    <div id="map-body">${drawMap(apps, world, only)}</div>`;
+
+  host.querySelector("#map-app").addEventListener("change", (e) => {
+    const pick = e.target.value;
+    try { localStorage.setItem(MAP_KEY, pick); } catch { /* ignore */ }
+    $("#map-body").innerHTML = drawMap(apps, world, pick);
+  });
 }
 
 /* ---- tabs --------------------------------------------------------------- */
