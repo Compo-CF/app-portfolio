@@ -108,6 +108,17 @@
   .grip:hover{color:var(--soft);border-color:var(--line)}
   .card.dragging{opacity:.5}
   .card.dragging .grip{cursor:grabbing}
+  .range{display:flex;align-items:center;gap:5px;margin:18px 0 0;
+         font-size:12px;color:var(--faint)}
+  .range span{margin-right:4px;text-transform:uppercase;letter-spacing:.07em;
+              font-weight:700}
+  .range button{appearance:none;background:none;border:1px solid var(--line);
+                color:var(--soft);border-radius:8px;padding:4px 10px;
+                font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+  .range button:hover{color:var(--ink)}
+  .range button[aria-pressed="true"]{background:var(--accent);color:#fff;
+                                     border-color:var(--accent)}
+  .range button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
   .tabs{display:flex;flex-wrap:wrap;gap:4px;margin:20px 0 18px;
         border-bottom:1px solid var(--line)}
   .tabs button{appearance:none;background:none;border:0;border-bottom:2px solid transparent;
@@ -192,6 +203,8 @@
   <div class="sub" id="order-note"></div>
 
   <div id="attention"></div>
+
+  <div id="range" class="range"></div>
 
   <div class="tabs" role="tablist" aria-label="Portfolio views">
     <button role="tab" id="tab-installs" aria-controls="panel-installs"
@@ -437,7 +450,13 @@ function combined(apps, pick) {
  */
 function daily(series, from, to, carry = false) {
   const out = {};
-  let total = 0;
+  // A running total starts from everything before the window, not from zero.
+  // Otherwise narrowing the range silently rewrites history: a 30-day view of
+  // a cumulative chart would show an app that has taken 1,140 installs as
+  // having taken a dozen, and look entirely plausible doing it.
+  let total = carry
+    ? Object.entries(series).reduce((n, [d, v]) => (d < from ? n + v : n), 0)
+    : 0;
   const day = new Date(from + "T00:00:00Z");
   const last = new Date(to + "T00:00:00Z");
   while (day <= last) {
@@ -472,8 +491,7 @@ function renderMoney(data) {
 
   // Span taken from downloads, which every app has, so both charts share an
   // x-axis with the rest of the page instead of starting at the first sale.
-  const span = Object.keys(combined(apps, (a) => a.downloads)).sort();
-  const from = span[0], to = span[span.length - 1];
+  const [from, to] = rangeSpan(apps);
   const earned = Object.values(usd).reduce((n, v) => n + v, 0);
   const sold = Object.values(units).reduce((n, v) => n + v, 0);
 
@@ -494,14 +512,14 @@ function renderMoney(data) {
                 .join(" · ")
             : ""}</div>
       </div>
-      ${chart(daily(usd, from, to, true), 365, money0)}
+      ${chart(daily(usd, from, to, true), ALL, money0)}
     </div>
     <div class="card">
       <div class="head">
         <div class="name">In-app purchases</div>
         <div class="meta"><b>${fmt(sold)}</b> bought across the portfolio</div>
       </div>
-      ${chart(daily(units, from, to), 365)}
+      ${chart(daily(units, from, to), ALL)}
     </div>
     ${adsCard(data, from, to)}`;
 }
@@ -627,7 +645,7 @@ function adsCard(data, from, to) {
         <div class="meta"><span class="money">${total.toFixed(2)} USD</span>
           estimated, AdMob</div>
       </div>
-      ${chart(daily(ads, from, to, true), 365, money0)}
+      ${chart(daily(ads, from, to, true), ALL, money0)}
     </div>`;
 }
 
@@ -648,8 +666,7 @@ function renderCumulative(apps) {
   const ranked = [...apps].sort(
     (a, b) => total(b.downloads) - total(a.downloads));
 
-  const span = Object.keys(combined(apps, (a) => a.downloads)).sort();
-  const from = span[0], to = span[span.length - 1];
+  const [from, to] = rangeSpan(apps);
 
   host.innerHTML = `
     <div class="card">
@@ -658,7 +675,7 @@ function renderCumulative(apps) {
         <div class="meta"><b>${fmt(total(combined(apps, (a) => a.downloads)))}</b>
           first-time installs since ${from}</div>
       </div>
-      ${chart(daily(combined(apps, (a) => a.downloads), from, to, true), 365)}
+      ${chart(daily(combined(apps, (a) => a.downloads), from, to, true), ALL)}
     </div>
     <div class="section">By app</div>
     ` + ranked.map((a) => {
@@ -669,7 +686,7 @@ function renderCumulative(apps) {
           <div class="name"><a href="${a.url}" rel="noopener">${a.name}</a></div>
           <div class="meta"><b>${fmt(run)}</b> total</div>
         </div>
-        ${run ? chart(daily(a.downloads || {}, from, to, true), 365, fmt, releaseMarks(a))
+        ${run ? chart(daily(a.downloads || {}, from, to, true), ALL, fmt, releaseMarks(a))
               : '<div class="empty">No installs yet.</div>'}
       </div>`;
     }).join("");
@@ -688,8 +705,7 @@ function renderPayments(apps) {
   const host = $("#payments");
   if (!host) return;
 
-  const span = Object.keys(combined(apps, (a) => a.downloads)).sort();
-  const from = span[0], to = span[span.length - 1];
+  const [from, to] = rangeSpan(apps);
 
   const earners = apps
     .map((a) => ({ app: a, usd: (a.revenue || {}).USD || {} }))
@@ -716,7 +732,7 @@ function renderPayments(apps) {
             ${app.iapUnits ? ` · <b>${fmt(total(app.iapUnits))}</b> purchases` : ""}
           </div>
         </div>
-        ${chart(daily(usd, from, to, true), 365, money0, releaseMarks(app))}
+        ${chart(daily(usd, from, to, true), ALL, money0, releaseMarks(app))}
       </div>`;
   }).join("");
 }
@@ -760,6 +776,63 @@ function renderReviews(apps) {
         ${r.body ? `<p>${r.body}</p>` : ""}
         <div class="meta">— ${r.nickname || "anonymous"}</div>
       </div>`).join("");
+}
+
+/* ---- how far back the charts look --------------------------------------- */
+
+const RANGE_KEY = "portfolio.range";
+const ALL = 99999;
+const RANGES = [
+  { days: 7, label: "7d" },
+  { days: 30, label: "30d" },
+  { days: 90, label: "90d" },
+  { days: 365, label: "1y" },
+  { days: ALL, label: "All" },
+];
+
+let DATA = null;          // the last payload rendered, so a range change
+                          // can redraw without re-fetching
+
+function rangeDays() {
+  try {
+    const saved = Number(localStorage.getItem(RANGE_KEY));
+    if (RANGES.some((r) => r.days === saved)) return saved;
+  } catch { /* ignore */ }
+  return ALL;
+}
+
+/** First and last day of the window, across everything the portfolio holds. */
+function rangeSpan(apps) {
+  const span = Object.keys(combined(apps, (a) => a.downloads)).sort();
+  if (!span.length) return ["", ""];
+  const days = rangeDays();
+  const from = days >= span.length ? span[0] : span[span.length - days];
+  return [from, span[span.length - 1]];
+}
+
+function renderRangeControl() {
+  const host = $("#range");
+  if (!host) return;
+  const now = rangeDays();
+  host.innerHTML = "<span>Range</span>" + RANGES.map((r) =>
+    `<button type="button" data-days="${r.days}" aria-pressed="${r.days === now}"
+     >${r.label}</button>`).join("");
+
+  host.querySelectorAll("button").forEach((b) => {
+    b.addEventListener("click", () => {
+      try { localStorage.setItem(RANGE_KEY, b.dataset.days); } catch { /* ignore */ }
+      if (!DATA) return;
+      // Redrawn rather than rescaled in place: each panel derives its own
+      // axis and labels from the data handed to it, so giving it a narrower
+      // slice is the entire change.
+      renderRangeControl();
+      renderAppCards(DATA.apps);
+      renderCumulative(DATA.apps);
+      renderMoney(DATA);
+      renderPayments(DATA.apps);
+      renderRatings(DATA.apps);
+    });
+  });
 }
 
 /* ---- what needs looking at ---------------------------------------------- */
@@ -896,7 +969,7 @@ function renderRatings(apps) {
                 ? ` · ${moved > 0 ? "+" : ""}${moved} since ${days[0]}` : ""}</div>
         </div>
         ${days.length > 1
-          ? chart(series, 365, (v) => v.toFixed(1), releaseMarks(app))
+          ? chart(series, rangeDays(), (v) => v.toFixed(1), releaseMarks(app))
           : `<div class="empty">Tracking from ${days[0]}. A line needs a second day.</div>`}
       </div>`;
   }).join("");
@@ -1211,6 +1284,7 @@ function money(app) {
 }
 
 function render(d) {
+  DATA = d;
   $("#generated").textContent =
     `${d.apps.length} apps · updated ${new Date(d.generated).toLocaleString()}`;
 
@@ -1231,11 +1305,6 @@ function render(d) {
     ["Average rating", avg],
   ].map(([label, v]) => `<div class="stat"><b>${v}</b><span>${label}</span></div>`).join("");
 
-  // Busiest first: a portfolio view should lead with what is moving. A saved
-  // order overrides it, and anything the saved order has never heard of —
-  // a newly published app — sorts to the end rather than vanishing.
-  const apps = [...d.apps].sort(
-    (a, b) => sumLast(b.downloads || {}, 30) - sumLast(a.downloads || {}, 30));
   renderMoney(d);
   renderPayouts(d);
   renderCumulative(d.apps);
@@ -1244,6 +1313,17 @@ function render(d) {
   renderMap(d.apps);
   renderRatings(d.apps);
   renderAttention(d.apps);
+
+  renderAppCards(d.apps);
+}
+
+/** The per-app cards on the Installs tab, redrawn whenever the range moves. */
+function renderAppCards(all_apps) {
+  // Busiest first: a portfolio view should lead with what is moving. A saved
+  // order overrides it, and anything the saved order has never heard of —
+  // a newly published app — sorts to the end rather than vanishing.
+  const apps = [...all_apps].sort(
+    (a, b) => sumLast(b.downloads || {}, 30) - sumLast(a.downloads || {}, 30));
 
   const saved = loadOrder();
   if (saved) {
@@ -1276,7 +1356,7 @@ function render(d) {
             ${live ? ` <span class="pill" style="background:${stateColour(live.state)}">v${live.version} ${live.state}</span>` : ""}
           </div>
         </div>
-        ${chart(dl, 365, fmt, releaseMarks(a))}
+        ${chart(dl, rangeDays(), fmt, releaseMarks(a))}
         ${android(a)}
         ${money(a) ? `<div class="rev">${money(a)}</div>` : ""}
         ${rev ? `<div class="rev">${"★".repeat(rev.rating || 0)} <q>${rev.title || ""}</q> — ${rev.nickname || "anonymous"}, ${rev.date}</div>` : ""}
@@ -1285,6 +1365,7 @@ function render(d) {
 
   enableReorder($("#apps"));
   renderResetControl();
+  renderRangeControl();
   enableTabs();
 }
 
