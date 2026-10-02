@@ -108,6 +108,8 @@
   .grip:hover{color:var(--soft);border-color:var(--line)}
   .card.dragging{opacity:.5}
   .card.dragging .grip{cursor:grabbing}
+  .stale{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:9px;
+         background:var(--warn);color:#fff;font-size:11px;font-weight:700}
   .range{display:flex;align-items:center;gap:5px;margin:18px 0 0;
          font-size:12px;color:var(--faint)}
   .range span{margin-right:4px;text-transform:uppercase;letter-spacing:.07em;
@@ -1308,8 +1310,25 @@ function money(app) {
 
 function render(d) {
   DATA = d;
-  $("#generated").textContent =
-    `${d.apps.length} apps · updated ${new Date(d.generated).toLocaleString()}`;
+  // How old, not when. "Updated 10/1/2026, 3:21 PM" asks the reader to do
+  // arithmetic before they can tell whether they are looking at today's
+  // numbers, and the refresh has silently failed to run more than once.
+  const builtAt = new Date(d.generated);
+  const hours = Math.floor((Date.now() - builtAt) / 3600000);
+  const age = hours < 1 ? "just now"
+    : hours < 24 ? `${hours} hour${hours === 1 ? "" : "s"} ago`
+    : `${Math.floor(hours / 24)} day${hours < 48 ? "" : "s"} ago`;
+
+  // Apple publishes a day's sales report the following morning, so the most
+  // recent day covered always trails the build. Stating both separates "the
+  // job has not run" from "Apple has not published".
+  const covered = Object.keys(combined(d.apps, (a) => a.downloads)).sort().pop();
+
+  $("#generated").innerHTML =
+    `${d.apps.length} apps · built ${age}, covering to ${covered}`
+    + (hours >= 36
+        ? ` <span class="stale">refresh has not run since ${builtAt.toLocaleDateString()}</span>`
+        : "");
 
   const all = {};
   for (const a of d.apps)

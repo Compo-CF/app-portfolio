@@ -5,8 +5,17 @@ name: Refresh portfolio data
 # which runs from a separate machine.
 
 on:
+  # Twice, on odd minutes. GitHub drops scheduled runs under load and makes no
+  # promise about firing at all — the 14:30 run has silently gone missing more
+  # than once, leaving the page a day stale with nothing to say so. :00 and
+  # :30 are the busiest moments of any hour, because every cron in the world
+  # points at them, so these deliberately do not.
+  #
+  # A second attempt is free: when the first has already landed the day's
+  # data, the job finds nothing new and exits.
   schedule:
-    - cron: '30 14 * * *'   # 14:30 UTC — mid-morning Central, report is up
+    - cron: '13 14 * * *'   # 14:13 UTC — mid-morning Central, report is up
+    - cron: '41 19 * * *'   # 19:41 UTC — a second chance the same day
   workflow_dispatch:
     inputs:
       backfill_days:
