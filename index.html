@@ -135,6 +135,11 @@
     .tabs button{padding:9px 9px;font-size:13.5px}
   }
   .empty{color:var(--faint);font-size:14px;padding:22px 2px}
+  .tabs .badge{display:inline-block;font-style:normal;min-width:17px;
+               padding:1px 5px;border-radius:9px;background:var(--warn);
+               color:#fff;font-size:11px;font-weight:700;text-align:center;
+               vertical-align:1px}
+  .tabs .has-bad .badge,.tabs button.has-bad .badge{background:var(--bad)}
   .alert{border:1px solid var(--line);border-left:4px solid var(--warn);
          background:var(--card);border-radius:10px;padding:11px 14px;
          margin-bottom:8px}
@@ -202,8 +207,6 @@
   <div class="sub" id="generated">Loading&hellip;</div>
   <div class="sub" id="order-note"></div>
 
-  <div id="attention"></div>
-
   <div id="range" class="range"></div>
 
   <div class="tabs" role="tablist" aria-label="Portfolio views">
@@ -219,6 +222,8 @@
             aria-selected="false">Map</button>
     <button role="tab" id="tab-reviews" aria-controls="panel-reviews"
             aria-selected="false">Reviews</button>
+    <button role="tab" id="tab-issues" aria-controls="panel-issues"
+            aria-selected="false">Issues</button>
   </div>
 
   <div role="tabpanel" id="panel-installs" aria-labelledby="tab-installs">
@@ -241,6 +246,9 @@
   </div>
   <div role="tabpanel" id="panel-reviews" aria-labelledby="tab-reviews" hidden>
     <div id="reviews"></div>
+  </div>
+  <div role="tabpanel" id="panel-issues" aria-labelledby="tab-issues" hidden>
+    <div id="attention"></div>
   </div>
   <footer>
     Data from App Store Connect, refreshed daily by GitHub Actions.
@@ -919,7 +927,22 @@ function renderAttention(apps) {
   const host = $("#attention");
   if (!host) return;
   const items = attention(apps);
-  if (!items.length) { host.innerHTML = ""; return; }
+
+  // A count on the tab, because moving this off the top means nobody sees it
+  // unless something draws the eye. Only things worth acting on are counted —
+  // badging the TestFlight notes would make the number permanent furniture
+  // and therefore ignorable.
+  const tab = $("#tab-issues");
+  if (tab) {
+    const live = items.filter((i) => i.level !== "info").length;
+    tab.innerHTML = "Issues" + (live ? ` <i class="badge">${live}</i>` : "");
+    tab.classList.toggle("has-bad", items.some((i) => i.level === "bad"));
+  }
+
+  if (!items.length) {
+    host.innerHTML = '<div class="empty">Nothing wants attention.</div>';
+    return;
+  }
 
   host.innerHTML = items.map((i) => `
     <div class="alert ${i.level}">
