@@ -5,17 +5,26 @@ name: Refresh portfolio data
 # which runs from a separate machine.
 
 on:
-  # Twice, on odd minutes. GitHub drops scheduled runs under load and makes no
-  # promise about firing at all — the 14:30 run has silently gone missing more
-  # than once, leaving the page a day stale with nothing to say so. :00 and
-  # :30 are the busiest moments of any hour, because every cron in the world
-  # points at them, so these deliberately do not.
+  # Three times, on odd minutes. GitHub drops scheduled runs under load and
+  # makes no promise about firing at all — the 14:30 run has silently gone
+  # missing more than once, leaving the page a day stale with nothing to say
+  # so. :00 and :30 are the busiest moments of any hour, because every cron in
+  # the world points at them, so these deliberately do not.
   #
-  # A second attempt is free: when the first has already landed the day's
+  # Extra attempts are free: when an earlier one has already landed the day's
   # data, the job finds nothing new and exits.
+  #
+  # The third slot fills the gap rather than shortening the wait. Observed
+  # runs land two to five hours after their cron time — 14:13 arriving near
+  # 18:00, 19:41 anywhere up to 00:56 the next day — and that lateness is
+  # queue load at GitHub's end, so moving a cron earlier does not make it run
+  # earlier. What a third slot buys is that no stretch of the day is left
+  # uncovered: 19:41 to 14:13 was an 18-hour hole, and 04:57 splits it into
+  # two of about nine.
   schedule:
     - cron: '13 14 * * *'   # 14:13 UTC — mid-morning Central, report is up
     - cron: '41 19 * * *'   # 19:41 UTC — a second chance the same day
+    - cron: '57 4 * * *'    # 04:57 UTC — overnight, covering the long gap
   workflow_dispatch:
     inputs:
       backfill_days:
