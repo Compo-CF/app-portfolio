@@ -10,6 +10,10 @@
     --bg:#f6f3ec; --card:#fff; --line:#e7e0cf; --ink:#141414;
     --soft:#6b6b6b; --faint:#a09788; --accent:#0b6fd0; --good:#1b5e20;
     --warn:#8a6100; --bad:#b3261e;
+    /* Play's own green, so the second line on a chart needs no looking up.
+       Far enough from --good, which only ever appears as money text, that
+       the two are not confused. */
+    --play:#01875f;
     --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
     --mono:'SF Mono',Menlo,Consolas,monospace;
   }
@@ -18,6 +22,9 @@
       --bg:#14120e; --card:#1d1a15; --line:#2f2a21; --ink:#f2ece0;
       --soft:#a9a193; --faint:#6f685c; --accent:#5aa9f8; --good:#6fbf73;
       --warn:#d9a441; --bad:#ef8279;
+      /* Play's green at full strength disappears against a dark card, so
+         the dark theme lightens it rather than reusing the brand value. */
+      --play:#4bd4a0;
     }
   }
   *{box-sizing:border-box}
@@ -100,6 +107,15 @@
          gap:4px 14px;align-items:baseline}
   .droid b{color:var(--ink);font-variant-numeric:tabular-nums}
   .droid .asof{color:var(--faint);font-size:11.5px;font-family:var(--mono)}
+  /* Deliberately NOT .legend — the map already owns that class for its
+     choropleth swatches, and a second .legend block later in this sheet
+     silently restyled them from 11px squares into line dashes. Keys that
+     mean different things get different names. */
+  .skey{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;
+        margin-top:6px;font-size:12px;color:var(--soft)}
+  .skey span{display:inline-flex;align-items:center;gap:5px}
+  .skey i{width:14px;height:2.5px;border-radius:2px;display:inline-block}
+  .skey .asof{color:var(--faint);font-size:11.5px;font-family:var(--mono)}
   /* Dragging is offered from a grip rather than the whole card: the card is
      full of links and text, and a card-wide drag would fight both. */
   .grip{cursor:grab;touch-action:none;user-select:none;color:var(--faint);
@@ -323,13 +339,44 @@ function releaseMarks(app) {
     .map((v) => ({ date: v.created, label: "v" + v.version }));
 }
 
-function chart(series, days, show = fmt, marks = []) {
+/** A chart, optionally with Google Play drawn over it as a second line.
+ *
+ *  `play` is the Play series keyed the same way. It is a separate line and
+ *  never added to the first, because the two count different things: Apple
+ *  reports first-time downloads, Play reports user installs, and neither is a
+ *  subset of the other. A combined total would be a number with no
+ *  definition. Two lines let you read each for what it is.
+ *
+ *  The line **stops at Play's last reported day** rather than running to the
+ *  right edge. Play publishes about a week behind Apple, so the trailing days
+ *  are missing, not zero — plotted as zero they draw a cliff, and an app
+ *  whose Android installs were merely unreported would look like an app whose
+ *  Android installs had collapsed. Stopping short says "no data yet", which
+ *  is the truth.
+ */
+function chart(series, days, show = fmt, marks = [], play = null) {
   const keys = Object.keys(series).sort().slice(-days);
   if (keys.length < 2) return '<div class="meta">Not enough history yet.</div>';
 
   const vals = keys.map((k) => series[k]);
+
+  // Play's own last day, not the chart's: everything after it is unreported.
+  const playDays = play ? Object.keys(play).filter((k) => k <= keys[keys.length - 1]).sort() : [];
+  const playLast = playDays.length ? playDays[playDays.length - 1] : null;
+  const playVals = playLast
+    ? keys.map((k) => (k <= playLast ? (play[k] ?? null) : null))
+    : [];
+  const hasPlay = playVals.some((v) => v !== null);
+
+  // The peak callout belongs to the App Store line — it is indexed back into
+  // `vals` below, so it must come from `vals` alone.
   const peak = Math.max(...vals);
-  const { step, max } = scaleFor(peak);
+
+  // The scale, though, has to hold both. One shared axis, because drawing
+  // them on separate scales would put a Play line of 2 level with an App
+  // Store line of 200 and invite exactly the wrong comparison.
+  const { step, max } = scaleFor(
+    Math.max(peak, ...(hasPlay ? playVals.filter((v) => v !== null) : [0])));
 
   const W = 1000, H = 118, TOP = 10;
   const x = (i) => (i / (keys.length - 1)) * W;
@@ -338,6 +385,15 @@ function chart(series, days, show = fmt, marks = []) {
 
   const line = vals.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
   const area = `${line}L${W},${H}L0,${H}Z`;
+
+  // Built as segments rather than one run, so a gap in Play's reporting
+  // leaves a gap in the line instead of a straight edge drawn across it.
+  let playPath = "", pen = false;
+  playVals.forEach((v, i) => {
+    if (v === null) { pen = false; return; }
+    playPath += `${pen ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`;
+    pen = true;
+  });
 
   const ticks = [];
   // 1e-9 so a float step like 0.30000000000000004 still reaches its top.
@@ -374,6 +430,9 @@ function chart(series, days, show = fmt, marks = []) {
           <path d="${area}" fill="var(--accent)" opacity=".13"/>
           <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2"
                 vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+          ${hasPlay ? `<path d="${playPath}" fill="none" stroke="var(--play)"
+                stroke-width="2" vector-effect="non-scaling-stroke"
+                stroke-linejoin="round"/>` : ""}
         </svg>
         ${marks.filter((m) => m.date >= first && m.date <= latest).map((m) => {
           // Positioned by where the date falls in the window, not by index,
@@ -388,7 +447,12 @@ function chart(series, days, show = fmt, marks = []) {
         ${peak > 0 ? label(last, 100) : ""}
       </div>
     </div>
-    <div class="axis"><span>${first}</span><span>${latest}</span></div>`;
+    <div class="axis"><span>${first}</span><span>${latest}</span></div>
+    ${hasPlay ? `<div class="skey">
+      <span><i style="background:var(--accent)"></i>App Store</span>
+      <span><i style="background:var(--play)"></i>Google Play</span>
+      <span class="asof">Play reported through ${playLast}</span>
+    </div>` : ""}`;
 }
 
 const sumLast = (series, days) =>
@@ -685,7 +749,8 @@ function renderCumulative(apps) {
         <div class="meta"><b>${fmt(total(combined(apps, (a) => a.downloads)))}</b>
           first-time installs since ${from}</div>
       </div>
-      ${chart(daily(combined(apps, (a) => a.downloads), from, to, true), ALL)}
+      ${chart(daily(combined(apps, (a) => a.downloads), from, to, true), ALL, fmt, [],
+              playRun(combined(apps, (a) => (a.android || {}).installs), from, to))}
     </div>
     <div class="section">By app</div>
     ` + ranked.map((a) => {
@@ -696,7 +761,8 @@ function renderCumulative(apps) {
           <div class="name"><a href="${a.url}" rel="noopener">${a.name}</a></div>
           <div class="meta"><b>${fmt(run)}</b> total</div>
         </div>
-        ${run ? chart(daily(a.downloads || {}, from, to, true), ALL, fmt, releaseMarks(a))
+        ${run ? chart(daily(a.downloads || {}, from, to, true), ALL, fmt, releaseMarks(a),
+                      playRun((a.android || {}).installs, from, to))
               : '<div class="empty">No installs yet.</div>'}
       </div>`;
     }).join("");
@@ -704,6 +770,22 @@ function renderCumulative(apps) {
 
 const total = (series) =>
   Object.values(series || {}).reduce((n, v) => n + v, 0);
+
+/** A running Play total that stops on Play's last reported day.
+ *
+ *  daily(..., carry) fills every day to the end of the window, which is right
+ *  for Apple and wrong here: past Play's last report the running total would
+ *  carry forward unchanged and draw a flat line to the right edge. Flat means
+ *  "nobody installed it" and the truth is "Google has not said yet" — a
+ *  distinction worth a few lines of code, since Play runs about a week
+ *  behind and that flat tail would be on every chart, every day.
+ */
+function playRun(installs, from, to) {
+  const days = Object.keys(installs || {}).sort();
+  if (!days.length) return null;
+  const last = days[days.length - 1];
+  return last < from ? null : daily(installs, from, last < to ? last : to, true);
+}
 
 /** Payments per app over time, cumulative and in USD.
  *
@@ -1398,7 +1480,7 @@ function renderAppCards(all_apps) {
             ${live ? ` <span class="pill" style="background:${stateColour(live.state)}">v${live.version} ${live.state}</span>` : ""}
           </div>
         </div>
-        ${chart(dl, rangeDays(), fmt, releaseMarks(a))}
+        ${chart(dl, rangeDays(), fmt, releaseMarks(a), (a.android || {}).installs)}
         ${android(a)}
         ${money(a) ? `<div class="rev">${money(a)}</div>` : ""}
         ${rev ? `<div class="rev">${"★".repeat(rev.rating || 0)} <q>${rev.title || ""}</q> — ${rev.nickname || "anonymous"}, ${rev.date}</div>` : ""}
