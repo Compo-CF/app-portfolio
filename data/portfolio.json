@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-06T19:32:16+00:00",
+ "generated": "2026-10-06T23:13:23+00:00",
  "admob": {
   "2026-06-03": 0.0,
   "2026-06-04": 0.0,
@@ -123,8 +123,8 @@
   "2026-10-02": 0.63,
   "2026-10-03": 0.6,
   "2026-10-04": 0.94,
-  "2026-10-05": 1.34,
-  "2026-10-06": 0.67
+  "2026-10-05": 1.33,
+  "2026-10-06": 0.87
  },
  "apps": [
   {
@@ -1879,6 +1879,11 @@
    "reviews": [],
    "versions": [
     {
+     "version": "1.7",
+     "state": "WAITING_FOR_REVIEW",
+     "created": "2026-10-06"
+    },
+    {
      "version": "1.6",
      "state": "READY_FOR_SALE",
      "created": "2026-10-02"
@@ -1913,9 +1918,14 @@
     {
      "version": "1",
      "state": "VALID",
-     "uploaded": "2026-10-02",
-     "marketing": "1.6",
-     "attached": "1.6"
+     "uploaded": "2026-10-06",
+     "marketing": "1.7",
+     "attached": "1.7"
+    },
+    {
+     "version": "1",
+     "state": "VALID",
+     "uploaded": "2026-10-02"
     },
     {
      "version": "2",
@@ -1931,11 +1941,6 @@
      "version": "3",
      "state": "VALID",
      "uploaded": "2026-08-13"
-    },
-    {
-     "version": "2",
-     "state": "VALID",
-     "uploaded": "2026-08-08"
     }
    ]
   },
@@ -2233,6 +2238,11 @@
    "reviews": [],
    "versions": [
     {
+     "version": "2.0",
+     "state": "WAITING_FOR_REVIEW",
+     "created": "2026-10-06"
+    },
+    {
      "version": "1.7",
      "state": "READY_FOR_SALE",
      "created": "2026-07-31"
@@ -2270,11 +2280,16 @@
    ],
    "builds": [
     {
+     "version": "13",
+     "state": "VALID",
+     "uploaded": "2026-10-06",
+     "marketing": "2.0",
+     "attached": "2.0"
+    },
+    {
      "version": "12",
      "state": "VALID",
-     "uploaded": "2026-08-08",
-     "marketing": "1.7",
-     "attached": "1.7"
+     "uploaded": "2026-08-08"
     },
     {
      "version": "11",
@@ -2290,11 +2305,6 @@
      "version": "9",
      "state": "VALID",
      "uploaded": "2026-06-22"
-    },
-    {
-     "version": "8",
-     "state": "VALID",
-     "uploaded": "2026-06-15"
     }
    ]
   },
@@ -2690,11 +2700,16 @@
    ],
    "builds": [
     {
-     "version": "8",
+     "version": "9",
      "state": "VALID",
      "uploaded": "2026-10-06",
-     "marketing": "3.1.0",
-     "attached": "3.1"
+     "marketing": "3.1.1",
+     "attached": null
+    },
+    {
+     "version": "8",
+     "state": "VALID",
+     "uploaded": "2026-10-06"
     },
     {
      "version": "8",
@@ -2710,11 +2725,6 @@
      "version": "6",
      "state": "VALID",
      "uploaded": "2026-09-29"
-    },
-    {
-     "version": "5",
-     "state": "VALID",
-     "uploaded": "2026-09-25"
     }
    ]
   },
