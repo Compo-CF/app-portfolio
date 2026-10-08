@@ -22,6 +22,7 @@ import jwt
 import requests
 
 import admob
+import finance
 import play
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -415,6 +416,19 @@ def main():
     ads = dict(prev_ads)
     ads.update(admob.earnings())
 
+    # What Apple actually owes, period by period, from the financial reports
+    # rather than the daily estimate. Merged onto what is committed for the
+    # same reason as the ads above, and because the probe bounds itself by
+    # what is already held: discard it and every run sweeps two fiscal years.
+    prev_payouts = []
+    if OUT.exists():
+        try:
+            prev = json.loads(OUT.read_text(encoding="utf-8"))
+            prev_payouts = list(prev.get("payouts") or [])
+        except (ValueError, KeyError):
+            prev_payouts = []
+    payouts = finance.periods(token(), VENDOR, known=prev_payouts)
+
     sku_map = skus()
 
     today = date.today()
@@ -483,6 +497,7 @@ def main():
         json.dumps({
             "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "admob": dict(sorted(ads.items())),
+            "payouts": payouts,
             "apps": apps,
         }, indent=1),
         encoding="utf-8",

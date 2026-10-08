@@ -124,6 +124,13 @@
   .day.zero .amt{color:var(--faint);font-weight:400}
   .day.none{border-style:dashed}
   .day.none .amt{color:var(--faint);font-weight:400}
+  /* A deposit that should already be in the bank, and one still to come.
+     Filled versus outlined rather than two greens, so which is which survives
+     being glanced at. */
+  .day.paid{background:color-mix(in srgb,var(--good) 16%,transparent);
+            border-color:color-mix(in srgb,var(--good) 45%,var(--line))}
+  .day.due{border-color:var(--good);border-style:dashed}
+  .day.due .amt{color:var(--good)}
   .day.future{border-color:color-mix(in srgb,var(--line) 55%,transparent)}
   .day.future .n{opacity:.45}
   /* Seven columns on a phone leaves about 40px a cell, and "$40.07" at the
@@ -294,6 +301,7 @@
   </div>
   <div role="tabpanel" id="panel-payments" aria-labelledby="tab-payments" hidden>
     <div id="calendar"></div>
+    <div id="deposits"></div>
     <div id="kpis"></div>
     <div id="money"></div>
     <div id="payments"></div>
@@ -675,6 +683,50 @@ let CAL_MONTH = null;
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"];
 
+const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** Where a month starts in the week, and how long it is.
+ *
+ *  UTC throughout. new Date("2026-10-01") is midnight UTC but getDay() reads
+ *  local, so west of Greenwich the first of the month lands on the previous
+ *  weekday and every cell in the grid shifts a column.
+ */
+function monthParts(ym) {
+  const [y, m] = ym.split("-").map(Number);
+  return {
+    y, m,
+    lead: new Date(Date.UTC(y, m - 1, 1)).getUTCDay(),
+    len: new Date(Date.UTC(y, m, 0)).getUTCDate(),
+  };
+}
+
+/** The shell both calendars share: month nav, weekday row, leading blanks.
+ *
+ *  Shared rather than copied because the two differ only in what a day means.
+ *  A second copy would have drifted the moment one of them was corrected.
+ */
+function calShell({ month, earliest, latest, totalHtml, cells, caveat }) {
+  const { y, m, lead } = monthParts(month);
+  const prev = shiftMonth(month, -1), next = shiftMonth(month, 1);
+  return `
+    <div class="cal">
+      <div class="calhead">
+        <button type="button" data-go="${prev}" aria-label="Previous month"
+                ${prev < earliest ? "disabled" : ""}>&lsaquo;</button>
+        <button type="button" data-go="${next}" aria-label="Next month"
+                ${next > latest ? "disabled" : ""}>&rsaquo;</button>
+        <span class="mon">${MONTH_NAMES[m - 1]} ${y}</span>
+        <span class="tot">${totalHtml}</span>
+      </div>
+      <div class="calgrid">
+        ${DOW.map((w) => `<span class="dow">${w}</span>`).join("")}
+        ${'<div class="day blank"></div>'.repeat(lead)}
+        ${cells.join("")}
+      </div>
+      <div class="caveat">${caveat}</div>
+    </div>`;
+}
+
 const shiftMonth = (ym, by) => {
   const [y, m] = ym.split("-").map(Number);
   const d = new Date(Date.UTC(y, m - 1 + by, 1));
@@ -706,12 +758,7 @@ function renderCalendar(data) {
   if (CAL_MONTH > thisMonth) CAL_MONTH = thisMonth;
   if (CAL_MONTH < earliest.slice(0, 7)) CAL_MONTH = earliest.slice(0, 7);
 
-  const [yy, mm] = CAL_MONTH.split("-").map(Number);
-  // UTC throughout. new Date("2026-10-01") is midnight UTC but getDay() reads
-  // local, so west of Greenwich the first of the month lands on the previous
-  // weekday and the whole grid shifts a column.
-  const lead = new Date(Date.UTC(yy, mm - 1, 1)).getUTCDay();
-  const len = new Date(Date.UTC(yy, mm, 0)).getUTCDate();
+  const { len } = monthParts(CAL_MONTH);
 
   const cells = [];
   let monthTotal = 0, anyPartial = false, anyMissing = false;
@@ -751,37 +798,153 @@ function renderCalendar(data) {
     </div>`);
   }
 
-  const prev = shiftMonth(CAL_MONTH, -1), next = shiftMonth(CAL_MONTH, 1);
-
-  host.innerHTML = `
-    <div class="cal">
-      <div class="calhead">
-        <button type="button" data-go="${prev}" aria-label="Previous month"
-                ${prev < earliest.slice(0, 7) ? "disabled" : ""}>&lsaquo;</button>
-        <button type="button" data-go="${next}" aria-label="Next month"
-                ${next > thisMonth ? "disabled" : ""}>&rsaquo;</button>
-        <span class="mon">${MONTH_NAMES[mm - 1]} ${yy}</span>
-        <span class="tot"><b>${money2(monthTotal)}</b> this month</span>
-      </div>
-      <div class="calgrid">
-        ${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-          .map((w) => `<span class="dow">${w}</span>`).join("")}
-        ${'<div class="day blank"></div>'.repeat(lead)}
-        ${cells.join("")}
-      </div>
-      <div class="caveat">App Store proceeds plus AdMob estimated earnings, in
-        USD, on the day they were earned — not the day money lands. Apple pays
-        about a month after each month closes and AdMob holds until $100.${
-          anyMissing ? " A dash is a day neither source has reported yet." : ""}${
-          anyPartial ? ' <span class="part">*</span> marks a day only one source has reported, so it will rise.' : ""}
-        Foreign-currency proceeds settle separately and are not counted here.</div>
-    </div>`;
+  host.innerHTML = calShell({
+    month: CAL_MONTH,
+    earliest: earliest.slice(0, 7),
+    latest: thisMonth,
+    totalHtml: `<b>${money2(monthTotal)}</b> earned this month`,
+    cells,
+    caveat: `App Store proceeds plus AdMob estimated earnings, in USD, on the
+      day they were <em>earned</em> — see the deposit calendar below for when
+      the money lands.${
+        anyMissing ? " A dash is a day neither source has reported yet." : ""}${
+        anyPartial ? ' <span class="part">*</span> marks a day only one source has reported, so it will rise.' : ""}`,
+  });
 
   host.querySelectorAll("[data-go]").forEach((b) =>
     b.addEventListener("click", () => {
       CAL_MONTH = b.dataset.go;
       renderCalendar(data);
     }));
+}
+
+/* ---- the deposit calendar ----------------------------------------------- */
+
+/** Days after a fiscal period closes that Apple's payment is observed to land.
+ *
+ *  Apple's own terms say "within 45 days of the last day of the fiscal month";
+ *  the figure everyone who tracks this reports is 33. The official number is
+ *  the outer bound, so 33 is what the calendar marks and 45 is what the note
+ *  says. Neither is a promise, and neither is a confirmation that the money
+ *  arrived — only a bank statement is that.
+ */
+const PAY_LAG_DAYS = 33;
+
+/** No threshold worth modelling, for this account.
+ *
+ *  Apple holds proceeds until they clear a minimum that depends on where the
+ *  bank is. For a US bank paid in USD that minimum is $0.02 — so every closed
+ *  period is paid, and there is no balance rolling forward to model. On a
+ *  bank elsewhere this would be wrong: the unlisted default is $40, and
+ *  Colombia, for one, is $100.
+ */
+const APPLE_MIN_USD = 0.02;
+
+const addDays = (iso, n) => {
+  const d = new Date(iso + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+
+/** One expected deposit per closed fiscal period, keyed by the day it lands. */
+function deposits(data) {
+  const out = {};
+  for (const p of data.payouts || []) {
+    if (p.currency !== "USD" || p.amount < APPLE_MIN_USD) continue;
+    const day = addDays(p.end, PAY_LAG_DAYS);
+    (out[day] = out[day] || []).push(p);
+  }
+  return out;
+}
+
+let DEP_MONTH = null;
+
+/** When the money actually turns up, as against when it was earned.
+ *
+ *  Built on Apple's financial reports rather than the daily sales estimate,
+ *  because those are the settlement figures: adjusted, and with every foreign
+ *  sale already converted. A US vendor is paid one USD sum per period, which
+ *  is why a month of won and pesos on the earnings calendar arrives here as
+ *  dollars and the two will never tally exactly.
+ *
+ *  AdMob has no entry at all. It pays only once the balance passes $100 and
+ *  gives no date before then, so a cell would be an invention; the balance is
+ *  stated in the note instead.
+ */
+function renderDeposits(data) {
+  const host = $("#deposits");
+  if (!host) return;
+
+  const due = deposits(data);
+  const days = Object.keys(due).sort();
+  if (!days.length) { host.innerHTML = ""; return; }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const thisMonth = today.slice(0, 7);
+  const first = days[0].slice(0, 7);
+  // The last month worth paging to is whichever is later: the month holding
+  // the furthest expected deposit, or this one. Stopping at the newest
+  // deposit would hide a month with none, and stopping at this month would
+  // hide the payment that is already scheduled for next.
+  const last = [days[days.length - 1].slice(0, 7), thisMonth].sort().pop();
+
+  if (!DEP_MONTH) DEP_MONTH = thisMonth;
+  if (DEP_MONTH > last) DEP_MONTH = last;
+  if (DEP_MONTH < first) DEP_MONTH = first;
+
+  const { len } = monthParts(DEP_MONTH);
+  const cells = [];
+  let monthTotal = 0, allPast = true;
+  for (let n = 1; n <= len; n++) {
+    const d = `${DEP_MONTH}-${String(n).padStart(2, "0")}`;
+    const here = due[d] || [];
+    const amount = here.reduce((s, p) => s + p.amount, 0);
+    monthTotal += amount;
+    const landed = here.length && d <= today;
+    if (here.length && !landed) allPast = false;
+
+    const cls = ["day", d === today ? "today" : "",
+                 here.length ? (landed ? "paid" : "due") : "future"]
+                .filter(Boolean).join(" ");
+    const tip = here.length
+      ? `${d} — ${money2(amount)} ${landed ? "should have landed" : "expected"}`
+        + here.map((p) => {
+            const [fy, per] = p.period.split("-");
+            return `; FY${fy} period ${Number(per)} sales, ${p.start} to ${p.end}`;
+          }).join("")
+      : d;
+
+    cells.push(`<div class="${cls}" title="${tip}">
+      <span class="n">${n}</span>
+      <span class="amt">${here.length ? money2(amount) : ""}</span>
+    </div>`);
+  }
+
+  const paidSoFar = days.filter((d) => d <= today)
+    .reduce((s, d) => s + due[d].reduce((t, p) => t + p.amount, 0), 0);
+  const ads = Object.values(data.admob || {}).reduce((n, v) => n + v, 0);
+
+  host.innerHTML = `<div class="section">Deposits</div>` + calShell({
+    month: DEP_MONTH,
+    earliest: first,
+    latest: last,
+    totalHtml: `<b>${money2(monthTotal)}</b> ${
+      monthTotal === 0 ? "due this month"
+        : allPast ? "due by now this month" : "expected this month"}`,
+    cells,
+    caveat: `One payment per closed fiscal period, from Apple's financial
+      reports — the settled figure, in USD, with foreign sales already
+      converted, which is why it will not tally exactly with the earnings
+      calendar above. Dated ${PAY_LAG_DAYS} days after each period closes,
+      which is the observed pattern; Apple's own terms promise only "within 45
+      days", and none of these is confirmation the money arrived.
+      <b>${money2(paidSoFar)}</b> should have landed so far.
+      AdMob is not shown: it holds earnings until $100 and names no date before
+      then — the balance is ${money2(ads)}.`,
+  });
+
+  host.querySelectorAll("[data-go]").forEach((b) =>
+    b.addEventListener("click", () => { DEP_MONTH = b.dataset.go; renderDeposits(data); }));
 }
 
 const byMonth = (series) => {
@@ -1612,6 +1775,7 @@ function render(d) {
 
   renderMoney(d);
   renderCalendar(d);
+  renderDeposits(d);
   renderPayouts(d);
   renderCumulative(d.apps);
   renderPayments(d.apps);
