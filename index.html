@@ -98,6 +98,47 @@
   .mrow.partial{color:var(--soft)}
   .mrow i{font-style:normal;color:var(--faint);font-size:11px}
   .caveat{color:var(--faint);font-size:12px;line-height:1.5;margin:10px 2px 0}
+  .cal{background:var(--card);border:1px solid var(--line);border-radius:12px;
+       padding:14px 16px 16px;margin-bottom:12px}
+  .calhead{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .calhead .mon{font-weight:700;font-size:15px}
+  .calhead .tot{margin-left:auto;font-size:13px;color:var(--soft)}
+  .calhead .tot b{color:var(--good);font-variant-numeric:tabular-nums}
+  .calhead button{background:none;border:1px solid var(--line);color:var(--ink);
+       border-radius:7px;width:26px;height:26px;cursor:pointer;font-size:15px;
+       line-height:1;padding:0}
+  .calhead button:disabled{color:var(--faint);cursor:default}
+  .calgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+  .dow{font-size:10px;text-transform:uppercase;letter-spacing:.07em;
+       color:var(--faint);text-align:center;padding-bottom:2px}
+  .day{border:1px solid var(--line);border-radius:8px;min-height:54px;
+       padding:4px 6px;display:flex;flex-direction:column;overflow:hidden}
+  .day.blank{border:0}
+  .day .n{font-size:10.5px;color:var(--faint);font-variant-numeric:tabular-nums}
+  .day .amt{margin-top:auto;font-size:12.5px;font-weight:700;color:var(--good);
+       font-variant-numeric:tabular-nums}
+  /* A day that earned nothing and a day nobody has reported on yet are
+     different facts, so they do not share a style. Zero states the figure;
+     unreported shows a dash and no figure at all, because printing $0.00
+     for a day Apple has simply not filed yet is a quiet lie. */
+  .day.zero .amt{color:var(--faint);font-weight:400}
+  .day.none{border-style:dashed}
+  .day.none .amt{color:var(--faint);font-weight:400}
+  .day.future{border-color:color-mix(in srgb,var(--line) 55%,transparent)}
+  .day.future .n{opacity:.45}
+  /* Seven columns on a phone leaves about 40px a cell, and "$40.07" at the
+     desktop size is clipped at the decimal — which turns a figure into a
+     different, smaller figure. Shrink the type rather than truncate it. */
+  @media (max-width:560px){
+    .cal{padding:12px 10px 12px}
+    .calgrid{gap:3px}
+    .day{min-height:46px;padding:3px 4px;border-radius:6px}
+    .day .n{font-size:9px}
+    .day .amt{font-size:10px}
+    .dow{font-size:9px;letter-spacing:.03em}
+  }
+  .day.today{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+  .day .part{color:var(--warn)}
   .tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;
        font-weight:600;border:1px solid var(--line);color:var(--faint);
        white-space:nowrap}
@@ -252,6 +293,7 @@
     <div id="cumulative"></div>
   </div>
   <div role="tabpanel" id="panel-payments" aria-labelledby="tab-payments" hidden>
+    <div id="calendar"></div>
     <div id="kpis"></div>
     <div id="money"></div>
     <div id="payments"></div>
@@ -602,6 +644,145 @@ function renderMoney(data) {
 // Below it, a month of earning produces no deposit at all — which is the
 // single most useful thing this section can tell you.
 const ADMOB_THRESHOLD = 100;
+
+/* ---- the month calendar ------------------------------------------------- */
+
+/** How far each source has actually reported.
+ *
+ *  Apple and AdMob do not cover the same span. Apple files a day's sales
+ *  report the following morning Pacific; AdMob is same-day. So on any given
+ *  afternoon one has yesterday and the other has today, and a cell that just
+ *  adds them would show today as a fraction of what it will be — and would
+ *  keep doing so every day, at the right-hand edge where the eye goes first.
+ *
+ *  Apple's coverage comes from `downloads`, not from `revenue`: revenue rows
+ *  exist only on days with a sale, so the newest revenue date says when money
+ *  last arrived, not how far the reports run. Downloads has a row per day
+ *  reported.
+ */
+function coverage(data) {
+  const newest = (o) => { const k = Object.keys(o || {}).sort(); return k[k.length - 1] || null; };
+  const dl = {};
+  for (const a of data.apps || [])
+    for (const day of Object.keys(a.downloads || {})) dl[day] = 1;
+  return { apple: newest(dl), ads: newest(data.admob) };
+}
+
+// Which month the calendar is showing. Outside the render so paging back a
+// month survives a re-render.
+let CAL_MONTH = null;
+
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"];
+
+const shiftMonth = (ym, by) => {
+  const [y, m] = ym.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + by, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+};
+
+/** A month of days, each showing what came in.
+ *
+ *  Sits above the tiles because a month laid out as a month answers the
+ *  question the tiles cannot: not "how much", but "which days".
+ */
+function renderCalendar(data) {
+  const host = $("#calendar");
+  if (!host) return;
+
+  const apps = data.apps || [];
+  const apple = combined(apps, (a) => (a.revenue || {}).USD);
+  const ads = data.admob || {};
+  const through = coverage(data);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const thisMonth = today.slice(0, 7);
+  const earliest = [...Object.keys(apple), ...Object.keys(ads)].sort()[0];
+  if (!earliest) { host.innerHTML = ""; return; }
+
+  // Clamped every render: data can arrive that moves the ends, and a stored
+  // month from a previous view must not strand the calendar outside them.
+  if (!CAL_MONTH) CAL_MONTH = thisMonth;
+  if (CAL_MONTH > thisMonth) CAL_MONTH = thisMonth;
+  if (CAL_MONTH < earliest.slice(0, 7)) CAL_MONTH = earliest.slice(0, 7);
+
+  const [yy, mm] = CAL_MONTH.split("-").map(Number);
+  // UTC throughout. new Date("2026-10-01") is midnight UTC but getDay() reads
+  // local, so west of Greenwich the first of the month lands on the previous
+  // weekday and the whole grid shifts a column.
+  const lead = new Date(Date.UTC(yy, mm - 1, 1)).getUTCDay();
+  const len = new Date(Date.UTC(yy, mm, 0)).getUTCDate();
+
+  const cells = [];
+  let monthTotal = 0, anyPartial = false, anyMissing = false;
+  for (let n = 1; n <= len; n++) {
+    const d = `${CAL_MONTH}-${String(n).padStart(2, "0")}`;
+    // A day that has not happened is not a day nobody reported on. Viewed on
+    // the 8th, the rest of October is simply the future; dashing all 23 of
+    // them makes a working month look like a broken feed.
+    const future = d > today;
+    const haveApple = !future && through.apple && d <= through.apple;
+    const haveAds = !future && through.ads && d <= through.ads;
+    const reported = haveApple || haveAds;
+    const amount = (haveApple ? apple[d] || 0 : 0) + (haveAds ? ads[d] || 0 : 0);
+    const partial = reported && !(haveApple && haveAds);
+    if (reported) monthTotal += amount;
+    if (partial) anyPartial = true;
+    if (!future && !reported) anyMissing = true;
+
+    const cls = [
+      "day",
+      d === today ? "today" : "",
+      future ? "future" : !reported ? "none" : amount === 0 ? "zero" : "",
+    ].filter(Boolean).join(" ");
+
+    const tip = future
+      ? d
+      : !reported
+        ? `${d} — not reported yet`
+        : partial
+          ? `${d} — ${money2(amount)}, ${haveApple ? "App Store only" : "AdMob only"}; the other source has not reported this day yet`
+          : `${d} — ${money2(amount)} (App Store ${money2(apple[d] || 0)} + AdMob ${money2(ads[d] || 0)})`;
+
+    cells.push(`<div class="${cls}" title="${tip}">
+      <span class="n">${n}</span>
+      <span class="amt">${future ? "" : reported ? money2(amount) : "&ndash;"}${
+        partial ? ' <span class="part" aria-hidden="true">*</span>' : ""}</span>
+    </div>`);
+  }
+
+  const prev = shiftMonth(CAL_MONTH, -1), next = shiftMonth(CAL_MONTH, 1);
+
+  host.innerHTML = `
+    <div class="cal">
+      <div class="calhead">
+        <button type="button" data-go="${prev}" aria-label="Previous month"
+                ${prev < earliest.slice(0, 7) ? "disabled" : ""}>&lsaquo;</button>
+        <button type="button" data-go="${next}" aria-label="Next month"
+                ${next > thisMonth ? "disabled" : ""}>&rsaquo;</button>
+        <span class="mon">${MONTH_NAMES[mm - 1]} ${yy}</span>
+        <span class="tot"><b>${money2(monthTotal)}</b> this month</span>
+      </div>
+      <div class="calgrid">
+        ${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+          .map((w) => `<span class="dow">${w}</span>`).join("")}
+        ${'<div class="day blank"></div>'.repeat(lead)}
+        ${cells.join("")}
+      </div>
+      <div class="caveat">App Store proceeds plus AdMob estimated earnings, in
+        USD, on the day they were earned — not the day money lands. Apple pays
+        about a month after each month closes and AdMob holds until $100.${
+          anyMissing ? " A dash is a day neither source has reported yet." : ""}${
+          anyPartial ? ' <span class="part">*</span> marks a day only one source has reported, so it will rise.' : ""}
+        Foreign-currency proceeds settle separately and are not counted here.</div>
+    </div>`;
+
+  host.querySelectorAll("[data-go]").forEach((b) =>
+    b.addEventListener("click", () => {
+      CAL_MONTH = b.dataset.go;
+      renderCalendar(data);
+    }));
+}
 
 const byMonth = (series) => {
   const out = {};
@@ -1430,6 +1611,7 @@ function render(d) {
   ].map(([label, v]) => `<div class="stat"><b>${v}</b><span>${label}</span></div>`).join("");
 
   renderMoney(d);
+  renderCalendar(d);
   renderPayouts(d);
   renderCumulative(d.apps);
   renderPayments(d.apps);
