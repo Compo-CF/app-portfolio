@@ -71,6 +71,7 @@
           border-radius:4px;white-space:nowrap;
           font-variant-numeric:tabular-nums}
   .dlabel.peak{color:var(--soft)}
+  .dlabel.play{color:var(--play)}
   /* A release tick: a full-height hairline with its version at the foot.
      Behind the line and the labels on purpose — it is context for the shape,
      not a thing to read first. */
@@ -111,12 +112,28 @@
   .calgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
   .dow{font-size:10px;text-transform:uppercase;letter-spacing:.07em;
        color:var(--faint);text-align:center;padding-bottom:2px}
-  .day{border:1px solid var(--line);border-radius:8px;min-height:54px;
+  .day{border:1px solid var(--line);border-radius:8px;min-height:72px;
        padding:4px 6px;display:flex;flex-direction:column;overflow:hidden}
   .day.blank{border:0}
   .day .n{font-size:10.5px;color:var(--faint);font-variant-numeric:tabular-nums}
   .day .amt{margin-top:auto;font-size:12.5px;font-weight:700;color:var(--good);
        font-variant-numeric:tabular-nums}
+  /* Three figures a cell, each led by a coloured rule rather than a letter:
+     at this size a letter costs more width than the number it labels. The
+     key under the calendar carries the names. */
+  .day .amt{display:flex;flex-direction:column;gap:1px;font-size:10.5px;
+       font-weight:600;width:100%}
+  .src{display:block;padding-left:7px;position:relative;color:var(--ink);
+       white-space:nowrap;overflow:hidden;text-overflow:clip}
+  .src::before{content:"";position:absolute;left:0;top:50%;width:3px;
+       height:9px;border-radius:2px;transform:translateY(-50%)}
+  .src.ios::before{background:var(--accent)}
+  .src.ads::before{background:var(--warn)}
+  .src.play::before{background:var(--play)}
+  /* A zero and a figure should not carry the same weight; a column of real
+     zeros would otherwise out-shout the one number that moved. */
+  .src i{font-style:normal;color:var(--faint);font-weight:400}
+  .caveat .src{display:inline-block;margin-right:8px;color:var(--soft)}
   /* A day that earned nothing and a day nobody has reported on yet are
      different facts, so they do not share a style. Zero states the figure;
      unreported shows a dash and no figure at all, because printing $0.00
@@ -139,7 +156,10 @@
   @media (max-width:560px){
     .cal{padding:12px 10px 12px}
     .calgrid{gap:3px}
-    .day{min-height:46px;padding:3px 4px;border-radius:6px}
+    .day{min-height:62px;padding:3px 3px;border-radius:6px}
+    .day .amt{font-size:8.5px;gap:0}
+    .src{padding-left:5px}
+    .src::before{width:2px;height:7px}
     .day .n{font-size:9px}
     .day .amt{font-size:10px}
     .dow{font-size:9px;letter-spacing:.03em}
@@ -404,7 +424,7 @@ function releaseMarks(app) {
  *  Android installs had collapsed. Stopping short says "no data yet", which
  *  is the truth.
  */
-function chart(series, days, show = fmt, marks = [], play = null) {
+function chart(series, days, show = fmt, marks = [], play = null, bars = false) {
   const keys = Object.keys(series).sort().slice(-days);
   if (keys.length < 2) return '<div class="meta">Not enough history yet.</div>';
 
@@ -445,6 +465,41 @@ function chart(series, days, show = fmt, marks = [], play = null) {
     pen = true;
   });
 
+  // Bars, when asked for. Daily installs are counts of discrete events, and a
+  // line between them implies a value at noon on a Tuesday that nobody
+  // counted. Bars say "this many, that day" and nothing more.
+  //
+  // The two series sit side by side in each day's slot rather than stacked:
+  // Apple counts first-time downloads and Play counts installs, so a stacked
+  // column would be a total with no definition — the same reason the lines
+  // were never added together.
+  //
+  // At the "All" range a slot is about two pixels wide, so the pair reads as
+  // two coloured densities rather than two bars; at 30 days it reads as
+  // bars. Both are honest, and neither needed a second chart type.
+  const slot = W / keys.length;
+  const bw = hasPlay ? Math.max(0.6, slot * 0.38) : Math.max(0.8, slot * 0.72);
+  const rects = (series, colour, offset) => series.map((v, i) => {
+    if (v === null || v <= 0) return "";
+    const h = Math.max(0.6, (v / max) * (H - TOP));
+    return `<rect x="${(i * slot + offset).toFixed(2)}" y="${(H - h).toFixed(2)}"
+      width="${bw.toFixed(2)}" height="${h.toFixed(2)}" fill="${colour}"/>`;
+  }).join("");
+
+  const barsSvg = !bars ? "" :
+    rects(vals, "var(--accent)", hasPlay ? slot * 0.06 : slot * 0.14)
+    + (hasPlay ? rects(playVals, "var(--play)", slot * 0.52) : "");
+
+  // Where each series' own latest non-zero day sits, as a percentage across.
+  // Apple's and Play's differ — Play reports several days behind — so the
+  // labels are placed per series rather than both at the right-hand edge.
+  const lastOf = (arr) => {
+    for (let i = arr.length - 1; i >= 0; i--)
+      if (arr[i] !== null && arr[i] > 0) return i;
+    return -1;
+  };
+  const iAppleLast = lastOf(vals), iPlayLast = hasPlay ? lastOf(playVals) : -1;
+
   const ticks = [];
   // 1e-9 so a float step like 0.30000000000000004 still reaches its top.
   for (let t = 0; t <= max + 1e-9; t += step) ticks.push(t);
@@ -477,12 +532,13 @@ function chart(series, days, show = fmt, marks = [], play = null) {
           ${ticks.map((t) => `<line x1="0" y1="${y(t).toFixed(1)}" x2="${W}" y2="${y(t).toFixed(1)}"
              stroke="var(--line)" stroke-width="1" vector-effect="non-scaling-stroke"
              opacity="${t === 0 ? 1 : 0.55}"/>`).join("")}
+          ${bars ? barsSvg : `
           <path d="${area}" fill="var(--accent)" opacity=".13"/>
           <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2"
                 vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
           ${hasPlay ? `<path d="${playPath}" fill="none" stroke="var(--play)"
                 stroke-width="2" vector-effect="non-scaling-stroke"
-                stroke-linejoin="round"/>` : ""}
+                stroke-linejoin="round"/>` : ""}`}
         </svg>
         ${marks.filter((m) => m.date >= first && m.date <= latest).map((m) => {
           // Positioned by where the date falls in the window, not by index,
@@ -492,9 +548,24 @@ function chart(series, days, show = fmt, marks = [], play = null) {
           return `<span class="mark" style="left:${pctX.toFixed(2)}%"
                     title="${m.label} — ${m.date}"><i></i><b>${m.label}</b></span>`;
         }).join("")}
-        <span class="dot" style="left:100%;top:${pct(last)}%"></span>
+        ${bars ? "" : `<span class="dot" style="left:100%;top:${pct(last)}%"></span>`}
         ${showPeak ? label(peak, peakPct, "peak") : ""}
-        ${peak > 0 ? label(last, 100) : ""}
+        ${bars
+          // In bar mode the newest figure for each platform is the thing
+          // worth reading, and Play's newest is not Apple's: Play reports
+          // several days behind, so a label pinned to the right-hand edge
+          // would sit above an empty slot and name the wrong day.
+          ? [iAppleLast >= 0
+               ? label(vals[iAppleLast],
+                       ((iAppleLast * slot + (hasPlay ? slot * 0.06 : slot * 0.14)
+                         + bw / 2) / W) * 100)
+               : "",
+             iPlayLast >= 0
+               ? label(playVals[iPlayLast],
+                       ((iPlayLast * slot + slot * 0.52 + bw / 2) / W) * 100,
+                       "play")
+               : ""].join("")
+          : peak > 0 ? label(last, 100) : ""}
       </div>
     </div>
     <div class="axis"><span>${first}</span><span>${latest}</span></div>
@@ -787,14 +858,33 @@ function renderCalendar(data) {
       ? d
       : !reported
         ? `${d} — not reported yet`
-        : partial
-          ? `${d} — ${money2(amount)}, ${haveApple ? "App Store only" : "AdMob only"}; the other source has not reported this day yet`
-          : `${d} — ${money2(amount)} (App Store ${money2(apple[d] || 0)} + AdMob ${money2(ads[d] || 0)})`;
+        : `${d} — App Store ${haveApple ? money2(apple[d] || 0) : "not reported yet"}`
+          + `, AdMob ${haveAds ? money2(ads[d] || 0) : "not reported yet"}`
+          + `, Google Play ${money2(0)} (neither Play app sells anything)`
+          + `; ${money2(amount)} in total`;
+
+    // Three figures, one per source, rather than a single total. A total
+    // answers "how much" and hides "from where", and the three behave quite
+    // differently: App Store money is lumpy and arrives per purchase, AdMob
+    // trickles daily, and Play is structurally nil.
+    //
+    // Google Play is shown at zero rather than left out. Neither Play app
+    // sells anything — S-Tier Eats carries ads and the church app carries
+    // nothing — so Android income reaches this page through AdMob, and a row
+    // that silently vanished would read as a missing feed rather than as the
+    // fact that there is nothing to collect.
+    const src = [
+      ["ios", haveApple ? apple[d] || 0 : null],
+      ["ads", haveAds ? ads[d] || 0 : null],
+      ["play", future ? null : 0],
+    ];
+    const rows = src.map(([k, v]) => `<span class="src ${k}">${
+      v === null ? "&ndash;" : v === 0 ? '<i>0</i>' : money2(v)}</span>`).join("");
 
     cells.push(`<div class="${cls}" title="${tip}">
-      <span class="n">${n}</span>
-      <span class="amt">${future ? "" : reported ? money2(amount) : "&ndash;"}${
+      <span class="n">${n}${
         partial ? ' <span class="part" aria-hidden="true">*</span>' : ""}</span>
+      ${future ? "" : `<span class="amt">${rows}</span>`}
     </div>`);
   }
 
@@ -804,9 +894,14 @@ function renderCalendar(data) {
     latest: thisMonth,
     totalHtml: `<b>${money2(monthTotal)}</b> earned this month`,
     cells,
-    caveat: `App Store proceeds plus AdMob estimated earnings, in USD, on the
-      day they were <em>earned</em> — see the deposit calendar below for when
-      the money lands.${
+    caveat: `Per day and per source, in USD, on the day it was <em>earned</em>
+      — see the deposit calendar below for when the money lands.
+      <span class="src ios">App Store</span>
+      <span class="src ads">AdMob</span>
+      <span class="src play">Google Play</span>.
+      Play is zero because neither Play app sells anything: S-Tier Eats
+      carries ads and the church app carries nothing, so Android income
+      arrives under AdMob.${
         anyMissing ? " A dash is a day neither source has reported yet." : ""}${
         anyPartial ? ' <span class="part">*</span> marks a day only one source has reported, so it will rise.' : ""}`,
   });
@@ -1716,24 +1811,6 @@ function renderResetControl() {
   if (button) button.onclick = () => { clearOrder(); location.reload(); };
 }
 
-function money(app) {
-  const totals = Object.entries(app.revenue || {})
-    .map(([cur, days]) => [cur, Object.values(days).reduce((n, v) => n + v, 0)])
-    .filter(([, v]) => Math.abs(v) >= 0.005);
-
-  if (totals.length) {
-    return totals
-      .map(([cur, v]) => `<span class="money">${v.toFixed(2)} ${cur}</span>`)
-      .join(" · ") + " estimated proceeds";
-  }
-  if (app.iaps === 0) return '<span class="tag">Free · no in-app purchases</span>';
-  if (app.iaps > 0) {
-    const n = `${app.iaps} in-app purchase${app.iaps === 1 ? "" : "s"}`;
-    return `<span class="tag">${n}</span> · no proceeds recorded in this window`;
-  }
-  return "";   // lookup failed; claim nothing
-}
-
 function render(d) {
   DATA = d;
   // How old, not when. "Updated 10/1/2026, 3:21 PM" asks the reader to do
@@ -1826,9 +1903,8 @@ function renderAppCards(all_apps) {
             ${live ? ` <span class="pill" style="background:${stateColour(live.state)}">v${live.version} ${live.state}</span>` : ""}
           </div>
         </div>
-        ${chart(dl, rangeDays(), fmt, releaseMarks(a), (a.android || {}).installs)}
+        ${chart(dl, rangeDays(), fmt, releaseMarks(a), (a.android || {}).installs, true)}
         ${android(a)}
-        ${money(a) ? `<div class="rev">${money(a)}</div>` : ""}
         ${rev ? `<div class="rev">${"★".repeat(rev.rating || 0)} <q>${rev.title || ""}</q> — ${rev.nickname || "anonymous"}, ${rev.date}</div>` : ""}
       </div>`;
   }).join("");
