@@ -1390,8 +1390,35 @@ const daysSince = (date) =>
  *  record exists to attach it to. Nothing warns you; the build list looks
  *  like progress. That stranded a release for a fortnight.
  */
-function attention(apps) {
+// Days without a new Play day before it is worth saying something. Observed
+// normal jitter is one fetch; the stalled stretch through late September ran
+// six. Three separates them without crying wolf.
+const PLAY_STALL_DAYS = 3;
+
+function attention(apps, play) {
   const items = [];
+
+  // Google publishes Android installs as a monthly file it rewrites as days
+  // settle, so the feed does not fail — it just stops containing anything
+  // new, and nothing on the page looks wrong. `advanced` is the last fetch
+  // that brought a day we did not already have.
+  //
+  // Phrased as "no new data", not "Google has not published": a run whose
+  // credentials failed leaves the date exactly as still as a Google stall
+  // does, and from here the two are indistinguishable.
+  if (play && play.advanced) {
+    const quiet = daysSince(play.advanced);
+    if (quiet >= PLAY_STALL_DAYS) {
+      items.push({
+        level: "warn", app: "Google Play",
+        what: `No new Play data for ${quiet} days`,
+        why: `Still reporting through ${play.through}. Android installs `
+           + "normally advance most days, about four days behind. Either "
+           + "Google has stopped publishing or the bucket read is failing — "
+           + "the refresh log says which.",
+      });
+    }
+  }
 
   for (const app of apps) {
     const build = (app.builds || [])[0];
@@ -1446,10 +1473,10 @@ function attention(apps) {
   return items;
 }
 
-function renderAttention(apps) {
+function renderAttention(apps, play) {
   const host = $("#attention");
   if (!host) return;
-  const items = attention(apps);
+  const items = attention(apps, play);
 
   // A count on the tab, because moving this off the top means nobody sees it
   // unless something draws the eye. Only things worth acting on are counted —
@@ -1859,7 +1886,7 @@ function render(d) {
   renderReviews(d.apps);
   renderMap(d.apps);
   renderRatings(d.apps);
-  renderAttention(d.apps);
+  renderAttention(d.apps, d.play);
 
   renderAppCards(d.apps);
 }

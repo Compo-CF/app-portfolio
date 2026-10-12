@@ -402,6 +402,43 @@ def main():
         android[app_id]["installs"].update(entry["installs"])
         android[app_id]["active"].update(entry["active"])
 
+    # How long since Google last gave us a day it had not given us before.
+    #
+    # Play's lag is not the thing worth watching. It sits around four days,
+    # and that is simply how long Google takes to finalise device counts.
+    # What is worth watching is the lag *not moving*: through late September
+    # the coverage date froze at 20 September for six consecutive fetches,
+    # then jumped five days at once. Nothing errors when that happens —
+    # play.py reads the file, the file just holds nothing new — so the page
+    # went on looking healthy while Android was a fortnight stale.
+    #
+    # `through` is the newest day any app has; `advanced` is the fetch on
+    # which `through` last increased. Today minus `advanced` is the stall.
+    play_through = max(
+        (d for a in android.values() for d in (a["installs"] or {})), default=None)
+    prev_play = {}
+    if OUT.exists():
+        try:
+            prev_play = dict(
+                json.loads(OUT.read_text(encoding="utf-8")).get("play") or {})
+        except (ValueError, KeyError):
+            prev_play = {}
+    if play_through:
+        moved = play_through > (prev_play.get("through") or "")
+        play_feed = {
+            "through": play_through,
+            # The first run after this was added cannot know when the date
+            # really last moved, so it claims today and reads as healthy. It
+            # corrects itself the first time Google actually publishes.
+            "advanced": (date.today().isoformat()
+                         if moved or not prev_play.get("advanced")
+                         else prev_play["advanced"]),
+        }
+    else:
+        # No Android data at all. Keep what was known rather than invent a
+        # stall out of a run that simply had no credentials.
+        play_feed = prev_play or None
+
     # Ad income, kept at the top level rather than per app: AdMob names apps
     # its own way and a guessed mapping would credit one app's earnings to
     # another. Merged onto what is committed, so a run without credentials
@@ -498,6 +535,7 @@ def main():
             "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "admob": dict(sorted(ads.items())),
             "payouts": payouts,
+            "play": play_feed,
             "apps": apps,
         }, indent=1),
         encoding="utf-8",
