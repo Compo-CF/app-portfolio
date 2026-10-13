@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-13T20:15:35+00:00",
+ "generated": "2026-10-13T23:25:02+00:00",
  "admob": {
   "2026-06-03": 0.0,
   "2026-06-04": 0.0,
@@ -131,7 +131,7 @@
   "2026-10-10": 1.42,
   "2026-10-11": 2.05,
   "2026-10-12": 2.24,
-  "2026-10-13": 1.22
+  "2026-10-13": 1.44
  },
  "payouts": [
   {
@@ -869,6 +869,11 @@
    ],
    "versions": [
     {
+     "version": "2.8",
+     "state": "WAITING_FOR_REVIEW",
+     "created": "2026-10-13"
+    },
+    {
      "version": "2.7.1",
      "state": "READY_FOR_SALE",
      "created": "2026-10-06"
@@ -912,20 +917,25 @@
      "version": "1.5",
      "state": "READY_FOR_SALE",
      "created": "2026-06-25"
-    },
-    {
-     "version": "1.3",
-     "state": "READY_FOR_SALE",
-     "created": "2026-06-17"
     }
    ],
    "builds": [
     {
+     "version": "94",
+     "state": "VALID",
+     "uploaded": "2026-10-13",
+     "marketing": "3.0",
+     "attached": null
+    },
+    {
+     "version": "93",
+     "state": "VALID",
+     "uploaded": "2026-10-13"
+    },
+    {
      "version": "92",
      "state": "VALID",
-     "uploaded": "2026-10-06",
-     "marketing": "2.7.1",
-     "attached": "2.7.1"
+     "uploaded": "2026-10-06"
     },
     {
      "version": "91",
@@ -936,16 +946,6 @@
      "version": "90",
      "state": "VALID",
      "uploaded": "2026-10-01"
-    },
-    {
-     "version": "89",
-     "state": "VALID",
-     "uploaded": "2026-09-03"
-    },
-    {
-     "version": "88",
-     "state": "VALID",
-     "uploaded": "2026-08-19"
     }
    ]
   },
@@ -1691,12 +1691,12 @@
    },
    "android": null,
    "rating": {
-    "average": 3.5,
-    "count": 2,
+    "average": 3.33,
+    "count": 3,
     "histogram": {
      "1": 0,
      "2": 1,
-     "3": 0,
+     "3": 1,
      "4": 0,
      "5": 1
     }
@@ -1751,11 +1751,19 @@
      "count": 2
     },
     "2026-10-13": {
-     "avg": 3.5,
-     "count": 2
+     "avg": 3.33,
+     "count": 3
     }
    },
    "reviews": [
+    {
+     "rating": 3,
+     "title": "Broken Pacing",
+     "body": "After getting every possible achievement and fully upgrading the cosmic tree it takes way too many prestiges to unlock the absolute tier for true cosmos. Seems odd to require 1 million unspent Cosmic Shards when you need hundreds of trillions for absolute.\n\nBoost extension also doesn\u2019t work at any level.",
+     "nickname": "Xaros17",
+     "date": "2026-10-12",
+     "territory": "USA"
+    },
     {
      "rating": 2,
      "title": "Can\u2019t reset?",
