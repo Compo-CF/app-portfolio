@@ -22,6 +22,7 @@ import jwt
 import requests
 
 import admob
+import analytics
 import finance
 import play
 
@@ -322,13 +323,21 @@ def app_detail(app_id):
 def main():
     days = int(os.environ.get("BACKFILL_DAYS", "3"))
 
+    # Sales-report downloads (Pacific-time days). Stored as downloadsSales
+    # since the switch to App Analytics; before it, "downloads" held exactly
+    # this series, so that is the fallback for the first run after the switch.
     existing = {}
+    prev_utc, prev_meta = {}, {}
     if OUT.exists():
         try:
             prev = json.loads(OUT.read_text(encoding="utf-8"))
-            existing = {a["id"]: a.get("downloads", {}) for a in prev.get("apps", [])}
+            existing = {a["id"]: (a.get("downloadsSales")
+                                  if "downloadsSales" in a else a.get("downloads", {}))
+                        for a in prev.get("apps", [])}
+            prev_utc = {a["id"]: (a.get("downloadsUtc") or {}) for a in prev.get("apps", [])}
+            prev_meta = {a["id"]: (a.get("analytics") or {}) for a in prev.get("apps", [])}
         except (ValueError, KeyError):
-            existing = {}
+            existing, prev_utc, prev_meta = {}, {}, {}
     series = {app_id: dict(existing.get(app_id, {})) for app_id, _ in APPS}
 
     prev_rev = {}
@@ -498,9 +507,61 @@ def main():
             if by_country.get(app_id):
                 countries[app_id][key] = by_country[app_id]
 
+    # App Analytics first-time downloads on UTC days — the same numbers the
+    # App Analytics pages show. The first run asks Apple to start producing
+    # the reports (1-2 days before any arrive) plus a one-time snapshot for
+    # history; later runs only re-read the last ~10 days of instances, since
+    # Apple restates recent days as late events arrive.
+    client = analytics.Client(token)
+    utc = {app_id: dict(prev_utc.get(app_id, {})) for app_id, _ in APPS}
+    meta = {app_id: dict(prev_meta.get(app_id, {})) for app_id, _ in APPS}
+    force = bool(os.environ.get("FORCE"))
+    for app_id, _ in APPS:
+        try:
+            ongoing, snapshot = analytics.ensure_requests(client, app_id)
+            if force or not meta[app_id].get("history"):
+                got = analytics.first_time_downloads(client, app_id, snapshot + ongoing)
+                if got:
+                    meta[app_id]["history"] = True
+            else:
+                since = (today - timedelta(days=10)).isoformat()
+                got = analytics.first_time_downloads(client, app_id, ongoing, since=since)
+            utc[app_id].update(got)
+        except requests.RequestException as e:
+            # Network trouble here must not cost the rest of the refresh.
+            print(f"  analytics: {app_id} skipped this run ({e})")
+
     apps = []
     for app_id, name in APPS:
         versions, rating, reviews, builds, iaps = app_detail(app_id)
+
+        # The page draws "downloads". It switches to UTC days as soon as Apple
+        # has delivered App Analytics data for the app, and stays on the
+        # Pacific-time sales series until then so no card goes blank while the
+        # first reports are being generated.
+        #
+        # Two guards keep the switch honest:
+        #  - only once the UTC series reaches within 3 days of the sales
+        #    series. A one-time snapshot stops on the day it was taken, and
+        #    switching on stale data would show the last week as missing.
+        #  - days inside the UTC range that Apple hasn't delivered (the stretch
+        #    between an old snapshot and the first ongoing report) are filled
+        #    from the sales series and listed, rather than drawn as zero.
+        sales_dl, utc_dl = series[app_id], utc[app_id]
+        newest_sales = max(sales_dl) if sales_dl else None
+        on_utc = bool(utc_dl) and (
+            not newest_sales
+            or max(utc_dl) >= (date.fromisoformat(newest_sales) - timedelta(days=3)).isoformat())
+        gap_days = []
+        if on_utc:
+            shown = dict(utc_dl)
+            lo, hi = min(utc_dl), max(utc_dl)
+            gap_days = sorted(d for d in sales_dl if lo <= d <= hi and d not in utc_dl)
+            for d in gap_days:
+                shown[d] = sales_dl[d]
+        else:
+            shown = sales_dl
+        newest = max(shown) if shown else None
 
         # Keyed by the day it was observed, so re-running overwrites rather
         # than appending a second reading for the same date.
@@ -511,7 +572,21 @@ def main():
             "id": app_id,
             "name": name,
             "url": f"https://apps.apple.com/app/id{app_id}",
-            "downloads": dict(sorted(series[app_id].items())),
+            "downloads": dict(sorted(shown.items())),
+            # "utc" = App Analytics (matches the App Analytics pages);
+            # "pacific" = daily sales report, used until Analytics data lands.
+            "downloadsBasis": "utc" if on_utc else "pacific",
+            # Apple settles App Analytics days within about two days; the
+            # page marks these as still filling in.
+            "downloadsProvisional": ([d for d in sorted(shown)
+                                      if newest and d > (date.fromisoformat(newest)
+                                                         - timedelta(days=2)).isoformat()]
+                                     if on_utc else []),
+            # Days in the UTC range filled from the sales report (Pacific days).
+            "downloadsGapsFromSales": gap_days,
+            "downloadsUtc": dict(sorted(utc[app_id].items())),
+            "downloadsSales": dict(sorted(series[app_id].items())),
+            "analytics": meta[app_id],
             "revenue": {c: dict(sorted(d.items())) for c, d in revenue[app_id].items()},
             "iaps": iaps,
             "iapUnits": dict(sorted(iap_units[app_id].items())),

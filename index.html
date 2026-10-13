@@ -341,6 +341,10 @@
   <footer>
     Data from App Store Connect, refreshed daily by GitHub Actions.
     Downloads are first-time installs; updates and re-downloads are excluded.
+    They come from App Analytics on UTC days, so they match the App Analytics
+    pages in App Store Connect; the newest two days are still filling in. An
+    app shows Pacific-time days from the daily sales report only until Apple
+    delivers its first App Analytics report.
     The charts and totals are <strong>App Store only</strong>. Google Play is
     reported separately per app, because Apple counts first-time downloads and
     Play counts user installs — neither contains the other, so a combined
@@ -1926,6 +1930,9 @@ function renderAppCards(all_apps) {
           </div>
           <div class="meta">
             App Store · ${fmt(sumLast(dl, 30))} in 30d · ${fmt(sumLast(dl, 7))} in 7d
+            ${a.downloadsBasis === "utc"
+              ? `<span title="App Analytics first-time downloads, UTC days — matches the App Analytics pages.${(a.downloadsProvisional || []).length ? " Still filling in: " + a.downloadsProvisional.join(", ") + "." : ""}${(a.downloadsGapsFromSales || []).length ? " Not yet delivered by App Analytics, shown from the sales report (Pacific days): " + a.downloadsGapsFromSales.join(", ") + "." : ""}">· UTC days</span>`
+              : `<span title="Daily sales report, Pacific-time days. Switches to App Analytics UTC days once Apple delivers the first reports.">· Pacific days</span>`}
             ${r ? ` · ★ ${r.average} (${r.count})` : " · no ratings yet"}
             ${live ? ` <span class="pill" style="background:${stateColour(live.state)}">v${live.version} ${live.state}</span>` : ""}
           </div>
