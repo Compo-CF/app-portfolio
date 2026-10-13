@@ -556,9 +556,17 @@ def main():
         if on_utc:
             shown = dict(utc_dl)
             lo, hi = min(utc_dl), max(utc_dl)
-            gap_days = sorted(d for d in sales_dl if lo <= d <= hi and d not in utc_dl)
-            for d in gap_days:
-                shown[d] = sales_dl[d]
+            # App Analytics omits days with no downloads, so a missing day is
+            # usually a real zero; the sales series (which has every day,
+            # zeros included) fills them. Only days where sales saw downloads
+            # are listed as "not yet delivered" — listing every quiet day
+            # would bury the few that matter.
+            for d in sales_dl:
+                if lo <= d <= hi and d not in utc_dl:
+                    shown[d] = sales_dl[d]
+                    if sales_dl[d]:
+                        gap_days.append(d)
+            gap_days.sort()
         else:
             shown = sales_dl
         newest = max(shown) if shown else None
