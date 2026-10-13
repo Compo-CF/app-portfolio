@@ -518,11 +518,29 @@ function chart(series, days, show = fmt, marks = [], play = null, bars = false) 
 
   // A label anchored at the right edge has to hang to the left of its point
   // or it overflows the card.
-  const label = (v, leftPct, cls = "") => {
-    const nudge = leftPct > 86 ? "translate(-100%,-150%)" : "translate(-50%,-150%)";
+  const label = (v, leftPct, cls = "", centred = false) => {
+    const nudge = leftPct > 86 && !centred ? "translate(-100%,-150%)" : "translate(-50%,-150%)";
     return `<span class="dlabel ${cls}" style="left:${leftPct.toFixed(2)}%;
             top:${pct(v)}%;transform:${nudge}">${show(v)}</span>`;
   };
+
+  // Bar mode: a figure over every bar, centred on the bar itself (not on the
+  // line chart's point spacing, which put the peak label off to one side).
+  // Every bar while each slot is wide enough to hold its own number — 31 days
+  // at most; past that the slots are a few pixels and only the peak and the
+  // newest bar are labelled. Play's narrower half-slot bars get every figure
+  // only up to two weeks, so the two series' numbers don't collide.
+  const centre = (i, offset) => ((i * slot + offset + bw / 2) / W) * 100;
+  const appleOff = hasPlay ? slot * 0.06 : slot * 0.14;
+  const everyApple = keys.length <= 31, everyPlay = keys.length <= 14;
+  const barLabels = !bars ? "" : [
+    ...vals.map((v, i) => (v > 0 && (everyApple || i === iAppleLast || i === peakAt))
+      ? label(v, centre(i, appleOff), !everyApple && i === peakAt && i !== iAppleLast ? "peak" : "", true)
+      : ""),
+    ...(hasPlay ? playVals.map((v, i) => (v !== null && v > 0 && (everyPlay || i === iPlayLast))
+      ? label(v, centre(i, slot * 0.52), "play", true)
+      : "") : []),
+  ].join("");
 
   return `
     <div class="plot">
@@ -553,22 +571,12 @@ function chart(series, days, show = fmt, marks = [], play = null, bars = false) 
                     title="${m.label} — ${m.date}"><i></i><b>${m.label}</b></span>`;
         }).join("")}
         ${bars ? "" : `<span class="dot" style="left:100%;top:${pct(last)}%"></span>`}
-        ${showPeak ? label(peak, peakPct, "peak") : ""}
+        ${!bars && showPeak ? label(peak, peakPct, "peak") : ""}
         ${bars
-          // In bar mode the newest figure for each platform is the thing
-          // worth reading, and Play's newest is not Apple's: Play reports
-          // several days behind, so a label pinned to the right-hand edge
-          // would sit above an empty slot and name the wrong day.
-          ? [iAppleLast >= 0
-               ? label(vals[iAppleLast],
-                       ((iAppleLast * slot + (hasPlay ? slot * 0.06 : slot * 0.14)
-                         + bw / 2) / W) * 100)
-               : "",
-             iPlayLast >= 0
-               ? label(playVals[iPlayLast],
-                       ((iPlayLast * slot + slot * 0.52 + bw / 2) / W) * 100,
-                       "play")
-               : ""].join("")
+          // Play's newest bar is not Apple's (Play reports several days
+          // behind), so each series is labelled at its own bars, never at a
+          // shared right-hand edge.
+          ? barLabels
           : peak > 0 ? label(last, 100) : ""}
       </div>
     </div>
