@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-20T18:28:08+00:00",
+ "generated": "2026-10-20T22:37:19+00:00",
  "admob": {
   "2026-06-03": 0.0,
   "2026-06-04": 0.0,
@@ -138,7 +138,7 @@
   "2026-10-17": 1.59,
   "2026-10-18": 1.63,
   "2026-10-19": 1.34,
-  "2026-10-20": 0.45
+  "2026-10-20": 0.54
  },
  "payouts": [
   {
@@ -1499,7 +1499,7 @@
      "2026-10-19": 4.89
     }
    },
-   "iaps": 13,
+   "iaps": 14,
    "iapUnits": {
     "2026-07-19": 1,
     "2026-08-20": 1,
@@ -2030,6 +2030,11 @@
    ],
    "versions": [
     {
+     "version": "3.2",
+     "state": "WAITING_FOR_REVIEW",
+     "created": "2026-10-20"
+    },
+    {
      "version": "3.1.2",
      "state": "READY_FOR_SALE",
      "created": "2026-10-15"
@@ -2073,20 +2078,20 @@
      "version": "2.1.1",
      "state": "READY_FOR_SALE",
      "created": "2026-09-16"
-    },
-    {
-     "version": "2.1",
-     "state": "READY_FOR_SALE",
-     "created": "2026-09-13"
     }
    ],
    "builds": [
     {
-     "version": "79",
+     "version": "81",
      "state": "VALID",
      "uploaded": "2026-10-20",
      "marketing": "3.2.0",
-     "attached": null
+     "attached": "3.2"
+    },
+    {
+     "version": "79",
+     "state": "VALID",
+     "uploaded": "2026-10-20"
     },
     {
      "version": "77",
@@ -2102,11 +2107,6 @@
      "version": "75",
      "state": "VALID",
      "uploaded": "2026-10-15"
-    },
-    {
-     "version": "38",
-     "state": "VALID",
-     "uploaded": "2026-10-13"
     }
    ]
   },
