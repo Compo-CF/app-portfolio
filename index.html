@@ -1231,11 +1231,12 @@ const total = (series) =>
  *  distinction worth a few lines of code, since Play runs about a week
  *  behind and that flat tail would be on every chart, every day.
  */
-function playRun(installs, from, to) {
+function playRun(installs, from, to, carry = true) {
   const days = Object.keys(installs || {}).sort();
   if (!days.length) return null;
   const last = days[days.length - 1];
-  return last < from ? null : daily(installs, from, last < to ? last : to, true);
+  return last < from ? null
+    : daily(installs, from, last < to ? last : to, carry);
 }
 
 /** Payments per app over time, cumulative and in USD.
@@ -1345,12 +1346,22 @@ function rangeDays() {
 }
 
 /** First and last day of the window, across everything the portfolio holds. */
+/** The selected range as real dates, counted in calendar days.
+ *
+ *  It used to index backwards through the stored keys, which was the same
+ *  thing only while every day had a row. Since zero-download days stopped
+ *  being stored, "30 days" counted thirty *recorded* days — so a quiet app's
+ *  window silently stretched further back than a busy one's, and two cards
+ *  side by side were showing different periods.
+ */
 function rangeSpan(apps) {
   const span = Object.keys(combined(apps, (a) => a.downloads)).sort();
   if (!span.length) return ["", ""];
+  const to = span[span.length - 1];
   const days = rangeDays();
-  const from = days >= span.length ? span[0] : span[span.length - days];
-  return [from, span[span.length - 1]];
+  if (days >= ALL) return [span[0], to];
+  const from = addDays(to, -(days - 1));
+  return [from < span[0] ? span[0] : from, to];
 }
 
 function renderRangeControl() {
@@ -1924,6 +1935,10 @@ function renderAppCards(all_apps) {
     });
   }
 
+  // One span for every card, so the x-axis means the same thing on all of
+  // them and the bars line up day for day down the page.
+  const [from, to] = rangeSpan(all_apps);
+
   $("#apps").innerHTML = apps.map((a) => {
     const dl = a.downloads || {};
     const live = (a.versions || [])[0];
@@ -1945,7 +1960,19 @@ function renderAppCards(all_apps) {
             ${live ? ` <span class="pill" style="background:${stateColour(live.state)}">v${live.version} ${live.state}</span>` : ""}
           </div>
         </div>
-        ${chart(dl, rangeDays(), fmt, releaseMarks(a), (a.android || {}).installs, true)}
+        ${chart(
+            // Filled across the calendar rather than plotted on the days that
+            // happen to have rows. Zero-download days are not stored, so
+            // plotting the raw series put Tuesday next to Friday at the same
+            // spacing as two consecutive days — a bar chart whose x-axis was
+            // not time. daily() writes the zeros back in.
+            daily(dl, from, to),
+            rangeDays(), fmt, releaseMarks(a),
+            // Play filled the same way, but stopping on its own last reported
+            // day: Google runs about five days behind, and filling those days
+            // with zeros would draw a cliff rather than an absence.
+            playRun((a.android || {}).installs, from, to, false),
+            true)}
         ${android(a)}
         ${rev ? `<div class="rev">${"★".repeat(rev.rating || 0)} <q>${rev.title || ""}</q> — ${rev.nickname || "anonymous"}, ${rev.date}</div>` : ""}
       </div>`;
