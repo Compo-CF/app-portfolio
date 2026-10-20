@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-19T23:03:51+00:00",
+ "generated": "2026-10-20T09:42:00+00:00",
  "admob": {
   "2026-06-03": 0.0,
   "2026-06-04": 0.0,
@@ -137,7 +137,8 @@
   "2026-10-16": 1.07,
   "2026-10-17": 1.59,
   "2026-10-18": 1.63,
-  "2026-10-19": 1.09
+  "2026-10-19": 1.34,
+  "2026-10-20": 0.14
  },
  "payouts": [
   {
@@ -935,6 +936,10 @@
      "count": 7
     },
     "2026-10-19": {
+     "avg": 5.0,
+     "count": 7
+    },
+    "2026-10-20": {
      "avg": 5.0,
      "count": 7
     }
@@ -1878,12 +1883,12 @@
    },
    "android": null,
    "rating": {
-    "average": 3.33,
-    "count": 3,
+    "average": 3.25,
+    "count": 4,
     "histogram": {
      "1": 0,
      "2": 1,
-     "3": 1,
+     "3": 2,
      "4": 0,
      "5": 1
     }
@@ -1964,9 +1969,21 @@
     "2026-10-19": {
      "avg": 3.33,
      "count": 3
+    },
+    "2026-10-20": {
+     "avg": 3.25,
+     "count": 4
     }
    },
    "reviews": [
+    {
+     "rating": 3,
+     "title": "An idle game",
+     "body": "As for the game, there\u2019s nothing special about it. I will give it props for not forcing me into an ad every so seconds (even though those were imbedded into the game). However, I will also give it some hate as there is no in-game sound or music despite my ringer being on and volume up. Other than that it\u2019s a perfectly average idle game. This is my honest review.",
+     "nickname": "Dameshen",
+     "date": "2026-10-18",
+     "territory": "USA"
+    },
     {
      "rating": 3,
      "title": "Broken Pacing",
@@ -3107,7 +3124,7 @@
    "versions": [
     {
      "version": "1.8",
-     "state": "WAITING_FOR_REVIEW",
+     "state": "READY_FOR_SALE",
      "created": "2026-10-19"
     },
     {
