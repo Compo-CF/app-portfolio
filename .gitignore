@@ -3,3 +3,6 @@ __pycache__/
 *.p8
 .env
 
+
+# Local preview scaffolding, not part of the site.
+.claude/
