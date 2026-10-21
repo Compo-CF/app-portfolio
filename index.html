@@ -192,6 +192,14 @@
   .grip:hover{color:var(--soft);border-color:var(--line)}
   .card.dragging{opacity:.5}
   .card.dragging .grip{cursor:grabbing}
+  #refresh{margin-left:10px;background:none;border:1px solid var(--line);
+       color:var(--ink);border-radius:7px;padding:2px 9px;font-size:11.5px;
+       font-family:inherit;cursor:pointer;vertical-align:1px}
+  #refresh:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+  #refresh:disabled{color:var(--faint);cursor:default}
+  #rebuild{margin-left:8px;font-size:11.5px;color:var(--faint)}
+  #rebuild:hover{color:var(--accent)}
+  #refresh-note{margin-left:8px;font-size:11.5px;color:var(--faint)}
   .stale{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:9px;
          background:var(--warn);color:#fff;font-size:11px;font-weight:700}
   .range{display:flex;align-items:center;gap:5px;margin:18px 0 0;
@@ -1737,9 +1745,16 @@ const TAB_KEY = "portfolio.tab";
  *  Panels are hidden rather than unmounted, so the charts inside keep their
  *  layout and nothing has to be redrawn when you switch back.
  */
+// The tab buttons and the card container are in the static markup; only the
+// cards inside are replaced. Wiring them on every draw stacked another set of
+// listeners each time — harmless while the page drew once, a leak now that a
+// button can redraw it on demand.
+let TABS_WIRED = false, REORDER_WIRED = false;
+
 function enableTabs() {
   const tabs = [...document.querySelectorAll('[role="tab"]')];
-  if (!tabs.length) return;
+  if (!tabs.length || TABS_WIRED) return;
+  TABS_WIRED = true;
 
   const show = (tab) => {
     for (const t of tabs) {
@@ -1804,6 +1819,8 @@ function clearOrder() {
  *  reconcile afterwards.
  */
 function enableReorder(container) {
+  if (REORDER_WIRED) return;
+  REORDER_WIRED = true;
   let card = null;
 
   container.addEventListener("pointerdown", (e) => {
@@ -1984,9 +2001,83 @@ function renderAppCards(all_apps) {
   enableTabs();
 }
 
-fetch("data/portfolio.json", { cache: "no-store" })
-  .then((r) => { if (!r.ok) throw new Error(`data/portfolio.json returned ${r.status}`); return r.json(); })
-  .then(render)
+/** Pull the data file and draw the page from it.
+ *
+ *  `cache: no-store` alone is not enough through a CDN, which will happily
+ *  hand back the copy it already has. The query string is what actually
+ *  guarantees a fresh read, and it is why the button can be trusted to show
+ *  a commit that landed a minute ago.
+ */
+function load() {
+  return fetch(`data/portfolio.json?t=${Date.now()}`, { cache: "no-store" })
+    .then((r) => {
+      if (!r.ok) throw new Error(`data/portfolio.json returned ${r.status}`);
+      return r.json();
+    });
+}
+
+/** The Refresh button.
+ *
+ *  It pulls the newest **committed** data and redraws — it does not run the
+ *  fetch against Apple, Google and AdMob. That lives in a GitHub Action, and
+ *  dispatching one needs a token with write access to this repository. This
+ *  page is public, so a token here would be a token for anybody; the link
+ *  beside the button opens the Action instead, where you are already signed
+ *  in. The scheduled job runs three times a day regardless.
+ *
+ *  Says which of the two things happened, because "nothing changed" and
+ *  "this is now current" look identical on a page that just redrew itself.
+ */
+function wireRefresh() {
+  const button = $("#refresh");
+  const note = $("#refresh-note");
+  if (!button) return;
+
+  button.addEventListener("click", async () => {
+    const before = DATA && DATA.generated;
+    button.disabled = true;
+    const label = button.textContent;
+    button.textContent = "Checking…";
+    if (note) note.textContent = "";
+    try {
+      const fresh = await load();
+      render(fresh);
+      // render() rewrites #generated, so the button and its note have to be
+      // put back afterwards — and the note has to be looked up again. The
+      // one captured above is a detached node by now, which is why the first
+      // version of this reported nothing at all.
+      wireRefresh.restore();
+      $("#refresh-note").textContent =
+        fresh.generated === before ? "already current" : "updated";
+    } catch (e) {
+      // Nothing was redrawn, so restore() finds the button already present
+      // and leaves it exactly as it is — disabled, still reading
+      // "Checking...". Put it back by hand or a failed refresh is a refresh
+      // you cannot retry.
+      wireRefresh.restore();
+      const again = $("#refresh");
+      if (again) { again.disabled = false; again.textContent = label; }
+      $("#refresh-note").textContent = `could not refresh (${e.message})`;
+    }
+  });
+}
+
+// render() replaces the whole freshness line, taking the button with it, so
+// the markup is re-inserted and re-wired after every draw.
+wireRefresh.restore = () => {
+  const host = $("#generated");
+  if (!host || host.querySelector("#refresh")) return;
+  host.insertAdjacentHTML("beforeend",
+    '<button id="refresh" type="button">Refresh</button>'
+    + '<a id="rebuild" target="_blank" rel="noopener"'
+    + ' href="https://github.com/Compo-CF/app-portfolio/actions/workflows/refresh.yml"'
+    + ' title="Run the fetch against Apple, Google and AdMob">full rebuild</a>'
+    + '<span id="refresh-note"></span>');
+  wireRefresh();
+};
+
+load()
+  .then((d) => { render(d); wireRefresh.restore(); })
   .catch((e) => {
     $("#generated").textContent = "";
     $("#apps").innerHTML = `<div class="err">Could not load the data file.<br>${e.message}</div>`;
