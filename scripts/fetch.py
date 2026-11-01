@@ -24,6 +24,7 @@ import requests
 import admob
 import analytics
 import finance
+import fx as fxrates
 import play
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -612,12 +613,63 @@ def main():
             "builds": builds,
         })
 
+    # Exchange rates for every day that carries foreign proceeds, so the page
+    # can show one dollar figure instead of a USD figure plus four currencies
+    # it leaves the reader to add up. Merged onto what is committed: a past
+    # day's ECB rate does not change, and a run that cannot reach the rate
+    # service must leave the converted history alone rather than blank it.
+    prev_fx = {}
+    if OUT.exists():
+        try:
+            prev_fx = dict(json.loads(OUT.read_text(encoding="utf-8")).get("fx") or {})
+        except (ValueError, KeyError):
+            prev_fx = {}
+    rates = fxrates.rates(fxrates.needed(apps), prev_fx)
+
+    # What the conversion is worth against what Apple actually settled.
+    #
+    # The converted figures use ECB reference rates; Apple uses its own, on
+    # its own date. Rather than claim the two agree, each closed period is
+    # measured against the finance report for it. The windows are known not
+    # to line up exactly — FY2026 P12 is labelled 30 Aug to 26 Sep but
+    # evidently cut off around the 24th, since a single day inside that range
+    # sold more units than the whole report settled — so a gap here is not
+    # automatically an error. It is the number that tells you how much to
+    # trust the estimate.
+    settled = []
+    for period in payouts:
+        if period.get("currency") != "USD":
+            continue
+        window = 0.0
+        for app in apps:
+            converted, _ = fxrates.in_usd(app.get("revenue"), rates)
+            window += sum(v for d, v in converted.items()
+                          if period["start"] <= d <= period["end"])
+        settled.append({
+            "period": period["period"],
+            "start": period["start"],
+            "end": period["end"],
+            "apple": period["amount"],
+            "estimated": round(window, 2),
+        })
+
+    missed = {}
+    for app in apps:
+        _, gaps = fxrates.in_usd(app.get("revenue"), rates)
+        for day, curs in gaps.items():
+            missed.setdefault(day, set()).update(curs)
+    if missed:
+        print(f"  fx: {len(missed)} day(s) still unconverted: "
+              + ", ".join(f"{d} {sorted(c)}" for d, c in sorted(missed.items())[:5]))
+
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(
         json.dumps({
             "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "admob": dict(sorted(ads.items())),
             "payouts": payouts,
+            "fx": rates,
+            "settled": settled,
             "play": play_feed,
             "apps": apps,
         }, indent=1),

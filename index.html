@@ -97,6 +97,7 @@
   .mrow.head{color:var(--faint);font-size:11px;text-transform:uppercase;
              letter-spacing:.07em;font-weight:700}
   .mrow.partial{color:var(--soft)}
+  .mrow b.off{color:var(--warn)}
   .mrow i{font-style:normal;color:var(--faint);font-size:11px}
   .caveat{color:var(--faint);font-size:12px;line-height:1.5;margin:10px 2px 0}
   .cal{background:var(--card);border:1px solid var(--line);border-radius:12px;
@@ -134,6 +135,7 @@
      zeros would otherwise out-shout the one number that moved. */
   .src i{font-style:normal;color:var(--faint);font-weight:400}
   .caveat .src{display:inline-block;margin-right:8px;color:var(--soft)}
+  .conv{color:var(--faint);font-size:11.5px}
   /* A day that earned nothing and a day nobody has reported on yet are
      different facts, so they do not share a style. Zero states the figure;
      unreported shows a dash and no figure at all, because printing $0.00
@@ -331,6 +333,7 @@
     <div id="calendar"></div>
     <div id="deposits"></div>
     <div id="kpis"></div>
+    <div id="settled"></div>
     <div id="money"></div>
     <div id="payments"></div>
   </div>
@@ -692,12 +695,56 @@ function daily(series, from, to, carry = false) {
  *  Purchases are counted in units, not money, because they answer a different
  *  question: how many people bought, as against what it was worth.
  */
+/** One app's proceeds as dollars a day, foreign sales converted.
+ *
+ *  The sales report states proceeds in the customer's currency, so a single
+ *  day can read EUR 5.59, KRW 4900 and USD 3.50 at once. Showing only the USD
+ *  part was defensible while foreign sales were rare; on 31 October six of
+ *  eight purchases were foreign and the page showed $5.60 of a ~$34 day.
+ *
+ *  Rates are the ECB's daily reference rates for the day of the sale, stored
+ *  by the fetcher. They are **not Apple's rates** — Apple converts at its own
+ *  rate on its own date — so everything here is an estimate, and the Payments
+ *  tab measures it against what Apple actually settled rather than assuming
+ *  they agree.
+ *
+ *  A day whose rate is missing contributes its USD part and is counted in
+ *  `missing`, because a converted total that quietly drops a currency is the
+ *  failure this replaced.
+ */
+function proceedsUSD(apps, fx = {}) {
+  const out = {}, missing = {};
+  for (const app of apps) {
+    for (const [cur, days] of Object.entries(app.revenue || {})) {
+      for (const [day, amount] of Object.entries(days)) {
+        if (!amount) continue;
+        if (cur === "USD") { out[day] = (out[day] || 0) + amount; continue; }
+        const rate = (fx[day] || {})[cur];
+        if (rate === undefined) { (missing[day] = missing[day] || {})[cur] = amount; continue; }
+        out[day] = (out[day] || 0) + amount * rate;
+      }
+    }
+  }
+  for (const k of Object.keys(out)) out[k] = Math.round(out[k] * 100) / 100;
+  return { usd: out, missing };
+}
+
+/** The raw per-currency proceeds for one day, for a tooltip.
+ *  The converted figure is what is shown; this is what it was made from. */
+function rawOn(apps, day) {
+  const by = {};
+  for (const app of apps)
+    for (const [cur, days] of Object.entries(app.revenue || {}))
+      if (days[day]) by[cur] = (by[cur] || 0) + days[day];
+  return by;
+}
+
 function renderMoney(data) {
   const apps = data.apps || [];
   const host = $("#money");
   if (!host) return;
 
-  const usd = combined(apps, (a) => (a.revenue || {}).USD);
+  const usd = proceedsUSD(apps, data.fx).usd;
   const units = combined(apps, (a) => a.iapUnits);
   if (!Object.keys(usd).length && !Object.keys(units).length) {
     host.innerHTML = "";
@@ -710,6 +757,9 @@ function renderMoney(data) {
   const earned = Object.values(usd).reduce((n, v) => n + v, 0);
   const sold = Object.values(units).reduce((n, v) => n + v, 0);
 
+  // Listed as what the dollar figure is made of, not as money beside it.
+  // These used to be printed as "plus EUR 45.89", which was honest while the
+  // headline was USD-only and became double-counting the moment it was not.
   const others = {};
   for (const app of apps)
     for (const [cur, days] of Object.entries(app.revenue || {}))
@@ -722,9 +772,9 @@ function renderMoney(data) {
         <div class="name">Cumulative proceeds</div>
         <div class="meta"><span class="money">${earned.toFixed(2)} USD</span> to date${
           Object.keys(others).length
-            ? " · plus " + Object.entries(others)
-                .map(([c, v]) => `<span class="money">${v.toLocaleString()} ${c}</span>`)
-                .join(" · ")
+            ? ` <span class="conv">including ` + Object.entries(others)
+                .map(([c, v]) => `${v.toLocaleString()} ${c}`)
+                .join(", ") + `, converted at the ECB rate for each day</span>`
             : ""}</div>
       </div>
       ${chart(daily(usd, from, to, true), ALL, money0)}
@@ -834,7 +884,7 @@ function renderCalendar(data) {
   if (!host) return;
 
   const apps = data.apps || [];
-  const apple = combined(apps, (a) => (a.revenue || {}).USD);
+  const apple = proceedsUSD(apps, data.fx).usd;
   const ads = data.admob || {};
   const through = coverage(data);
 
@@ -879,6 +929,16 @@ function renderCalendar(data) {
       : !reported
         ? `${d} — not reported yet`
         : `${d} — App Store ${haveApple ? money2(apple[d] || 0) : "not reported yet"}`
+          + (() => {
+              // What the dollar figure was made of. A converted number with
+              // no sight of its parts is a number you cannot check.
+              const raw = haveApple ? rawOn(apps, d) : {};
+              const foreign = Object.entries(raw).filter(([c]) => c !== "USD");
+              return foreign.length
+                ? ` (${foreign.map(([c, v]) => `${v.toLocaleString()} ${c}`).join(" + ")}`
+                  + `${raw.USD ? ` + ${money2(raw.USD)}` : ""} converted at the ECB day rate)`
+                : "";
+            })()
           + `, AdMob ${haveAds ? money2(ads[d] || 0) : "not reported yet"}`
           + `, Google Play ${money2(0)} (neither Play app sells anything)`
           + `; ${money2(amount)} in total`;
@@ -919,6 +979,11 @@ function renderCalendar(data) {
       <span class="src ios">App Store</span>
       <span class="src ads">AdMob</span>
       <span class="src play">Google Play</span>.
+      App Store proceeds are converted to USD at the European Central Bank's
+      rate for the day of the sale, so a day selling in euros, won or koruna
+      reads as one figure; hover a day to see what it was made of. Apple
+      converts at its own rate, so these are estimates — the reconciliation
+      below measures them against what Apple actually settled.
       Play is zero because neither Play app sells anything: S-Tier Eats
       carries ads and the church app carries nothing, so Android income
       arrives under AdMob.${
@@ -1080,12 +1145,55 @@ const byMonth = (series) => {
  *  settle separately and at Apple's own rate, so folding them into a figure
  *  labelled "expect this" would be inventing precision.
  */
+/** How close the converted estimate came to what Apple actually paid.
+ *
+ *  Everything converted on this page uses ECB reference rates; Apple uses
+ *  its own, on its own date. Rather than claim the two agree, each closed
+ *  fiscal period is set beside the finance report for it.
+ *
+ *  A gap is not automatically an error. Apple's labelled period dates are
+ *  known not to be the inclusive cutoff for the sales-report days: FY2026
+ *  P12 is labelled 30 Aug to 26 Sep, yet a single day inside that range sold
+ *  more units than the whole report settled, so sales from the end of the
+ *  window are paid in the next period instead. That shows up here as a large
+ *  positive difference and is the honest thing to display — the alternative
+ *  is a page that looks reconciled because nobody checked.
+ */
+function renderSettled(data) {
+  const host = $("#settled");
+  if (!host) return;
+  const rows = data.settled || [];
+  if (!rows.length) { host.innerHTML = ""; return; }
+
+  host.innerHTML = `
+    <div class="section">Estimate vs Apple</div>
+    <div class="months">
+      <div class="mrow head"><span>Fiscal period</span><span>Apple settled</span>
+        <span>Our estimate</span><span>Difference</span></div>
+      ${rows.slice().reverse().map((r) => {
+        const diff = r.estimated - r.apple;
+        const close = Math.abs(diff) < 0.5;
+        return `<div class="mrow" title="sales dated ${r.start} to ${r.end}">
+          <span>FY${r.period}</span>
+          <span>${money2(r.apple)}</span>
+          <span>${money2(r.estimated)}</span>
+          <b class="${close ? "" : "off"}">${diff >= 0 ? "+" : ""}${money2(diff)}</b>
+        </div>`;
+      }).join("")}
+    </div>
+    <div class="caveat">A difference near zero means the day rates matched
+      Apple's closely enough to trust the converted figures. A large one is
+      usually the period boundary rather than the rate: Apple's labelled end
+      date is not the inclusive cutoff for the sales days, so purchases from
+      the last day or two of a window are settled in the following period.</div>`;
+}
+
 function renderPayouts(data) {
   const host = $("#kpis");
   if (!host) return;
 
   const apps = data.apps || [];
-  const appleDaily = combined(apps, (a) => (a.revenue || {}).USD);
+  const appleDaily = proceedsUSD(apps, data.fx).usd;
   const adsDaily = data.admob || {};
   const apple = byMonth(appleDaily), ads = byMonth(adsDaily);
 
@@ -1143,7 +1251,9 @@ function renderPayouts(data) {
     <div class="caveat">Estimates in USD, not deposits. Apple reports proceeds
       before adjustments and pays about a month after each month closes, once
       its own minimum is met. AdMob holds earnings until $100. Foreign-currency
-      proceeds are real but settle separately and are not included above.</div>`;
+      proceeds <em>are</em> included, converted at the European Central Bank's
+      rate for the day of each sale; Apple converts at its own rate, so see
+      how close that lands in the table below.</div>`;
 }
 
 const money2 = (n) => "$" + n.toFixed(2);
@@ -1260,7 +1370,7 @@ function renderPayments(apps) {
   const [from, to] = rangeSpan(apps);
 
   const earners = apps
-    .map((a) => ({ app: a, usd: (a.revenue || {}).USD || {} }))
+    .map((a) => ({ app: a, usd: proceedsUSD([a], DATA.fx).usd }))
     .filter((e) => total(e.usd) > 0)
     .sort((x, y) => total(y.usd) - total(x.usd));
 
@@ -1277,9 +1387,12 @@ function renderPayments(apps) {
           <div class="name"><a href="${app.url}" rel="noopener">${app.name}</a></div>
           <div class="meta">
             <span class="money">${total(usd).toFixed(2)} USD</span>${
+              // Inside the figure, not beside it. Printed as a second money
+              // value it reads as more money on top of the dollars, which is
+              // exactly what it stopped being once the total was converted.
               other.length
-                ? " · " + other.map(([c, days]) =>
-                    `<span class="money">${total(days).toLocaleString()} ${c}</span>`).join(" · ")
+                ? ` <span class="conv">incl. ` + other.map(([c, days]) =>
+                    `${total(days).toLocaleString()} ${c}`).join(", ") + `</span>`
                 : ""}
             ${app.iapUnits ? ` · <b>${fmt(total(app.iapUnits))}</b> purchases` : ""}
           </div>
@@ -1921,6 +2034,7 @@ function render(d) {
   renderCalendar(d);
   renderDeposits(d);
   renderPayouts(d);
+  renderSettled(d);
   renderCumulative(d.apps);
   renderPayments(d.apps);
   renderReviews(d.apps);
