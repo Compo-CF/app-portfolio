@@ -1302,6 +1302,19 @@ function adsCard(data, from, to) {
  *  represents. Each app gets its own scale, and the totals in the headers are
  *  what you compare.
  */
+/** What a series adds up to inside the selected window. */
+const inRange = (series, from, to) =>
+  Object.entries(series || {}).reduce(
+    (n, [d, v]) => (d >= from && d <= to ? n + v : n), 0);
+
+/** How to describe the window in words, since "since 2026-08-03" reads as
+ *  all-time history when it is actually the left edge of a 90-day view. */
+function rangeWords(from, to) {
+  const days = rangeDays();
+  return days >= ALL ? `all time, since ${from}`
+                     : `in the ${days} days to ${to}`;
+}
+
 function renderCumulative(apps) {
   const host = $("#cumulative");
   if (!host) return;
@@ -1315,8 +1328,14 @@ function renderCumulative(apps) {
     <div class="card">
       <div class="head">
         <div class="name">Every app together</div>
-        <div class="meta"><b>${fmt(total(combined(apps, (a) => a.downloads)))}</b>
-          first-time installs since ${from}</div>
+        <div class="meta"><b>${fmt(inRange(combined(apps, (a) => a.downloads), from, to))}</b>
+          first-time installs ${rangeWords(from, to)}${
+            // The line below ends at the all-time running total, because a
+            // cumulative chart that restarted at the window edge would
+            // rewrite history every time the range changed. Saying both keeps
+            // the headline honest without leaving that endpoint unexplained.
+            rangeDays() >= ALL ? ""
+              : ` <span class="conv">· ${fmt(total(combined(apps, (a) => a.downloads)))} all time, where the line ends</span>`}</div>
       </div>
       ${chart(daily(combined(apps, (a) => a.downloads), from, to, true), ALL, fmt, [],
               playRun(combined(apps, (a) => (a.android || {}).installs), from, to))}
@@ -1324,11 +1343,13 @@ function renderCumulative(apps) {
     <div class="section">By app</div>
     ` + ranked.map((a) => {
       const run = total(a.downloads);
+      const here = inRange(a.downloads, from, to);
       return `
       <div class="card">
         <div class="head">
           <div class="name"><a href="${a.url}" rel="noopener">${a.name}</a></div>
-          <div class="meta"><b>${fmt(run)}</b> total</div>
+          <div class="meta"><b>${fmt(here)}</b> ${rangeWords(from, to)}${
+            rangeDays() >= ALL ? "" : ` <span class="conv">· ${fmt(run)} all time</span>`}</div>
         </div>
         ${run ? chart(daily(a.downloads || {}, from, to, true), ALL, fmt, releaseMarks(a),
                       playRun((a.android || {}).installs, from, to))
