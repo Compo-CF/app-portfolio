@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-03T12:34:16+00:00",
+ "generated": "2026-11-03T13:07:16+00:00",
  "admob": {
   "2026-06-03": 0.0,
   "2026-06-04": 0.0,
@@ -152,7 +152,7 @@
   "2026-10-31": 1.46,
   "2026-11-01": 1.3,
   "2026-11-02": 1.32,
-  "2026-11-03": 0.3
+  "2026-11-03": 0.34
  },
  "payouts": [
   {
@@ -1307,7 +1307,7 @@
      "state": "VALID",
      "uploaded": "2026-10-23",
      "marketing": "3.0",
-     "attached": null
+     "attached": "3.0"
     },
     {
      "version": "95",
@@ -1453,12 +1453,13 @@
     "2026-10-29": 25,
     "2026-10-30": 49,
     "2026-10-31": 70,
-    "2026-11-01": 42
+    "2026-11-01": 42,
+    "2026-11-02": 59
    },
    "downloadsBasis": "utc",
    "downloadsProvisional": [
-    "2026-10-31",
-    "2026-11-01"
+    "2026-11-01",
+    "2026-11-02"
    ],
    "downloadsGapsFromSales": [
     "2026-07-14",
@@ -1561,7 +1562,8 @@
     "2026-10-29": 25,
     "2026-10-30": 49,
     "2026-10-31": 70,
-    "2026-11-01": 42
+    "2026-11-01": 42,
+    "2026-11-02": 59
    },
    "downloadsSales": {
     "2026-05-28": 0,
@@ -1810,7 +1812,7 @@
      "2026-10-31": 78.89
     }
    },
-   "iaps": null,
+   "iaps": 14,
    "iapUnits": {
     "2026-07-19": 1,
     "2026-08-20": 1,
@@ -3208,12 +3210,13 @@
     "2026-10-29": 1,
     "2026-10-30": 0,
     "2026-10-31": 0,
-    "2026-11-01": 2
+    "2026-11-01": 2,
+    "2026-11-02": 1
    },
    "downloadsBasis": "utc",
    "downloadsProvisional": [
-    "2026-10-31",
-    "2026-11-01"
+    "2026-11-01",
+    "2026-11-02"
    ],
    "downloadsGapsFromSales": [
     "2026-07-26",
@@ -3302,7 +3305,8 @@
     "2026-10-25": 1,
     "2026-10-26": 2,
     "2026-10-29": 1,
-    "2026-11-01": 2
+    "2026-11-01": 2,
+    "2026-11-02": 1
    },
    "downloadsSales": {
     "2026-05-28": 0,
@@ -4413,7 +4417,7 @@
      "state": "VALID",
      "uploaded": "2026-10-06",
      "marketing": "2.0",
-     "attached": null
+     "attached": "2.0"
     },
     {
      "version": "12",
@@ -4760,7 +4764,13 @@
    "rating": null,
    "ratingHistory": {},
    "reviews": [],
-   "versions": [],
+   "versions": [
+    {
+     "version": "1.0",
+     "state": "PREPARE_FOR_SUBMISSION",
+     "created": "2026-07-30"
+    }
+   ],
    "builds": [
     {
      "version": "23",
@@ -5149,7 +5159,28 @@
    "rating": null,
    "ratingHistory": {},
    "reviews": [],
-   "versions": [],
+   "versions": [
+    {
+     "version": "3.1",
+     "state": "READY_FOR_SALE",
+     "created": "2026-10-06"
+    },
+    {
+     "version": "3.0",
+     "state": "READY_FOR_SALE",
+     "created": "2026-09-29"
+    },
+    {
+     "version": "2.0",
+     "state": "READY_FOR_SALE",
+     "created": "2026-09-25"
+    },
+    {
+     "version": "1.0",
+     "state": "READY_FOR_SALE",
+     "created": "2026-08-04"
+    }
+   ],
    "builds": [
     {
      "version": "9",
@@ -5826,6 +5857,146 @@
      "version": "20261019.627",
      "state": "VALID",
      "uploaded": "2026-10-19"
+    }
+   ]
+  },
+  {
+   "id": "6821057970",
+   "name": "Alchemica",
+   "url": "https://apps.apple.com/app/id6821057970",
+   "downloads": {
+    "2026-10-27": 0,
+    "2026-10-28": 0,
+    "2026-10-29": 0,
+    "2026-10-30": 0,
+    "2026-10-31": 0,
+    "2026-11-01": 0
+   },
+   "downloadsBasis": "pacific",
+   "downloadsProvisional": [],
+   "downloadsGapsFromSales": [],
+   "downloadsUtc": {},
+   "downloadsSales": {
+    "2026-10-27": 0,
+    "2026-10-28": 0,
+    "2026-10-29": 0,
+    "2026-10-30": 0,
+    "2026-10-31": 0,
+    "2026-11-01": 0
+   },
+   "analytics": {},
+   "revenue": {},
+   "iaps": 12,
+   "iapUnits": {},
+   "countries": {},
+   "android": null,
+   "rating": null,
+   "ratingHistory": {},
+   "reviews": [],
+   "versions": [
+    {
+     "version": "1.0",
+     "state": "READY_FOR_SALE",
+     "created": "2026-10-09"
+    }
+   ],
+   "builds": [
+    {
+     "version": "21",
+     "state": "VALID",
+     "uploaded": "2026-10-15",
+     "marketing": "1.0.0",
+     "attached": "1.0"
+    },
+    {
+     "version": "20",
+     "state": "VALID",
+     "uploaded": "2026-10-15"
+    },
+    {
+     "version": "14",
+     "state": "VALID",
+     "uploaded": "2026-10-14"
+    },
+    {
+     "version": "12",
+     "state": "VALID",
+     "uploaded": "2026-10-14"
+    },
+    {
+     "version": "10",
+     "state": "VALID",
+     "uploaded": "2026-10-14"
+    }
+   ]
+  },
+  {
+   "id": "6823629432",
+   "name": "Merge BBQ: Low & Slow",
+   "url": "https://apps.apple.com/app/id6823629432",
+   "downloads": {
+    "2026-10-27": 0,
+    "2026-10-28": 0,
+    "2026-10-29": 0,
+    "2026-10-30": 0,
+    "2026-10-31": 0,
+    "2026-11-01": 0
+   },
+   "downloadsBasis": "pacific",
+   "downloadsProvisional": [],
+   "downloadsGapsFromSales": [],
+   "downloadsUtc": {},
+   "downloadsSales": {
+    "2026-10-27": 0,
+    "2026-10-28": 0,
+    "2026-10-29": 0,
+    "2026-10-30": 0,
+    "2026-10-31": 0,
+    "2026-11-01": 0
+   },
+   "analytics": {},
+   "revenue": {},
+   "iaps": 17,
+   "iapUnits": {},
+   "countries": {},
+   "android": null,
+   "rating": null,
+   "ratingHistory": {},
+   "reviews": [],
+   "versions": [
+    {
+     "version": "1.0",
+     "state": "WAITING_FOR_REVIEW",
+     "created": "2026-10-16"
+    }
+   ],
+   "builds": [
+    {
+     "version": "26",
+     "state": "VALID",
+     "uploaded": "2026-10-18",
+     "marketing": "1.0",
+     "attached": null
+    },
+    {
+     "version": "25",
+     "state": "VALID",
+     "uploaded": "2026-10-17"
+    },
+    {
+     "version": "23",
+     "state": "VALID",
+     "uploaded": "2026-10-16"
+    },
+    {
+     "version": "21",
+     "state": "VALID",
+     "uploaded": "2026-10-16"
+    },
+    {
+     "version": "20",
+     "state": "VALID",
+     "uploaded": "2026-10-16"
     }
    ]
   }
