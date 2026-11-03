@@ -1647,6 +1647,39 @@ function multiChart(series, from, to, show = money0) {
   const ticks = [];
   for (let t = 0; t <= max + 1e-9; t += step) ticks.push(t);
 
+  // Same rule as the single-series charts: a figure on every day at a week,
+  // the newest one beyond that.
+  //
+  // With one difference these charts force. Eight cumulative series sit
+  // bunched in the bottom fifth of the plot — GBP through PHP span $74 to $3
+  // on an axis that has to reach $600 for USD — so labelling all of them
+  // would stack numbers on top of each other and read as mud. Labels are
+  // placed strongest-first and any that would land within 11px of one already
+  // placed is dropped. The legend carries every figure exactly, so nothing is
+  // lost by a label being skipped; what is gained is that the ones drawn can
+  // actually be read.
+  const everyPoint = keys.length <= 7;
+  const placed = [];
+  const labels = [];
+  const atX = everyPoint ? keys.map((_, i) => i) : [keys.length - 1];
+  for (const i of atX) {
+    const taken = [];
+    // runs is already ordered biggest-first, so the series most worth
+    // labelling claims its spot before the ones crowding the baseline.
+    for (const r of runs) {
+      const v = r.run[keys[i]] || 0;
+      if (!v) continue;
+      const top = y(v);
+      if (taken.some((t) => Math.abs(t - top) < 11)) continue;
+      taken.push(top);
+      const leftPct = (i / (keys.length - 1)) * 100;
+      const nudge = leftPct > 86 ? "translate(-100%,-150%)" : "translate(-50%,-150%)";
+      labels.push(`<span class="dlabel" style="left:${leftPct.toFixed(2)}%;`
+        + `top:${pct(v)}%;transform:${nudge};color:${r.colour}">${show(v)}</span>`);
+    }
+    placed.push(taken.length);
+  }
+
   return `
     <div class="plot">
       <div class="yaxis">
@@ -1665,6 +1698,7 @@ function multiChart(series, from, to, show = money0) {
                      vector-effect="non-scaling-stroke" stroke-linejoin="round"/>`;
           }).join("")}
         </svg>
+        ${labels.join("")}
       </div>
     </div>
     <div class="axis"><span>${keys[0]}</span><span>${keys[keys.length - 1]}</span></div>
