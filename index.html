@@ -149,6 +149,11 @@
   .day.paid{background:color-mix(in srgb,var(--good) 16%,transparent);
             border-color:color-mix(in srgb,var(--good) 45%,var(--line))}
   .day.due{border-color:var(--good);border-style:dashed}
+  /* A date with no figure behind it. Deliberately not green: it is not money
+     yet, only a day Apple's calendar says one is due. */
+  .day.waiting{border-color:var(--faint);border-style:dashed}
+  .day .amt i.wait{font-style:normal;font-weight:400;color:var(--faint);
+       font-size:9.5px}
   .day.due .amt{color:var(--good)}
   .day.future{border-color:color-mix(in srgb,var(--line) 55%,transparent)}
   .day.future .n{opacity:.45}
@@ -366,17 +371,21 @@
     to them: different accounts, different payment schedules, and a combined
     total would reconcile against neither statement.
     <br><br>
-    <strong>Currencies are listed separately and never added together.</strong>
-    Apple reports proceeds in the currency of the region a sale came from, so
-    a Korean purchase arrives as KRW rather than dollars. Converting here
-    would mean picking an exchange rate, and Apple settles at its own rate on
-    the day it pays — so any total this page invented would be a number that
-    could never be reconciled against a bank statement.
+    <strong>Foreign currencies are converted, and the conversion is
+    checked.</strong> Apple reports proceeds in the currency of the region a
+    sale came from, so a Korean purchase arrives as KRW rather than dollars.
+    This page used to show only the dollar rows, which was defensible while
+    foreign sales were rare and badly wrong once they were the majority: on
+    31 October six of eight purchases were foreign and the figure shown was
+    $5.60 of a roughly $34 day.
     <br><br>
-    To judge scale, compare the same product rather than the currency: Cosmica's
-    Everything Bundle returns $3.50 in the United States and ₩4,900 in Korea.
-    Those are the same sale at the same price tier. Won are small units, which
-    makes a routine purchase look like a large number.
+    Everything is now converted at the European Central Bank's reference rate
+    for the day of the sale, and every converted figure can be taken apart —
+    hover a day on the payments calendar to see the amounts it was built
+    from. Apple settles at its own rate on its own date, so these are
+    estimates, and the <em>Estimate vs Apple</em> table on the Payments tab
+    measures each closed period against the finance report for it rather than
+    assuming the two agree.
   </footer>
 </div>
 
@@ -1027,12 +1036,57 @@ const addDays = (iso, n) => {
 };
 
 /** One expected deposit per closed fiscal period, keyed by the day it lands. */
+/** The fiscal period after the newest one Apple has published.
+ *
+ *  Apple's quarter runs five weeks then four then four — read off the three
+ *  periods held, not assumed: P10 is 28 Jun to 1 Aug (35 days), P11 and P12
+ *  are 28 each. So a period is five weeks when its number starts a quarter,
+ *  and the year rolls after P12.
+ *
+ *  Checked against reality: from FY2026 P12 this derives FY2027 P01 as
+ *  27 Sep to 31 Oct, which is the period Apple has in fact just closed.
+ *
+ *  Only ever one period ahead. The arithmetic would happily run to next
+ *  summer and the error compounds with every step, so the calendar projects
+ *  the next payment and stops.
+ */
+function nextPeriod(newest) {
+  const [fy, num] = newest.period.split("-").map(Number);
+  const n = num === 12 ? 1 : num + 1;
+  const year = num === 12 ? fy + 1 : fy;
+  const start = addDays(newest.end, 1);
+  const weeks = n % 3 === 1 ? 5 : 4;               // quarters open five-week
+  return {
+    period: `${year}-${String(n).padStart(2, "0")}`,
+    start,
+    end: addDays(start, weeks * 7 - 1),
+    pending: true,
+  };
+}
+
+/** Expected deposits, keyed by the day they should land.
+ *
+ *  Published periods carry their settled figure. The next one does not exist
+ *  yet, and is shown anyway with no amount: the date is derivable from the
+ *  fiscal calendar even when the money is not, and without it the calendar
+ *  simply stopped after the last report — which read as "no more payments"
+ *  rather than "none reported yet". Periods are four or five weeks, so a
+ *  five-week one steps over a whole calendar month: nothing pays in November
+ *  2026 at all, between 29 October and 3 December.
+ */
 function deposits(data) {
   const out = {};
-  for (const p of data.payouts || []) {
-    if (p.currency !== "USD" || p.amount < APPLE_MIN_USD) continue;
+  const paid = (data.payouts || []).filter(
+    (p) => p.currency === "USD" && p.amount >= APPLE_MIN_USD);
+  for (const p of paid) {
     const day = addDays(p.end, PAY_LAG_DAYS);
     (out[day] = out[day] || []).push(p);
+  }
+  if (paid.length) {
+    const newest = paid.reduce((a, b) => (a.end > b.end ? a : b));
+    const soon = nextPeriod(newest);
+    const day = addDays(soon.end, PAY_LAG_DAYS);
+    (out[day] = out[day] || []).push(soon);
   }
   return out;
 }
@@ -1074,43 +1128,62 @@ function renderDeposits(data) {
 
   const { len } = monthParts(DEP_MONTH);
   const cells = [];
-  let monthTotal = 0, allPast = true;
+  let monthTotal = 0, allPast = true, pendingThisMonth = false;
   for (let n = 1; n <= len; n++) {
     const d = `${DEP_MONTH}-${String(n).padStart(2, "0")}`;
     const here = due[d] || [];
-    const amount = here.reduce((s, p) => s + p.amount, 0);
+    // A projected period has no figure, so it must not reach the month total
+    // or the total would silently read as complete when it is not.
+    const settled = here.filter((p) => !p.pending);
+    const waiting = here.filter((p) => p.pending);
+    const amount = settled.reduce((s, p) => s + p.amount, 0);
     monthTotal += amount;
-    const landed = here.length && d <= today;
-    if (here.length && !landed) allPast = false;
+    const landed = settled.length && d <= today;
+    if (settled.length && !landed) allPast = false;
+    if (waiting.length) pendingThisMonth = true;
 
     const cls = ["day", d === today ? "today" : "",
-                 here.length ? (landed ? "paid" : "due") : "future"]
+                 settled.length ? (landed ? "paid" : "due")
+                 : waiting.length ? "waiting" : "future"]
                 .filter(Boolean).join(" ");
-    const tip = here.length
+    const span = (p) => {
+      const [fy, per] = p.period.split("-");
+      return `FY${fy} period ${Number(per)} sales, ${p.start} to ${p.end}`;
+    };
+    const tip = settled.length
       ? `${d} — ${money2(amount)} ${landed ? "should have landed" : "expected"}`
-        + here.map((p) => {
-            const [fy, per] = p.period.split("-");
-            return `; FY${fy} period ${Number(per)} sales, ${p.start} to ${p.end}`;
-          }).join("")
-      : d;
+        + settled.map((p) => `; ${span(p)}`).join("")
+      : waiting.length
+        ? `${d} — payment expected, amount not known yet. ${span(waiting[0])}. `
+          + "Apple has not published the finance report for this period, so "
+          + "there is a date but no figure."
+        : d;
 
     cells.push(`<div class="${cls}" title="${tip}">
       <span class="n">${n}</span>
-      <span class="amt">${here.length ? money2(amount) : ""}</span>
+      <span class="amt">${settled.length ? money2(amount)
+        : waiting.length ? '<i class="wait">expected</i>' : ""}</span>
     </div>`);
   }
 
-  const paidSoFar = days.filter((d) => d <= today)
-    .reduce((s, d) => s + due[d].reduce((t, p) => t + p.amount, 0), 0);
+  // Settled periods only. A projected one has no amount, and adding
+  // undefined here would turn the whole figure into NaN.
+  const paidSoFar = days.filter((d) => d <= today).reduce(
+    (s, d) => s + due[d].filter((p) => !p.pending)
+                        .reduce((t, p) => t + p.amount, 0), 0);
   const ads = Object.values(data.admob || {}).reduce((n, v) => n + v, 0);
 
   host.innerHTML = `<div class="section">Deposits</div>` + calShell({
     month: DEP_MONTH,
     earliest: first,
     latest: last,
-    totalHtml: `<b>${money2(monthTotal)}</b> ${
-      monthTotal === 0 ? "due this month"
-        : allPast ? "due by now this month" : "expected this month"}`,
+    totalHtml: monthTotal === 0 && pendingThisMonth
+      // "$0.00 due this month" is wrong when a payment is expected and only
+      // its size is unknown. Saying nothing about an amount beats saying zero.
+      ? `<b>&mdash;</b> one payment expected, amount not published yet`
+      : `<b>${money2(monthTotal)}</b> ${
+          monthTotal === 0 ? "due this month"
+            : allPast ? "due by now this month" : "expected this month"}`,
     cells,
     caveat: `One payment per closed fiscal period, from Apple's financial
       reports — the settled figure, in USD, with foreign sales already
@@ -1119,6 +1192,11 @@ function renderDeposits(data) {
       which is the observed pattern; Apple's own terms promise only "within 45
       days", and none of these is confirmation the money arrived.
       <b>${money2(paidSoFar)}</b> should have landed so far.
+      The last cell is the next period's payment: Apple has not published its
+      finance report, so the date is derived from the fiscal calendar and the
+      amount is simply not known yet. Periods run four or five weeks, so a
+      five-week one steps over a whole calendar month — nothing at all pays in
+      November 2026, between 29 October and 3 December.
       AdMob is not shown: it holds earnings until $100 and names no date before
       then — the balance is ${money2(ads)}.`,
   });
