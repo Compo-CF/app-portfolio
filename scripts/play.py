@@ -33,6 +33,9 @@ PACKAGES = {
     # and it contributes nothing. Listed now so that the day it ships, the
     # figures start arriving without anyone remembering this file exists.
     "com.compofelice.woodlandstrailguide_flutter": "6785576912",
+    # Reached Play production 2026-11-01. Its reports were being read and
+    # discarded until the run started naming unmapped packages.
+    "com.compofelice.critterconga": "6817339425",
 }
 
 BUCKET = os.environ.get("PLAY_BUCKET", "pubsite_prod_6691100777752209003")
