@@ -33,14 +33,16 @@ ASC = "https://api.appstoreconnect.apple.com/v1"
 
 # App ids are public — they appear in every App Store URL.
 #
-# The account carries two apps this list deliberately omits, so that the gap
-# does not read as an oversight to whoever next compares the two:
+# This is every app on the account, checked against it on 2026-11-03 rather
+# than assumed. Two ids this list used to call deliberate omissions —
+# Pit Clock (6811207479) and Chirp Meter Dashboard (6776745788) — no longer
+# resolve, so there is nothing left to omit and the note saying otherwise has
+# gone with them.
 #
-#   Pit Clock: BBQ Smoke Timer (6811207479) — deprecated, not shipping
-#   Chirp Meter Dashboard      (6776745788) — Centric-internal, not part of
-#                                             this portfolio
-#
-# Neither is "not yet". Leave them out.
+# An app is added as soon as it exists, not when it goes live. The download
+# series only accumulates from the day an app appears here, so adding one
+# while it is still in review captures launch day instead of backfilling it
+# later from whatever Apple still holds.
 APPS = [
     ("6773501518", "S-Tier Eats"),
     ("6784340038", "Cosmica: Idle Universe"),
@@ -50,11 +52,10 @@ APPS = [
     ("6796323432", "Houston BBQ Guide"),
     ("6797896315", "Pupduko"),
     ("6809621921", "Fiber Field Kit"),
-    # Waiting for review at the time of adding. Listed early on purpose: the
-    # download series only accumulates from the day an app appears here, so
-    # adding it before launch means day one is captured rather than
-    # backfilled from whatever Apple still holds later.
     ("6817339425", "Critter Conga"),
+    ("6821057970", "Alchemica"),
+    # In review on 2026-11-03, listed now for the reason above.
+    ("6823629432", "Merge BBQ: Low & Slow"),
 ]
 
 
