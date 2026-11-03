@@ -567,23 +567,29 @@ function chart(series, days, show = fmt, marks = [], play = null, bars = false) 
             top:${pct(v)}%;transform:${nudge}">${show(v)}</span>`;
   };
 
-  // Bar mode: a figure over every bar, centred on the bar itself (not on the
-  // line chart's point spacing, which put the peak label off to one side).
-  // Every bar while each slot is wide enough to hold its own number — 31 days
-  // at most; past that the slots are a few pixels and only the peak and the
-  // newest bar are labelled. Play's narrower half-slot bars get every figure
-  // only up to two weeks, so the two series' numbers don't collide.
+  // Centred on the bar itself, not on the line chart's point spacing, which
+  // put a label off to one side of the bar it described.
   const centre = (i, offset) => ((i * slot + offset + bw / 2) / W) * 100;
   const appleOff = hasPlay ? slot * 0.06 : slot * 0.14;
-  const everyApple = keys.length <= 31, everyPlay = keys.length <= 14;
+  // A figure on every day only at a week; past that, just the newest.
+  //
+  // It used to label every bar up to 31 days, which turned the 30-day view
+  // into a wall of numbers — and at that density the labels are what you read
+  // first, over the shape they are sitting on. Seven slots comfortably hold
+  // their own numbers; thirty do not.
+  const everyPoint = keys.length <= 7;
   const barLabels = !bars ? "" : [
-    ...vals.map((v, i) => (v > 0 && (everyApple || i === iAppleLast || i === peakAt))
-      ? label(v, centre(i, appleOff), !everyApple && i === peakAt && i !== iAppleLast ? "peak" : "", true)
-      : ""),
-    ...(hasPlay ? playVals.map((v, i) => (v !== null && v > 0 && (everyPlay || i === iPlayLast))
-      ? label(v, centre(i, slot * 0.52), "play", true)
-      : "") : []),
+    ...vals.map((v, i) => (v > 0 && (everyPoint || i === iAppleLast))
+      ? label(v, centre(i, appleOff), "", true) : ""),
+    ...(hasPlay ? playVals.map((v, i) => (v !== null && v > 0 && (everyPoint || i === iPlayLast))
+      ? label(v, centre(i, slot * 0.52), "play", true) : "") : []),
   ].join("");
+
+  // Line mode gets the same rule. The end label is drawn below either way, so
+  // this covers every point except the last.
+  const lineLabels = (bars || !everyPoint) ? "" :
+    vals.map((v, i) => (v > 0 && i !== vals.length - 1)
+      ? label(v, (i / (keys.length - 1)) * 100) : "").join("");
 
   return `
     <div class="plot">
@@ -614,7 +620,8 @@ function chart(series, days, show = fmt, marks = [], play = null, bars = false) 
                     title="${m.label} — ${m.date}"><i></i><b>${m.label}</b></span>`;
         }).join("")}
         ${bars ? "" : `<span class="dot" style="left:100%;top:${pct(last)}%"></span>`}
-        ${!bars && showPeak ? label(peak, peakPct, "peak") : ""}
+        ${!bars && showPeak && !everyPoint ? label(peak, peakPct, "peak") : ""}
+        ${lineLabels}
         ${bars
           // Play's newest bar is not Apple's (Play reports several days
           // behind), so each series is labelled at its own bars, never at a
