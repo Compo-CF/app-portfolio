@@ -101,12 +101,37 @@ def token():
                       headers={"kid": KEY_ID, "typ": "JWT"})
 
 
-def api(path):
-    r = requests.get(f"{ASC}/{path}",
-                     headers={"Authorization": f"Bearer {token()}"}, timeout=45)
-    if r.status_code != 200:
+def api(path, attempts=3):
+    """One App Store Connect call, retried when Apple is merely slow.
+
+    Apple times out often enough that, unhandled, it is the usual way this
+    job dies: one read timeout anywhere in the run raised out of main() and
+    nothing was committed at all — two runs in a row on 2026-11-03, in
+    different calls each time. The portfolio makes dozens of these per run
+    and grew two more apps that day, so the odds only go up.
+
+    Retries cover timeouts and Apple's own 5xx and 429. A 4xx is an answer,
+    not a stumble, and is handed back as it always was.
+    """
+    for attempt in range(attempts):
+        try:
+            r = requests.get(f"{ASC}/{path}",
+                             headers={"Authorization": f"Bearer {token()}"},
+                             timeout=45)
+        except requests.RequestException as e:
+            if attempt == attempts - 1:
+                print(f"  asc: {path} unreachable after {attempts} tries "
+                      f"({type(e).__name__})")
+                return {"__error__": "timeout"}
+            time.sleep(2 * (attempt + 1))
+            continue
+
+        if r.status_code == 200:
+            return r.json()
+        if r.status_code in (429, 500, 502, 503, 504) and attempt < attempts - 1:
+            time.sleep(2 * (attempt + 1))
+            continue
         return {"__error__": r.status_code}
-    return r.json()
 
 
 def sales_rows(day):
