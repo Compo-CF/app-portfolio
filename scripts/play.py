@@ -181,14 +181,20 @@ def installs():
             return {}
         print(f"  play: {len(blobs)} report(s) readable without listing")
 
-    out = {}
+    out, unmapped = {}, set()
     for blob in blobs:
         m = _NAME.search(blob.name)
         if not m:
             continue
         app_id = PACKAGES.get(m.group("pkg"))
         if not app_id:
-            continue                                 # an app the dashboard omits
+            # Say so rather than drop it. Google publishes a report for every
+            # app on the account, so a package missing from PACKAGES is almost
+            # always an app that has just shipped on Play and whose figures
+            # are now being read and thrown away — silently, which is how
+            # Critter Conga went unreported after reaching production.
+            unmapped.add(m.group("pkg"))
+            continue
         entry = out.setdefault(app_id, {"installs": {}, "active": {}})
         for row in _rows(blob):
             day = (row.get("Date") or "").strip()
@@ -196,6 +202,12 @@ def installs():
                 continue
             entry["installs"][day] = _int(row, "Daily User Installs")
             entry["active"][day] = _int(row, "Active Device Installs")
+
+    if unmapped:
+        print("  play: reports exist for packages this dashboard does not map, "
+              "so their installs are being discarded: "
+              + ", ".join(sorted(unmapped)))
+        print("  play: add them to PACKAGES in scripts/play.py")
 
     for entry in out.values():
         entry["installs"] = dict(sorted(entry["installs"].items()))
