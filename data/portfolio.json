@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-04T17:05:37+00:00",
+ "generated": "2026-11-04T18:43:50+00:00",
  "admob": {
   "2026-06-03": 0.0,
   "2026-06-04": 0.0,
@@ -153,7 +153,7 @@
   "2026-11-01": 1.3,
   "2026-11-02": 1.32,
   "2026-11-03": 1.71,
-  "2026-11-04": 0.59
+  "2026-11-04": 0.68
  },
  "payouts": [
   {
@@ -6187,6 +6187,78 @@
      "version": "20",
      "state": "VALID",
      "uploaded": "2026-10-16"
+    }
+   ]
+  },
+  {
+   "id": "6830660705",
+   "name": "Ghostline: Idle Racer",
+   "url": "https://apps.apple.com/app/id6830660705",
+   "downloads": {
+    "2026-10-28": 0,
+    "2026-10-29": 0,
+    "2026-10-30": 0,
+    "2026-10-31": 0,
+    "2026-11-01": 0,
+    "2026-11-02": 0,
+    "2026-11-03": 0
+   },
+   "downloadsBasis": "pacific",
+   "downloadsProvisional": [],
+   "downloadsGapsFromSales": [],
+   "downloadsUtc": {},
+   "downloadsSales": {
+    "2026-10-28": 0,
+    "2026-10-29": 0,
+    "2026-10-30": 0,
+    "2026-10-31": 0,
+    "2026-11-01": 0,
+    "2026-11-02": 0,
+    "2026-11-03": 0
+   },
+   "analytics": {},
+   "revenue": {},
+   "iaps": 8,
+   "iapUnits": {},
+   "countries": {},
+   "android": null,
+   "rating": null,
+   "ratingHistory": {},
+   "reviews": [],
+   "versions": [
+    {
+     "version": "1.0.0",
+     "state": "WAITING_FOR_REVIEW",
+     "created": "2026-11-04"
+    }
+   ],
+   "builds": [
+    {
+     "version": "22",
+     "state": "VALID",
+     "uploaded": "2026-11-04",
+     "marketing": "1.0.0",
+     "attached": "1.0.0"
+    },
+    {
+     "version": "21",
+     "state": "VALID",
+     "uploaded": "2026-11-04"
+    },
+    {
+     "version": "20",
+     "state": "VALID",
+     "uploaded": "2026-11-04"
+    },
+    {
+     "version": "19",
+     "state": "VALID",
+     "uploaded": "2026-11-04"
+    },
+    {
+     "version": "18",
+     "state": "VALID",
+     "uploaded": "2026-11-04"
     }
    ]
   }
