@@ -1160,8 +1160,17 @@ function nextPeriod(newest) {
  */
 function deposits(data) {
   const out = {};
-  const paid = (data.payouts || []).filter(
-    (p) => p.currency === "USD" && p.amount >= APPLE_MIN_USD);
+  // One entry per closed period: every currency Apple settled, converted at
+  // the ECB rate on the period's last day (fetch.py builds data.settled).
+  // Counting the USD row alone left out about $146 of FY2027 P01's euros,
+  // pounds and won. Data written before that fix falls back to the USD rows.
+  const periods = (data.settled || []).length
+    ? data.settled.map((s) => ({
+        period: s.period, start: s.start, end: s.end, amount: s.apple,
+        foreign: s.appleUsd == null ? 0 : s.apple - s.appleUsd,
+      }))
+    : (data.payouts || []).filter((p) => p.currency === "USD");
+  const paid = periods.filter((p) => p.amount >= APPLE_MIN_USD);
   for (const p of paid) {
     const day = addDays(p.end, PAY_LAG_DAYS);
     (out[day] = out[day] || []).push(p);
@@ -1180,10 +1189,11 @@ let DEP_MONTH = null;
 /** When the money actually turns up, as against when it was earned.
  *
  *  Built on Apple's financial reports rather than the daily sales estimate,
- *  because those are the settlement figures: adjusted, and with every foreign
- *  sale already converted. A US vendor is paid one USD sum per period, which
- *  is why a month of won and pesos on the earnings calendar arrives here as
- *  dollars and the two will never tally exactly.
+ *  because those are the settlement figures, after adjustments. They are
+ *  settled per region in that region's currency; Apple converts them only
+ *  when it pays, at its own rate, and may hold a small regional balance until
+ *  it clears that region's minimum. So a period with foreign sales is shown
+ *  converted at the ECB period-end rate and marked approximate.
  *
  *  AdMob has no entry at all. It pays only once the balance passes $100 and
  *  gives no date before then, so a cell would be an invention; the balance is
@@ -1221,6 +1231,8 @@ function renderDeposits(data) {
     const settled = here.filter((p) => !p.pending);
     const waiting = here.filter((p) => p.pending);
     const amount = settled.reduce((s, p) => s + p.amount, 0);
+    const foreign = settled.reduce((s, p) => s + (p.foreign || 0), 0);
+    const approx = foreign >= 0.005 ? "≈" : "";
     monthTotal += amount;
     const landed = settled.length && d <= today;
     if (settled.length && !landed) allPast = false;
@@ -1235,8 +1247,11 @@ function renderDeposits(data) {
       return `FY${fy} period ${Number(per)} sales, ${p.start} to ${p.end}`;
     };
     const tip = settled.length
-      ? `${d} — ${money2(amount)} ${landed ? "should have landed" : "expected"}`
+      ? `${d} — ${approx}${money2(amount)} ${landed ? "should have landed" : "expected"}`
         + settled.map((p) => `; ${span(p)}`).join("")
+        + (approx ? `; includes about ${money2(foreign)} settled in foreign `
+            + "currencies, converted here at ECB rates. Apple converts at its "
+            + "own rate when it pays." : "")
       : waiting.length
         ? `${d} — payment expected, amount not known yet. ${span(waiting[0])}. `
           + "Apple has not published the finance report for this period, so "
@@ -1245,7 +1260,7 @@ function renderDeposits(data) {
 
     cells.push(`<div class="${cls}" title="${tip}">
       <span class="n">${n}</span>
-      <span class="amt">${settled.length ? money2(amount)
+      <span class="amt">${settled.length ? approx + money2(amount)
         : waiting.length ? '<i class="wait">expected</i>' : ""}</span>
     </div>`);
   }
@@ -1270,9 +1285,12 @@ function renderDeposits(data) {
             : allPast ? "due by now this month" : "expected this month"}`,
     cells,
     caveat: `One payment per closed fiscal period, from Apple's financial
-      reports — the settled figure, in USD, with foreign sales already
-      converted, which is why it will not tally exactly with the earnings
-      calendar above. Dated ${PAY_LAG_DAYS} days after each period closes,
+      reports. Apple settles each region in its own currency (dollars, euros,
+      pounds, won&hellip;) and converts only when it pays, at its own rate; a
+      small regional balance can be held back until it clears that region's
+      minimum. Amounts marked &asymp; include foreign currency converted at the
+      European Central Bank's rate on the period's last day, so the deposit
+      will differ by a few dollars. Dated ${PAY_LAG_DAYS} days after each period closes,
       which is the observed pattern; Apple's own terms promise only "within 45
       days", and none of these is confirmation the money arrived.
       <b>${money2(paidSoFar)}</b> should have landed so far.
@@ -1296,30 +1314,20 @@ const byMonth = (series) => {
   return out;
 };
 
-/** What is likely to actually arrive, as against what was earned.
- *
- *  These are different numbers and the rest of the page only showed the
- *  second. Both Apple and Google hold money behind a threshold and pay on a
- *  lag, so a good month does not mean a deposit — and in AdMob's case months
- *  of earning may mean no deposit for the best part of a year.
- *
- *  USD only, deliberately. The foreign currencies are real money but they
- *  settle separately and at Apple's own rate, so folding them into a figure
- *  labelled "expect this" would be inventing precision.
- */
-/** How close the converted estimate came to what Apple actually paid.
+/** How close the converted estimate came to what Apple actually settled.
  *
  *  Everything converted on this page uses ECB reference rates; Apple uses
  *  its own, on its own date. Rather than claim the two agree, each closed
- *  fiscal period is set beside the finance report for it.
+ *  fiscal period is set beside the finance report for it — every currency in
+ *  that report, converted at the ECB rate on the period's last day. (Until
+ *  2026-11-05 only the USD row was compared, which made FY2027 P01 look $128
+ *  short when Apple had settled about $146 more in euros, pounds and won.)
  *
- *  A gap is not automatically an error. Apple's labelled period dates are
- *  known not to be the inclusive cutoff for the sales-report days: FY2026
- *  P12 is labelled 30 Aug to 26 Sep, yet a single day inside that range sold
- *  more units than the whole report settled, so sales from the end of the
- *  window are paid in the next period instead. That shows up here as a large
- *  positive difference and is the honest thing to display — the alternative
- *  is a page that looks reconciled because nobody checked.
+ *  A per-period gap is mostly the boundary, not the rate: the finance period
+ *  runs a day or two behind the sales-report days (FY2026 P12 closed two days
+ *  early at the fiscal year end, and those sales settled in FY2027 P01). The
+ *  running total cancels every boundary but the latest one, so it is the
+ *  better measure of how far to trust the estimate.
  */
 function renderSettled(data) {
   const host = $("#settled");
@@ -1327,27 +1335,51 @@ function renderSettled(data) {
   const rows = data.settled || [];
   if (!rows.length) { host.innerHTML = ""; return; }
 
+  const signed = (n) => `${n >= 0 ? "+" : "&minus;"}${money2(Math.abs(n))}`;
+  const pct = (diff, base) => base ? ` (${diff >= 0 ? "+" : "−"}${
+    Math.abs(diff / base * 100).toFixed(1)}%)` : "";
+  const row = (label, apple, est, title) => {
+    const diff = est - apple;
+    // Close means within 5% or 50 cents: ECB and Apple rates alone differ by
+    // a percent or two, so demanding cents would flag every period.
+    const close = Math.abs(diff) < Math.max(0.5, apple * 0.05);
+    return `<div class="mrow" title="${title}${pct(diff, apple)}">
+      <span>${label}</span>
+      <span>${money2(apple)}</span>
+      <span>${money2(est)}</span>
+      <b class="${close ? "" : "off"}">${signed(diff)}</b>
+    </div>`;
+  };
+  const apple = rows.reduce((n, r) => n + r.apple, 0);
+  const est = rows.reduce((n, r) => n + r.estimated, 0);
+  const gaps = rows.filter((r) => r.unconverted && Object.keys(r.unconverted).length);
+
   host.innerHTML = `
     <div class="section">Estimate vs Apple</div>
     <div class="months">
       <div class="mrow head"><span>Fiscal period</span><span>Apple settled</span>
         <span>Our estimate</span><span>Difference</span></div>
+      ${row("<b>All closed periods</b>", apple, est,
+            `sales dated ${rows[0].start} to ${rows[rows.length - 1].end}`)}
       ${rows.slice().reverse().map((r) => {
-        const diff = r.estimated - r.apple;
-        const close = Math.abs(diff) < 0.5;
-        return `<div class="mrow" title="sales dated ${r.start} to ${r.end}">
-          <span>FY${r.period}</span>
-          <span>${money2(r.apple)}</span>
-          <span>${money2(r.estimated)}</span>
-          <b class="${close ? "" : "off"}">${diff >= 0 ? "+" : ""}${money2(diff)}</b>
-        </div>`;
+        const cur = Object.entries(r.currencies || {})
+          .map(([c, v]) => `${c} ${v}`).join(", ");
+        const miss = r.unconverted && Object.keys(r.unconverted).length
+          ? `; NOT converted (no ECB rate): ${Object.keys(r.unconverted).join(", ")}` : "";
+        return row(`FY${r.period}`, r.apple, r.estimated,
+          `sales dated ${r.start} to ${r.end}${cur ? `; settled ${cur}` : ""}${miss}`);
       }).join("")}
     </div>
-    <div class="caveat">A difference near zero means the day rates matched
-      Apple's closely enough to trust the converted figures. A large one is
-      usually the period boundary rather than the rate: Apple's labelled end
-      date is not the inclusive cutoff for the sales days, so purchases from
-      the last day or two of a window are settled in the following period.</div>`;
+    <div class="caveat">Apple's column is every currency it settled for the
+      period (dollars, euros, pounds, won&hellip;), converted at the European
+      Central Bank's rate on the period's last day, so both columns use the same
+      kind of rate; hover a row for the per-currency amounts. A single period
+      can still be off by a day or two of sales: the finance period runs a day
+      or two behind the sales days, so a strong last day lands in the next
+      period. <b>All closed periods</b> cancels those shifts except at the
+      latest boundary and is the figure to judge the estimate by. Red means
+      more than 5% apart.${gaps.length ? ` Some currencies had no ECB rate and
+      are left out of Apple's figure: ${gaps.map((r) => `FY${r.period}`).join(", ")}.` : ""}</div>`;
 }
 
 function renderPayouts(data) {

@@ -705,34 +705,68 @@ def main():
             prev_fx = dict(json.loads(OUT.read_text(encoding="utf-8")).get("fx") or {})
         except (ValueError, KeyError):
             prev_fx = {}
-    rates = fxrates.rates(fxrates.needed(apps), prev_fx)
+    # The finance reports settle each region in its own currency (EUR, GBP,
+    # KRW...), not one USD sum, so the payout currencies need a rate too: the
+    # ECB rate on the period's last day, borrowed from the prior working day
+    # when that is a weekend.
+    wanted = fxrates.needed(apps)
+    for p in payouts:
+        if p.get("currency") and p["currency"] != "USD" and p.get("amount"):
+            wanted.setdefault(p["end"], set()).add(p["currency"])
+    rates = fxrates.rates(wanted, prev_fx)
 
     # What the conversion is worth against what Apple actually settled.
     #
     # The converted figures use ECB reference rates; Apple uses its own, on
     # its own date. Rather than claim the two agree, each closed period is
-    # measured against the finance report for it. The windows are known not
-    # to line up exactly — FY2026 P12 is labelled 30 Aug to 26 Sep but
-    # evidently cut off around the 24th, since a single day inside that range
-    # sold more units than the whole report settled — so a gap here is not
-    # automatically an error. It is the number that tells you how much to
-    # trust the estimate.
+    # measured against the finance report for it — every currency in it, each
+    # converted at the period-end ECB rate. (Until 2026-11-05 only the USD row
+    # was compared, which made FY2027 P01 read $343.70 settled against a $471
+    # estimate when Apple had in fact settled about $490 across eight
+    # currencies.) The windows also do not line up exactly: the finance period
+    # runs a day or two behind the sales-report days (FY2026 P12 closed early
+    # at the fiscal year end and its last two days settled in FY2027 P01), so
+    # a single period can be off by a day or two of sales. The page adds a
+    # running total, across which those boundary shifts cancel.
+    by_period = {}
+    for p in payouts:
+        by_period.setdefault(p["period"], []).append(p)
     settled = []
-    for period in payouts:
-        if period.get("currency") != "USD":
-            continue
+    for label in sorted(by_period, key=lambda l: by_period[l][0]["end"]):
+        rows = by_period[label]
+        start, end = rows[0]["start"], rows[0]["end"]
+        currencies, unconverted, apple = {}, {}, 0.0
+        for p in rows:
+            cur = p.get("currency") or "USD"
+            amount = p.get("amount") or 0.0
+            currencies[cur] = round(currencies.get(cur, 0.0) + amount, 2)
+            if cur == "USD":
+                apple += amount
+                continue
+            rate = (rates.get(end) or {}).get(cur)
+            if rate is None:
+                # Said out loud rather than dropped: a total that quietly
+                # omits a currency is the error this block exists to fix.
+                unconverted[cur] = round(unconverted.get(cur, 0.0) + amount, 2)
+                continue
+            apple += amount * rate
         window = 0.0
         for app in apps:
             converted, _ = fxrates.in_usd(app.get("revenue"), rates)
-            window += sum(v for d, v in converted.items()
-                          if period["start"] <= d <= period["end"])
+            window += sum(v for d, v in converted.items() if start <= d <= end)
         settled.append({
-            "period": period["period"],
-            "start": period["start"],
-            "end": period["end"],
-            "apple": period["amount"],
+            "period": label,
+            "start": start,
+            "end": end,
+            "apple": round(apple, 2),
+            "appleUsd": currencies.get("USD", 0.0),
+            "currencies": currencies,
+            "unconverted": unconverted,
             "estimated": round(window, 2),
         })
+        if unconverted:
+            print(f"  settled {label}: no ECB rate for {sorted(unconverted)}; "
+                  "left out of the converted total")
 
     missed = {}
     for app in apps:

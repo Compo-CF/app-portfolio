@@ -1,10 +1,13 @@
 """Apple's financial reports: what is actually owed, period by period.
 
-The daily sales report estimates proceeds. This is the settlement view — the
-figure Apple pays, after adjustments and after every foreign sale has been
-converted. For a vendor banking in the US the whole report comes back in USD,
-including sales made in won, euros, pesos and pounds, which is why this and
-the per-app revenue figures do not line up and should not be made to.
+The daily sales report estimates proceeds. This is the settlement view — what
+Apple owes, after adjustments. It is **not** one USD figure: each region is
+settled in its own currency (Extended Partner Share in Partner Share
+Currency), so one period comes back as USD 343.70, EUR 45.89, GBP 52.54,
+KRW 9800 and so on. Apple converts them to the bank's currency only when it
+pays, at its own rate, and a region's balance is held until it clears that
+region's minimum. So the rows are kept per currency here, and `fetch.py`
+converts them at ECB rates only for the comparison with the estimate.
 
 Two things about `filter[reportDate]` are worth knowing before changing it:
 

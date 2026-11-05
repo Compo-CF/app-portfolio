@@ -1,8 +1,9 @@
 """Historical exchange rates, so foreign proceeds can be shown in dollars.
 
-Apple pays a US vendor one USD figure per fiscal period, having converted
-every sale itself. The daily sales report does not: it states proceeds in the
-customer's currency, so a single day can read EUR 5.59, KRW 4900 and USD 3.50
+Neither Apple report hands back one dollar figure. The financial report
+settles each region in its own currency (FY2027 P01: USD, EUR, GBP, CAD,
+AUD, CZK, PHP, KRW), and Apple converts those only when it pays. The daily
+sales report states proceeds in the customer's currency, so a single day can read EUR 5.59, KRW 4900 and USD 3.50
 at once. The dashboard used to show only the USD part, which was defensible
 while foreign sales were rare and badly wrong once they were the majority —
 on 31 October six of eight purchases were foreign and the page showed $5.60
