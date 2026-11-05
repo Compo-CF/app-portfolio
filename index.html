@@ -46,6 +46,9 @@
   .wrap{max-width:1040px;margin:0 auto;padding:28px 20px 64px}
   h1{font-size:26px;letter-spacing:-.4px;margin:0}
   .sub{color:var(--faint);font-size:13px;margin-top:4px}
+  /* Names which series a Ratings-tab chart is, since a card can hold two. */
+  .rlabel{color:var(--faint);font-size:12px;margin:14px 0 4px}
+  .rlabel b{color:var(--soft);font-weight:600}
   .totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
           gap:12px;margin:22px 0 26px}
   .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;
@@ -2009,8 +2012,10 @@ function renderAttention(apps, play) {
  *  The store rating (every star rating, from the iTunes lookup) is tracked
  *  from 2026-11-05. Before that the dashboard tracked the written-review
  *  average and called it the rating; that series is kept as
- *  reviewRatingHistory but is not drawn here, because joining the two would
- *  show a jump that never happened.
+ *  reviewRatingHistory and drawn as its own chart under the store one,
+ *  labelled, never joined to it: a single line through both would show a
+ *  jump (Cosmica 3.4 to 4.24) that never happened. It also gives the tab a
+ *  real trend while the store series is still a few days old.
  */
 function storefronts(r) {
   const s = Object.entries((r && r.storefronts) || {});
@@ -2022,8 +2027,9 @@ function renderRatings(apps) {
   if (!host) return;
 
   const rated = apps
-    .map((a) => ({ app: a, hist: a.storeRatingHistory || {} }))
-    .filter((r) => Object.keys(r.hist).length)
+    .map((a) => ({ app: a, hist: a.storeRatingHistory || {},
+                   written: a.reviewRatingHistory || {} }))
+    .filter((r) => Object.keys(r.hist).length || Object.keys(r.written).length)
     .sort((x, y) => (y.app.rating?.count || 0) - (x.app.rating?.count || 0));
 
   if (!rated.length) {
@@ -2031,27 +2037,46 @@ function renderRatings(apps) {
     return;
   }
 
-  host.innerHTML = rated.map(({ app, hist }) => {
+  const stars = (v) => v.toFixed(1);
+
+  host.innerHTML = rated.map(({ app, hist, written }) => {
     const days = Object.keys(hist).sort();
     const series = {};
     for (const d of days) series[d] = hist[d].avg;
-    const now = hist[days[days.length - 1]];
-    const first = hist[days[0]];
-    const moved = (now.avg - first.avg).toFixed(2);
+    const now = days.length ? hist[days[days.length - 1]] : null;
+    const first = days.length ? hist[days[0]] : null;
+    const moved = now ? (now.avg - first.avg).toFixed(2) : "0.00";
     const wr = app.reviewRating;
+
+    const wDays = Object.keys(written).sort();
+    const wSeries = {};
+    for (const d of wDays) wSeries[d] = written[d].avg;
+
+    const storeBlock = !days.length ? ""
+      : `<div class="rlabel"><b>Store rating</b>, every star rating across all
+           storefronts · tracked from ${days[0]}</div>`
+        + (days.length > 1
+          ? chart(series, rangeDays(), stars, releaseMarks(app))
+          : `<div class="meta">One day so far. The line starts with the next refresh.</div>`);
+
+    const writtenBlock = wDays.length < 2 ? ""
+      : `<div class="rlabel"><b>Written reviews only</b>, a separate and smaller
+           set than the store rating · tracked from ${wDays[0]}</div>`
+        + chart(wSeries, rangeDays(), stars, releaseMarks(app));
 
     return `
       <div class="card">
         <div class="head">
           <div class="name"><a href="${app.url}" rel="noopener">${app.name}</a></div>
-          <div class="meta">★ <b>${now.avg}</b> from ${fmt(now.count)}
+          <div class="meta">${now
+            ? `★ <b>${now.avg.toFixed(2)}</b> from ${fmt(now.count)}
             ${now.count === 1 ? "rating" : "ratings"}${
               days.length > 1 && moved !== "0.00"
-                ? ` · ${moved > 0 ? "+" : ""}${moved} since ${days[0]}` : ""}</div>
+                ? ` · ${moved > 0 ? "+" : ""}${moved} since ${days[0]}` : ""}`
+            : "No store rating recorded yet"}</div>
         </div>
-        ${days.length > 1
-          ? chart(series, rangeDays(), (v) => v.toFixed(1), releaseMarks(app))
-          : `<div class="empty">Tracking from ${days[0]}. A line needs a second day.</div>`}
+        ${storeBlock}
+        ${writtenBlock}
         <div class="rev">By storefront: ${storefronts(app.rating) || "—"}${
           wr ? `<br>Written reviews only: ★ ${wr.average} from ${fmt(wr.count)}
             (${[5, 4, 3, 2, 1].map((n) => `${n}★ ${wr.histogram?.[n] || 0}`).join(", ")})` : ""}</div>
