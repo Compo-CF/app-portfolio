@@ -26,6 +26,7 @@ import analytics
 import finance
 import fx as fxrates
 import play
+import storeratings
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "portfolio.json"
@@ -278,7 +279,7 @@ def revenue_by_app(rows, sku_map=None):
 
 
 def app_detail(app_id):
-    versions, rating, reviews, builds = [], None, [], []
+    versions, review_rating, reviews, builds = [], None, [], []
 
     # How many in-app purchases the app offers, which is what separates "this
     # earned nothing" from "this cannot earn anything". A revenue row against
@@ -299,10 +300,16 @@ def app_detail(app_id):
             "created": (a.get("createdDate") or "")[:10],
         })
 
+    # Written reviews only. This used to be the app's headline "rating", which
+    # understated every app: most people tap stars and write nothing, and
+    # those never appear here (Cosmica on 2026-11-05: 3.4 from 5 here against
+    # 4.07 from 14 on the US store). The headline now comes from
+    # storeratings.py; this stays as reviewRating, the average and histogram
+    # of what people bothered to write about.
     data = api(f"apps/{app_id}/customerReviews?limit=200&sort=-createdDate").get("data", [])
     scores = [r["attributes"].get("rating") for r in data if r["attributes"].get("rating")]
     if scores:
-        rating = {
+        review_rating = {
             "average": round(sum(scores) / len(scores), 2),
             "count": len(scores),
             "histogram": {str(n): scores.count(n) for n in range(1, 6)},
@@ -345,7 +352,7 @@ def app_detail(app_id):
             entry["attached"] = att["attributes"].get("versionString") if att else None
         builds.append(entry)
 
-    return versions, rating, reviews, builds, iaps
+    return versions, review_rating, reviews, builds, iaps
 
 
 def main():
@@ -405,14 +412,30 @@ def main():
     # current one. Without keeping it, "is this recovering?" is unanswerable
     # — a 2-star review drops the average visibly and nothing records when,
     # or whether it came back.
-    prev_rat = {}
+    #
+    # Two series, never mixed. storeRatingHistory is the store's own star
+    # rating (all ratings, from the iTunes lookup) and starts on 2026-11-05.
+    # reviewRatingHistory is the written-review average; until that date it
+    # was stored as "ratingHistory" and passed off as the rating, so it is
+    # carried over under its honest name rather than spliced onto the store
+    # series, where the switch would have drawn as a fake jump (3.4 to 4.3).
+    prev_rev_hist, prev_store_hist, prev_store = {}, {}, {}
     if OUT.exists():
         try:
             prev = json.loads(OUT.read_text(encoding="utf-8"))
-            prev_rat = {a["id"]: (a.get("ratingHistory") or {}) for a in prev.get("apps", [])}
+            for a in prev.get("apps", []):
+                prev_rev_hist[a["id"]] = (a.get("reviewRatingHistory")
+                                          or a.get("ratingHistory") or {})
+                prev_store_hist[a["id"]] = a.get("storeRatingHistory") or {}
+                # Only a lookup-sourced rating is a usable fallback; the old
+                # written-review one would put the wrong numbers back.
+                r = a.get("rating") or {}
+                if r.get("source") == "itunes-lookup":
+                    prev_store[a["id"]] = r
         except (ValueError, KeyError):
-            prev_rat = {}
-    rating_history = {app_id: dict(prev_rat.get(app_id, {})) for app_id, _ in APPS}
+            prev_rev_hist, prev_store_hist, prev_store = {}, {}, {}
+    review_history = {app_id: dict(prev_rev_hist.get(app_id, {})) for app_id, _ in APPS}
+    store_history = {app_id: dict(prev_store_hist.get(app_id, {})) for app_id, _ in APPS}
 
     # Play data, merged onto whatever is already committed rather than
     # replacing it. Google keeps a limited window, and an empty result means
@@ -559,9 +582,26 @@ def main():
             # Network trouble here must not cost the rest of the refresh.
             print(f"  analytics: {app_id} skipped this run ({e})")
 
+    # Storefronts worth asking: every country any app has ever been
+    # downloaded in (nobody can rate an app they never installed), the US
+    # always, and anywhere a rating was found before in case the download
+    # series has a gap. One call per storefront covers every app.
+    storefronts = {"US"}
+    for app_id, _ in APPS:
+        for day in countries[app_id].values():
+            storefronts.update(day)
+        storefronts.update((prev_store.get(app_id) or {}).get("storefronts") or {})
+    store_rating, failed = storeratings.fetch(
+        [a for a, _ in APPS], storefronts, prev_store)
+    print(f"  ratings: {len(storefronts)} storefront(s) asked"
+          + (f", kept last run's figures for {', '.join(failed)}" if failed else ""))
+
     apps = []
     for app_id, name in APPS:
-        versions, rating, reviews, builds, iaps = app_detail(app_id)
+        versions, review_rating, reviews, builds, iaps = app_detail(app_id)
+        # A storefront that failed this run already carries last run's
+        # figures (storeratings.fetch), so this is never a fake drop.
+        rating = store_rating.get(app_id)
 
         # The page draws "downloads". It switches to UTC days as soon as Apple
         # has delivered App Analytics data for the app, and stays on the
@@ -601,9 +641,16 @@ def main():
 
         # Keyed by the day it was observed, so re-running overwrites rather
         # than appending a second reading for the same date.
-        if rating:
-            rating_history[app_id][today.isoformat()] = {
-                "avg": rating["average"], "count": rating["count"]}
+        # Not on a run where no storefront answered: that would log a copy of
+        # yesterday as if it had been observed today.
+        if rating and len(failed) < len(storefronts):
+            us = rating["storefronts"].get("US")
+            store_history[app_id][today.isoformat()] = {
+                "avg": rating["average"], "count": rating["count"],
+                "us": {"avg": us["average"], "count": us["count"]} if us else None}
+        if review_rating:
+            review_history[app_id][today.isoformat()] = {
+                "avg": review_rating["average"], "count": review_rating["count"]}
         apps.append({
             "id": app_id,
             "name": name,
@@ -633,8 +680,15 @@ def main():
             "android": (android[app_id]
                         if android[app_id]["installs"] or android[app_id]["active"]
                         else None),
+            # The store's star rating, all ratings across storefronts
+            # (storeratings.py). average/count keep their old names so
+            # anything summing them gets the right numbers.
             "rating": rating,
-            "ratingHistory": dict(sorted(rating_history[app_id].items())),
+            "storeRatingHistory": dict(sorted(store_history[app_id].items())),
+            # Written reviews only, with the star histogram of those reviews.
+            # Not the app's rating; see app_detail().
+            "reviewRating": review_rating,
+            "reviewRatingHistory": dict(sorted(review_history[app_id].items())),
             "reviews": reviews,
             "versions": versions,
             "builds": builds,

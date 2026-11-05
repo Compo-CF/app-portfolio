@@ -1772,14 +1772,16 @@ function renderReviews(apps) {
     return;
   }
 
-  const rated = apps.filter((a) => a.rating);
+  // The average of the written reviews listed below, which is not the apps'
+  // store rating: most ratings come without a review and never appear here.
+  const rated = apps.filter((a) => a.reviewRating);
   const avg = rated.length
-    ? (rated.reduce((n, a) => n + a.rating.average * a.rating.count, 0) /
-       rated.reduce((n, a) => n + a.rating.count, 0)).toFixed(2)
+    ? (rated.reduce((n, a) => n + a.reviewRating.average * a.reviewRating.count, 0) /
+       rated.reduce((n, a) => n + a.reviewRating.count, 0)).toFixed(2)
     : "—";
 
   host.innerHTML =
-    `<div class="section">${fmt(all.length)} reviews · ★ ${avg} average</div>` +
+    `<div class="section">${fmt(all.length)} written reviews · ★ ${avg} across them</div>` +
     all.map((r) => `
       <div class="rv">
         <div class="top">
@@ -2003,13 +2005,24 @@ function renderAttention(apps, play) {
  *  snapshots and starts the day the dashboard began keeping them — short at
  *  first, and honest about that rather than pretending to history it does
  *  not have.
+ *
+ *  The store rating (every star rating, from the iTunes lookup) is tracked
+ *  from 2026-11-05. Before that the dashboard tracked the written-review
+ *  average and called it the rating; that series is kept as
+ *  reviewRatingHistory but is not drawn here, because joining the two would
+ *  show a jump that never happened.
  */
+function storefronts(r) {
+  const s = Object.entries((r && r.storefronts) || {});
+  return s.map(([cc, v]) => `${cc} ★ ${v.average} (${fmt(v.count)})`).join(" · ");
+}
+
 function renderRatings(apps) {
   const host = $("#ratings");
   if (!host) return;
 
   const rated = apps
-    .map((a) => ({ app: a, hist: a.ratingHistory || {} }))
+    .map((a) => ({ app: a, hist: a.storeRatingHistory || {} }))
     .filter((r) => Object.keys(r.hist).length)
     .sort((x, y) => (y.app.rating?.count || 0) - (x.app.rating?.count || 0));
 
@@ -2025,6 +2038,7 @@ function renderRatings(apps) {
     const now = hist[days[days.length - 1]];
     const first = hist[days[0]];
     const moved = (now.avg - first.avg).toFixed(2);
+    const wr = app.reviewRating;
 
     return `
       <div class="card">
@@ -2038,6 +2052,9 @@ function renderRatings(apps) {
         ${days.length > 1
           ? chart(series, rangeDays(), (v) => v.toFixed(1), releaseMarks(app))
           : `<div class="empty">Tracking from ${days[0]}. A line needs a second day.</div>`}
+        <div class="rev">By storefront: ${storefronts(app.rating) || "—"}${
+          wr ? `<br>Written reviews only: ★ ${wr.average} from ${fmt(wr.count)}
+            (${[5, 4, 3, 2, 1].map((n) => `${n}★ ${wr.histogram?.[n] || 0}`).join(", ")})` : ""}</div>
       </div>`;
   }).join("");
 }
@@ -2377,7 +2394,7 @@ function render(d) {
     ["App Store, 7 days", fmt(sumLast(all, 7))],
     ["App Store, 30 days", fmt(sumLast(all, 30))],
     ["App Store, 365 days", fmt(sumLast(all, 365))],
-    ["Average rating", avg],
+    ["Average store rating", avg],
   ].map(([label, v]) => `<div class="stat"><b>${v}</b><span>${label}</span></div>`).join("");
 
   renderMoney(d);
@@ -2438,7 +2455,7 @@ function renderAppCards(all_apps) {
             ${a.downloadsBasis === "utc"
               ? `<span title="App Analytics first-time downloads, UTC days — matches the App Analytics pages.${(a.downloadsProvisional || []).length ? " Still filling in: " + a.downloadsProvisional.join(", ") + "." : ""}${(a.downloadsGapsFromSales || []).length ? " Not yet delivered by App Analytics, shown from the sales report (Pacific days): " + a.downloadsGapsFromSales.join(", ") + "." : ""}">· UTC days</span>`
               : `<span title="Daily sales report, Pacific-time days. Switches to App Analytics UTC days once Apple delivers the first reports.">· Pacific days</span>`}
-            ${r ? ` · ★ ${r.average} (${r.count})` : " · no ratings yet"}
+            ${r ? ` · <span title="All App Store star ratings, every storefront. ${storefronts(r)}">★ ${r.average} (${fmt(r.count)})</span>` : " · no ratings yet"}
             ${live ? ` <span class="pill" style="background:${stateColour(live.state)}">v${live.version} ${live.state}</span>` : ""}
           </div>
         </div>
