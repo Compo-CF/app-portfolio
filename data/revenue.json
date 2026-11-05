@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-05T15:41:32Z",
+ "generated": "2026-11-05T19:33:28Z",
  "fx": {
   "2026-10-31": {
    "CAD": 0.715871,
@@ -9,6 +9,26 @@
    "PHP": 0.015704,
    "CZK": 0.045876,
    "KRW": 0.000749
+  },
+  "2026-11-01": {
+   "AUD": 0.702445,
+   "EUR": 1.117206,
+   "GBP": 1.33989
+  },
+  "2026-11-02": {
+   "CAD": 0.715615,
+   "GBP": 1.34194
+  },
+  "2026-11-03": {
+   "EUR": 1.117905,
+   "DKK": 0.149582,
+   "GBP": 1.341076,
+   "NOK": 0.108339
+  },
+  "2026-11-04": {
+   "EUR": 1.126697,
+   "GBP": 1.349983,
+   "CAD": 0.717618
   }
  },
  "periods": [
@@ -430,5 +450,230 @@
     }
    ]
   }
- ]
+ ],
+ "open": {
+  "start": "2026-11-01",
+  "through": "2026-11-04",
+  "missing": [],
+  "days": {
+   "2026-11-01": [
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "AUD",
+     "units": 1,
+     "amount": 5.08,
+     "usd": 3.57
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "EUR",
+     "units": 1,
+     "amount": 3.69,
+     "usd": 4.12
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "GBP",
+     "units": 1,
+     "amount": 2.89,
+     "usd": 3.87
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "USD",
+     "units": 2,
+     "amount": 7.0,
+     "usd": 7.0
+    }
+   ],
+   "2026-11-02": [
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "CAD",
+     "units": 1,
+     "amount": 4.89,
+     "usd": 3.5
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "GBP",
+     "units": 2,
+     "amount": 5.78,
+     "usd": 7.76
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "USD",
+     "units": 2,
+     "amount": 7.0,
+     "usd": 7.0
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Remove Ads",
+     "sku": "com.centricfiber.cosmica.removeads",
+     "currency": "USD",
+     "units": 1,
+     "amount": 2.1,
+     "usd": 2.1
+    }
+   ],
+   "2026-11-03": [
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "DKK",
+     "units": 1,
+     "amount": 23.09,
+     "usd": 3.45
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "EUR",
+     "units": 1,
+     "amount": 3.72,
+     "usd": 4.16
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "NOK",
+     "units": 1,
+     "amount": 33.04,
+     "usd": 3.58
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "USD",
+     "units": 2,
+     "amount": 7.0,
+     "usd": 7.0
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Shards Small",
+     "sku": "com.centricfiber.cosmica.shards_pack_small",
+     "currency": "USD",
+     "units": 1,
+     "amount": 1.4,
+     "usd": 1.4
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Stardust Doubler",
+     "sku": "com.centricfiber.cosmica.stardust_doubler",
+     "currency": "EUR",
+     "units": 1,
+     "amount": 5.59,
+     "usd": 6.25
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Time Warp 24h",
+     "sku": "com.centricfiber.cosmica.timewarp_24h",
+     "currency": "DKK",
+     "units": 1,
+     "amount": 23.09,
+     "usd": 3.45
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Time Warp 8h",
+     "sku": "com.centricfiber.cosmica.timewarp_8h",
+     "currency": "GBP",
+     "units": 1,
+     "amount": 1.15,
+     "usd": 1.54
+    }
+   ],
+   "2026-11-04": [
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "EUR",
+     "units": 1,
+     "amount": 3.69,
+     "usd": 4.16
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "USD",
+     "units": 3,
+     "amount": 10.5,
+     "usd": 10.5
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Stardust Doubler",
+     "sku": "com.centricfiber.cosmica.stardust_doubler",
+     "currency": "CAD",
+     "units": 1,
+     "amount": 6.99,
+     "usd": 5.02
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Time Warp 24h",
+     "sku": "com.centricfiber.cosmica.timewarp_24h",
+     "currency": "GBP",
+     "units": 2,
+     "amount": 5.78,
+     "usd": 7.8
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Time Warp 8h",
+     "sku": "com.centricfiber.cosmica.timewarp_8h",
+     "currency": "GBP",
+     "units": 1,
+     "amount": 1.15,
+     "usd": 1.55
+    }
+   ]
+  }
+ }
 }
