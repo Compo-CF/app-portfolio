@@ -39,7 +39,11 @@
       margin-right:5px;vertical-align:-1px}
     .rv-share{display:block;height:4px;border-radius:2px;background:var(--accent);
       margin-top:4px;opacity:.55}
+    .rv-grid.m{grid-template-columns:var(--lg)}
+    .rv-open{color:var(--soft);font-style:italic}
+    #revenue .range{flex-wrap:wrap;row-gap:6px}
     @media (max-width:640px){
+      .rv-grid.m{grid-template-columns:var(--sm)}
       .rv-grid{font-size:12.5px;padding:8px 10px;gap:6px}
       .rv-bar{grid-template-columns:64px 1fr 64px}
       .rv-hide-sm{display:none}
@@ -61,9 +65,21 @@
     return `${MON[mid.getUTCMonth()]} ${mid.getUTCFullYear()}`;
   };
   const fyLabel = (p) => { const [y, n] = p.label.split("-"); return `FY${y.slice(2)} P${n}`; };
-  const native = (rows) => rows.map((r) =>
-    `${r.amount.toLocaleString("en-US", {maximumFractionDigits: 2})} ${r.currency}`).join(", ");
+  // Native amounts, one figure per currency however many rows carry it.
+  const native = (rows) => {
+    const by = {};
+    for (const r of rows) by[r.currency] = (by[r.currency] || 0) + r.amount;
+    return Object.entries(by).sort((a, b) => (a[0] === "USD" ? -1 : b[0] === "USD" ? 1 : a[0] < b[0] ? -1 : 1))
+      .map(([c, v]) => `${v.toLocaleString("en-US", {maximumFractionDigits: 2})} ${c}`).join(", ");
+  };
   const sum = (rows, f) => rows.reduce((n, r) => n + (f(r) || 0), 0);
+  // A converted figure that leaves a currency out must say so.
+  const shortBy = (rows) => {
+    const c = [...new Set(rows.filter((r) => r.usd == null).map((r) => r.currency))];
+    return c.length ? ` (${c.join(", ")} not converted: no ECB rate)` : "";
+  };
+  const range = (a, b) => (a.slice(0, 7) === b.slice(0, 7)
+    ? `${day(a)}–${+b.slice(8)}` : `${day(a)} – ${day(b)}`);
 
   let DATA = null;
   let PICK = null;
@@ -79,7 +95,20 @@
     const approx = (p) => (foreignOf(p) ? "≈" : "");
     const latest = periods[periods.length - 1];
     const prior = periods[periods.length - 2];
-    const pick = periods.find((p) => p.label === PICK) || latest;
+
+    // Two views beside the settled periods, for the Products picker and the
+    // purchase table: the days since the newest financial report (daily sales
+    // reports, not settled yet), and every settled period together.
+    const od = (DATA.open && DATA.open.days) || {};
+    const OPEN = DATA.open && DATA.open.through && Object.values(od).some((rs) => rs.length)
+      ? {label: "open", open: true, start: DATA.open.start, end: DATA.open.through,
+         missing: DATA.open.missing || [], rows: Object.values(od).flat()}
+      : null;
+    const ALL = {label: "all", all: true, start: periods[0].start, end: latest.end,
+                 rows: periods.flatMap((p) => p.rows)};
+    const nameOf = (p) => (p.open ? range(p.start, p.end) : p.all ? "All periods" : monthName(p));
+    const views = [...(OPEN ? [OPEN] : []), ...[...periods].reverse(), ALL];
+    const pick = views.find((p) => p.label === PICK) || latest;
 
     // Apps ranked by all-time proceeds; the top four keep a colour, the rest
     // share "Other" so the chart stays readable as the portfolio grows.
@@ -144,31 +173,78 @@
     html += `<div class="rv-grid total" style="${cols}"><span>Total</span>${shown.map((p) =>
       `<span>${approx(p)}${usd(totalOf(p))}</span>`).join("")}<span>${usd(all)}</span></div></div>`;
 
+    /* ---- purchase x period table ---- */
+    // Every purchase ever bought, a column per settled period, the open days
+    // after them, and the settled total. Ranked by everything it has earned.
+    const keyOf = (r) => `${r.app}\u0000${r.product}`;
+    const buys = {};
+    const entry = (r) => (buys[keyOf(r)] ||= {app: r.app, product: r.product, settled: [], open: []});
+    for (const r of ALL.rows) entry(r).settled.push(r);
+    for (const r of OPEN ? OPEN.rows : []) entry(r).open.push(r);
+    const earned = (b) => sum(b.settled, (r) => r.usd) + sum(b.open, (r) => r.usd);
+    const ranked = Object.values(buys).sort((x, y) => earned(y) - earned(x));
+    const buyCols = [...shown, ...(OPEN ? [OPEN] : [])];
+    // Narrow screens keep the newest settled period, the open days and the total.
+    const keepSm = (i) => i >= shown.length - 1;
+    const cls = (p, i) => [keepSm(i) ? "" : "rv-hide-sm", p.open ? "rv-open" : ""].join(" ").trim();
+    const mcols = `--lg:minmax(0,1.9fr) repeat(${buyCols.length},minmax(0,1fr)) minmax(0,.6fr) minmax(0,1fr);` +
+      `--sm:minmax(0,1.7fr) repeat(${buyCols.filter((_, i) => keepSm(i)).length},minmax(0,1fr)) minmax(0,1fr)`;
+    const head = (p, i) => (p.open
+      ? `<span class="${cls(p, i)}" title="Not settled yet: Apple's daily sales reports, ${day(p.start)} – ${day(p.end)}">${nameOf(p)}</span>`
+      : `<span class="${cls(p, i)}" title="${fyLabel(p)}, ${day(p.start)} – ${day(p.end)}">${monthName(p).slice(0, 3)} ${monthName(p).slice(-2)}</span>`);
+    html += `<div class="rv-h">By purchase</div><div class="months">
+      <div class="rv-grid head m" style="${mcols}"><span>Purchase</span>${buyCols.map(head).join("")}
+        <span class="rv-hide-sm" title="Settled periods">Units</span><span title="All settled periods">Settled</span></div>`;
+    for (const b of ranked) {
+      const units = sum(b.settled, (r) => r.units);
+      const total = sum(b.settled, (r) => r.usd);
+      const per = units > 0 ? ` · ${usd(total / units)} each` : "";
+      const cells = buyCols.map((p, i) => {
+        const rs = (p.open ? b.open : b.settled.filter((r) => p.rows.includes(r)));
+        const tip = rs.length ? `${sum(rs, (r) => r.units)} sold · ${native(rs)}${shortBy(rs)}` : "none";
+        const mark = rs.some((r) => r.currency !== "USD") ? "≈" : "";
+        return `<span class="${cls(p, i)}" title="${esc(tip)}">${rs.length ? mark + usd(sum(rs, (r) => r.usd)) : "—"}</span>`;
+      });
+      html += `<div class="rv-grid m" style="${mcols}">
+        <span>${esc(b.product)}<small>${esc(b.app)}${per}</small></span>${cells.join("")}
+        <span class="rv-hide-sm">${b.settled.length ? units : "—"}</span>
+        <b title="${esc((native(b.settled) || "none") + shortBy(b.settled))}">${b.settled.length ? usd(total) : "—"}</b></div>`;
+    }
+    html += `<div class="rv-grid total m" style="${mcols}"><span>Total</span>${buyCols.map((p, i) =>
+      `<span class="${cls(p, i)}">${approx(p)}${usd(totalOf(p))}</span>`).join("")}
+      <span class="rv-hide-sm">${sum(ALL.rows, (r) => r.units)}</span><span>${usd(all)}</span></div></div>`;
+
     /* ---- products for one period ---- */
     html += `<div class="rv-h">Products</div>
-      <div class="range" role="group" aria-label="Fiscal period"><span>Period</span>${
-      [...periods].reverse().map((p) => `<button type="button" data-label="${p.label}"
-        aria-pressed="${p === pick}">${monthName(p)}</button>`).join("")}</div>`;
+      <div class="range" role="group" aria-label="Period"><span>Period</span>${
+      views.map((p) => `<button type="button" data-label="${p.label}"
+        aria-pressed="${p === pick}"${p.open ? ' title="Not settled yet"' : ""}>${nameOf(p)}</button>`).join("")}</div>`;
     const groups = {};
-    for (const r of pick.rows) (groups[`${r.app}\u0000${r.product}`] ||= []).push(r);
+    for (const r of pick.rows) (groups[keyOf(r)] ||= []).push(r);
     const prods = Object.values(groups).sort((x, y) => sum(y, (r) => r.usd) - sum(x, (r) => r.usd));
     const pt = totalOf(pick);
-    const pcols = "grid-template-columns:minmax(0,2fr) minmax(0,.6fr) minmax(0,1.6fr) minmax(0,.9fr)";
+    const pcols = "--lg:minmax(0,2fr) minmax(0,.6fr) minmax(0,1.6fr) minmax(0,.9fr);" +
+      "--sm:minmax(0,2fr) minmax(0,.6fr) minmax(0,.9fr)";
     html += `<div class="months">
-      <div class="rv-grid head" style="${pcols}"><span>Product</span><span>Units</span>
-        <span class="rv-hide-sm">Settled in</span><span>USD</span></div>`;
+      <div class="rv-grid head m" style="${pcols}"><span>Product</span><span>Units</span>
+        <span class="rv-hide-sm">${pick.open ? "Earned in" : "Settled in"}</span><span>USD</span></div>`;
     for (const rs of prods) {
       const v = sum(rs, (r) => r.usd);
       const foreign = rs.some((r) => r.currency !== "USD");
-      html += `<div class="rv-grid" style="${pcols}">
-        <span>${esc(rs[0].product)}<small>${esc(rs[0].app)} · ${(v / pt * 100).toFixed(1)}%</small>
-          <span class="rv-share" style="width:${(v / pt) * 100}%"></span></span>
+      const share = pt ? v / pt : 0;
+      html += `<div class="rv-grid m" style="${pcols}">
+        <span>${esc(rs[0].product)}<small>${esc(rs[0].app)} · ${(share * 100).toFixed(1)}%</small>
+          <span class="rv-share" style="width:${Math.max(share, 0) * 100}%"></span></span>
         <span>${sum(rs, (r) => r.units)}</span>
-        <span class="rv-hide-sm" style="font-size:12px;color:var(--soft)">${esc(native(rs))}</span>
+        <span class="rv-hide-sm" style="font-size:12px;color:var(--soft)">${esc(native(rs) + shortBy(rs))}</span>
         <b>${foreign ? "≈" : ""}${usd(v)}</b></div>`;
     }
-    html += `<div class="rv-grid total" style="${pcols}"><span>${monthName(pick)} · ${fyLabel(pick)},
-      ${day(pick.start)} – ${day(pick.end)}</span><span>${sum(pick.rows, (r) => r.units)}</span>
+    const pickName = pick.open
+      ? `${range(pick.start, pick.end)} · daily sales, not settled yet`
+      : pick.all ? `All periods · ${day(pick.start)} ${pick.start.slice(0, 4)} – ${day(pick.end)} ${pick.end.slice(0, 4)}`
+      : `${monthName(pick)} · ${fyLabel(pick)}, ${day(pick.start)} – ${day(pick.end)}`;
+    html += `<div class="rv-grid total m" style="${pcols}"><span>${pickName}</span>
+      <span>${sum(pick.rows, (r) => r.units)}</span>
       <span class="rv-hide-sm"></span><span>${approx(pick)}${usd(pt)}</span></div></div>`;
 
     html += `<div class="caveat">From Apple's financial reports: what Apple settled for each
@@ -178,7 +254,11 @@
       marked ≈ include foreign currency at the European Central Bank rate on the period's last
       day and will differ from the deposit by a few dollars; hover a cell for the native amounts.
       A region's sales can land a period late, because they appear only in the period Apple settles
-      them. AdMob is not included. Updated ${esc((DATA.generated || "").slice(0, 10))}.</div>`;
+      them. AdMob is not included. Updated ${esc((DATA.generated || "").slice(0, 10))}.${OPEN ? `
+      <br><br><i>${range(OPEN.start, OPEN.end)}</i>, in italics, is not settled yet: it is read from
+      Apple's daily sales reports (Pacific days), converted at each day's ECB rate, and moves into a
+      fiscal period when Apple's next financial report closes. Treat it as an estimate.${
+      OPEN.missing.length ? ` No report yet for ${OPEN.missing.map(day).join(", ")}, so it is short those days.` : ""}` : ""}</div>`;
 
     host.innerHTML = html;
     host.querySelectorAll(".range button").forEach((b) =>

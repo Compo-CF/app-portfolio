@@ -27,7 +27,7 @@ import json
 import os
 import sys
 import time
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import jwt
@@ -170,6 +170,114 @@ def fetch(label, bearer, vendor):
     return parse(text, label)
 
 
+# How far back the open window may reach. A financial report later than this
+# is its own problem; the window should not grow without bound meanwhile.
+OPEN_MAX_DAYS = 45
+
+
+def sales_day(day, bearer, vendor):
+    """One day's in-app sales by purchase, from the DAILY sales summary.
+
+    None when Apple has not published that day (a 404, normal for yesterday),
+    so the day is asked about again next run; [] when it has and nothing was
+    bought. Read with the rules in reference_asc_sales_report_parsing:
+    Developer Proceeds is per unit, refunds are negative units, and each row
+    is in the currency it was earned in.
+    """
+    try:
+        r = requests.get(f"{ASC}/salesReports", timeout=60,
+                         headers={"Authorization": f"Bearer {bearer}",
+                                  "Accept": "application/a-gzip"},
+                         params={"filter[frequency]": "DAILY",
+                                 "filter[reportType]": "SALES",
+                                 "filter[reportSubType]": "SUMMARY",
+                                 "filter[reportDate]": day,
+                                 "filter[vendorNumber]": vendor})
+    except requests.RequestException as e:
+        print(f"  sales {day}: unreachable ({type(e).__name__})")
+        return None
+    if r.status_code != 200:
+        if r.status_code != 404:
+            print(f"  sales {day}: refused ({r.status_code})")
+        return None
+    try:
+        text = gzip.decompress(r.content).decode("utf-8", "replace")
+    except (OSError, EOFError):
+        text = r.content.decode("utf-8", "replace")
+
+    lines = text.splitlines()
+    if not lines:
+        return []
+    hdr = lines[0].split("\t")
+    agg = {}
+    for line in lines[1:]:
+        row = dict(zip(hdr, line.split("\t")))
+        ptype = (row.get("Product Type Identifier") or "").strip()
+        try:
+            units = int(row.get("Units") or 0)
+            per = float(row.get("Developer Proceeds") or 0)
+        except ValueError:
+            continue
+        # In-app purchases are the IA* types. A paid app's own sale would be
+        # a non-IA row with proceeds, so keep any row that earned something.
+        if not (ptype.startswith("IA") or per):
+            continue
+        sku = (row.get("SKU") or "").strip()
+        cur = (row.get("Currency of Proceeds") or "USD").strip()
+        app_id, app = app_of(sku)
+        k = (app, row.get("Title") or sku, cur)
+        out = agg.setdefault(k, {"appId": app_id, "app": app, "product": k[1],
+                                 "sku": sku, "currency": cur,
+                                 "units": 0, "amount": 0.0})
+        out["units"] += units
+        out["amount"] += units * per
+    rows = sorted(agg.values(), key=lambda r: (r["app"], r["product"], r["currency"]))
+    for r in rows:
+        r["amount"] = round(r["amount"], 2)
+    return [r for r in rows if r["units"] or r["amount"]]
+
+
+def open_sales(periods, prev_open, bearer, vendor, today):
+    """Sales by purchase for the days no financial report covers yet.
+
+    The window starts the day after the newest settled period and runs to
+    yesterday. A published day's report does not change, so held days are
+    never refetched; when the next financial report closes, the days it
+    covers fall out of the window and are dropped.
+    """
+    if not periods:
+        return None
+    start = date.fromisoformat(periods[-1]["end"]) + timedelta(days=1)
+    held = {d: rows for d, rows in ((prev_open or {}).get("days") or {}).items()
+            if d >= start.isoformat()}
+    last = today - timedelta(days=1)
+    first = max(start, last - timedelta(days=OPEN_MAX_DAYS))
+    fetched = 0
+    day = first
+    while day <= last:
+        iso = day.isoformat()
+        if iso not in held:
+            rows = sales_day(iso, bearer, vendor)
+            if rows is not None:
+                held[iso] = rows
+                fetched += 1
+        day += timedelta(days=1)
+    if fetched:
+        print(f"  sales: {fetched} day(s) fetched for the open period")
+    if not held:
+        return {"start": start.isoformat(), "through": None, "missing": [], "days": {}}
+    through = max(held)
+    # Days inside the window Apple has not answered for. Usually none; listed
+    # so the page can say the total is short rather than quietly being short.
+    missing, d = [], first
+    while d.isoformat() < through:
+        if d.isoformat() not in held:
+            missing.append(d.isoformat())
+        d += timedelta(days=1)
+    return {"start": start.isoformat(), "through": through, "missing": missing,
+            "days": dict(sorted(held.items()))}
+
+
 def _order(label):
     y, p = label.split("-")
     return int(y), int(p)
@@ -206,22 +314,36 @@ def main():
             found += 1
 
     periods = sorted(held.values(), key=lambda p: p["end"])
+    open_ = open_sales(periods, prev.get("open"), bearer, vendor, date.today())
+
+    # Settled periods convert at their last day's rate (as the Payments tab
+    # does); open days at each day's own rate (as the estimate does).
     wanted = {}
     for p in periods:
         for r in p["rows"]:
             if r["currency"] != "USD":
                 wanted.setdefault(p["end"], set()).add(r["currency"])
+    for d, rows in ((open_ or {}).get("days") or {}).items():
+        for r in rows:
+            if r["currency"] != "USD":
+                wanted.setdefault(d, set()).add(r["currency"])
     rates = fxrates.rates(wanted, prev.get("fx") or {})
 
-    for p in periods:
-        day = rates.get(p["end"]) or {}
-        for r in p["rows"]:
+    def convert(rows, on):
+        day = rates.get(on) or {}
+        for r in rows:
             rate = 1.0 if r["currency"] == "USD" else day.get(r["currency"])
             r["usd"] = round(r["amount"] * rate, 2) if rate else None
 
+    for p in periods:
+        convert(p["rows"], p["end"])
+    for d, rows in ((open_ or {}).get("days") or {}).items():
+        convert(rows, d)
+
     out = {"generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
            "fx": {d: v for d, v in rates.items() if d in wanted},
-           "periods": periods}
+           "periods": periods,
+           "open": open_}
     if prev and {k: v for k, v in out.items() if k != "generated"} == \
             {k: v for k, v in prev.items() if k != "generated"}:
         print(f"revenue: nothing new ({len(periods)} periods)")
