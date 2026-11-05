@@ -103,6 +103,18 @@ jobs:
           BACKFILL_DAYS: ${{ github.event.inputs.backfill_days || '7' }}
         run: python scripts/fetch.py
 
+      # The Revenue tab: the same Apple financial reports at product level, in
+      # data/revenue.json. Optional, so a failure here never costs the main
+      # refresh; the committed revenue history is simply left as it was.
+      - name: Apple proceeds by app and product
+        continue-on-error: true
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          ASC_VENDOR_NUMBER: ${{ secrets.ASC_VENDOR_NUMBER }}
+        run: python scripts/revenue.py
+
       - name: Commit if anything moved
         # The same credentials as the fetch step, because the retry below
         # regenerates the file and would otherwise run without them — a
@@ -139,7 +151,7 @@ jobs:
           # both the accumulated history and any field a newer parser has
           # started writing. Forcing our copy over would silently drop them.
           for attempt in 1 2 3; do
-            git add data/portfolio.json
+            git add data/portfolio.json data/revenue.json
             # Nothing new is the normal case on a quiet day and must not fail.
             if git diff --staged --quiet; then echo "nothing new"; exit 0; fi
 
@@ -154,6 +166,7 @@ jobs:
             git fetch -q origin "$GITHUB_REF_NAME"
             git reset -q --hard "origin/$GITHUB_REF_NAME"
             python scripts/fetch.py
+            python scripts/revenue.py || echo "::warning::revenue.py failed on retry; revenue.json left as committed"
           done
 
           echo "::error::Could not land the data after 3 attempts."

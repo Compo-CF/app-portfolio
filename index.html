@@ -342,6 +342,8 @@
             aria-selected="false">Cumulative</button>
     <button role="tab" id="tab-payments" aria-controls="panel-payments"
             aria-selected="false">Payments</button>
+    <button role="tab" id="tab-revenue" aria-controls="panel-revenue"
+            aria-selected="false">Revenue</button>
     <button role="tab" id="tab-ratings" aria-controls="panel-ratings"
             aria-selected="false">Ratings</button>
     <button role="tab" id="tab-map" aria-controls="panel-map"
@@ -367,6 +369,9 @@
     <div id="curtoggle"></div>
     <div id="money"></div>
     <div id="payments"></div>
+  </div>
+  <div role="tabpanel" id="panel-revenue" aria-labelledby="tab-revenue" hidden>
+    <div id="revenue"></div>
   </div>
   <div role="tabpanel" id="panel-ratings" aria-labelledby="tab-ratings" hidden>
     <div id="ratings"></div>
@@ -2622,5 +2627,6 @@ load()
     $("#apps").innerHTML = `<div class="err">Could not load the data file.<br>${e.message}</div>`;
   });
 </script>
+<script src="revenue.js"></script>
 </body>
 </html>

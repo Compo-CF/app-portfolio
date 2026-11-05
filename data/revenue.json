@@ -1,0 +1,434 @@
+{
+ "generated": "2026-11-05T15:41:32Z",
+ "fx": {
+  "2026-10-31": {
+   "CAD": 0.715871,
+   "EUR": 1.117206,
+   "GBP": 1.33989,
+   "AUD": 0.702445,
+   "PHP": 0.015704,
+   "CZK": 0.045876,
+   "KRW": 0.000749
+  }
+ },
+ "periods": [
+  {
+   "label": "2026-10",
+   "start": "2026-06-28",
+   "end": "2026-08-01",
+   "rows": [
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Remove Ads",
+     "sku": "com.centricfiber.cosmica.removeads",
+     "currency": "USD",
+     "units": 1,
+     "amount": 2.54,
+     "usd": 2.54
+    },
+    {
+     "appId": "6773501518",
+     "app": "S-Tier Eats",
+     "product": "Generous Tip",
+     "sku": "com.compofelice.WoodlandsEats.tip.large",
+     "currency": "USD",
+     "units": 1,
+     "amount": 8.49,
+     "usd": 8.49
+    },
+    {
+     "appId": "6785576912",
+     "app": "Woodlands Trail Guide",
+     "product": "Regular Tip",
+     "sku": "com.compofelice.WoodlandsTrailGuide.tip.medium",
+     "currency": "USD",
+     "units": 1,
+     "amount": 3.39,
+     "usd": 3.39
+    },
+    {
+     "appId": "6785576912",
+     "app": "Woodlands Trail Guide",
+     "product": "Remove Ads",
+     "sku": "com.compofelice.WoodlandsTrailGuide.removeAds",
+     "currency": "USD",
+     "units": 4,
+     "amount": 3.36,
+     "usd": 3.36
+    },
+    {
+     "appId": "6785576912",
+     "app": "Woodlands Trail Guide",
+     "product": "Small Tip",
+     "sku": "com.compofelice.WoodlandsTrailGuide.tip.small",
+     "currency": "USD",
+     "units": 1,
+     "amount": 0.84,
+     "usd": 0.84
+    }
+   ]
+  },
+  {
+   "label": "2026-11",
+   "start": "2026-08-02",
+   "end": "2026-08-29",
+   "rows": [
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Remove Ads",
+     "sku": "com.centricfiber.cosmica.removeads",
+     "currency": "USD",
+     "units": 1,
+     "amount": 2.1,
+     "usd": 2.1
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Shards Small",
+     "sku": "com.centricfiber.cosmica.shards_pack_small",
+     "currency": "USD",
+     "units": 1,
+     "amount": 1.4,
+     "usd": 1.4
+    },
+    {
+     "appId": "6773501518",
+     "app": "S-Tier Eats",
+     "product": "Medium Tip",
+     "sku": "com.compofelice.WoodlandsEats.tip.medium",
+     "currency": "USD",
+     "units": 1,
+     "amount": 3.5,
+     "usd": 3.5
+    },
+    {
+     "appId": "6785576912",
+     "app": "Woodlands Trail Guide",
+     "product": "Remove Ads",
+     "sku": "com.compofelice.WoodlandsTrailGuide.removeAds",
+     "currency": "USD",
+     "units": 1,
+     "amount": 0.84,
+     "usd": 0.84
+    }
+   ]
+  },
+  {
+   "label": "2026-12",
+   "start": "2026-08-30",
+   "end": "2026-09-26",
+   "rows": [
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "2x Boost 24h",
+     "sku": "com.centricfiber.cosmica.boost_2x_24hr",
+     "currency": "USD",
+     "units": 1,
+     "amount": 1.4,
+     "usd": 1.4
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "USD",
+     "units": 4,
+     "amount": 14.0,
+     "usd": 14.0
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Offline 7d",
+     "sku": "com.centricfiber.cosmica.offline_7day",
+     "currency": "USD",
+     "units": 1,
+     "amount": 2.1,
+     "usd": 2.1
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Remove Ads",
+     "sku": "com.centricfiber.cosmica.removeads",
+     "currency": "USD",
+     "units": 2,
+     "amount": 4.2,
+     "usd": 4.2
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Shards Small",
+     "sku": "com.centricfiber.cosmica.shards_pack_small",
+     "currency": "USD",
+     "units": 3,
+     "amount": 4.2,
+     "usd": 4.2
+    }
+   ]
+  },
+  {
+   "label": "2027-01",
+   "start": "2026-09-27",
+   "end": "2026-10-31",
+   "rows": [
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "2x Boost 24h",
+     "sku": "com.centricfiber.cosmica.boost_2x_24hr",
+     "currency": "USD",
+     "units": 8,
+     "amount": 11.2,
+     "usd": 11.2
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Automation Core",
+     "sku": "com.centricfiber.cosmica.automation_core",
+     "currency": "EUR",
+     "units": 2,
+     "amount": 4.96,
+     "usd": 5.54
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Automation Core",
+     "sku": "com.centricfiber.cosmica.automation_core",
+     "currency": "USD",
+     "units": 2,
+     "amount": 5.6,
+     "usd": 5.6
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "AUD",
+     "units": 1,
+     "amount": 5.08,
+     "usd": 3.57
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "CAD",
+     "units": 2,
+     "amount": 9.78,
+     "usd": 7.0
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "CZK",
+     "units": 1,
+     "amount": 78.89,
+     "usd": 3.62
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "EUR",
+     "units": 10,
+     "amount": 35.34,
+     "usd": 39.48
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "GBP",
+     "units": 10,
+     "amount": 28.9,
+     "usd": 38.72
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "KRW",
+     "units": 2,
+     "amount": 9800.0,
+     "usd": 7.34
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "PHP",
+     "units": 1,
+     "amount": 186.88,
+     "usd": 2.93
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "USD",
+     "units": 49,
+     "amount": 171.5,
+     "usd": 171.5
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Offline 7d",
+     "sku": "com.centricfiber.cosmica.offline_7day",
+     "currency": "USD",
+     "units": 4,
+     "amount": 8.4,
+     "usd": 8.4
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Remove Ads",
+     "sku": "com.centricfiber.cosmica.removeads",
+     "currency": "USD",
+     "units": 9,
+     "amount": 18.9,
+     "usd": 18.9
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Shards Large",
+     "sku": "com.centricfiber.cosmica.shards_pack_large",
+     "currency": "USD",
+     "units": 11,
+     "amount": 77.0,
+     "usd": 77.0
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Shards Small",
+     "sku": "com.centricfiber.cosmica.shards_pack_small",
+     "currency": "USD",
+     "units": 15,
+     "amount": 21.0,
+     "usd": 21.0
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Stardust Doubler",
+     "sku": "com.centricfiber.cosmica.stardust_doubler",
+     "currency": "EUR",
+     "units": 1,
+     "amount": 5.59,
+     "usd": 6.25
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Stardust Doubler",
+     "sku": "com.centricfiber.cosmica.stardust_doubler",
+     "currency": "GBP",
+     "units": 1,
+     "amount": 4.63,
+     "usd": 6.2
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Stardust Doubler",
+     "sku": "com.centricfiber.cosmica.stardust_doubler",
+     "currency": "USD",
+     "units": 3,
+     "amount": 16.8,
+     "usd": 16.8
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Supporter Pack",
+     "sku": "com.centricfiber.cosmica.supporter",
+     "currency": "GBP",
+     "units": 1,
+     "amount": 1.73,
+     "usd": 2.32
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Supporter Pack",
+     "sku": "com.centricfiber.cosmica.supporter",
+     "currency": "USD",
+     "units": 1,
+     "amount": 2.1,
+     "usd": 2.1
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Time Warp 24h",
+     "sku": "com.centricfiber.cosmica.timewarp_24h",
+     "currency": "GBP",
+     "units": 2,
+     "amount": 5.78,
+     "usd": 7.74
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Time Warp 8h",
+     "sku": "com.centricfiber.cosmica.timewarp_8h",
+     "currency": "GBP",
+     "units": 10,
+     "amount": 11.5,
+     "usd": 15.41
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Time Warp 8h",
+     "sku": "com.centricfiber.cosmica.timewarp_8h",
+     "currency": "USD",
+     "units": 5,
+     "amount": 7.0,
+     "usd": 7.0
+    },
+    {
+     "appId": "6773501518",
+     "app": "S-Tier Eats",
+     "product": "Medium Tip",
+     "sku": "com.compofelice.WoodlandsEats.tip.medium",
+     "currency": "USD",
+     "units": 1,
+     "amount": 3.5,
+     "usd": 3.5
+    },
+    {
+     "appId": "6785576912",
+     "app": "Woodlands Trail Guide",
+     "product": "Remove Ads",
+     "sku": "com.compofelice.WoodlandsTrailGuide.removeAds",
+     "currency": "USD",
+     "units": 1,
+     "amount": 0.7,
+     "usd": 0.7
+    }
+   ]
+  }
+ ]
+}
