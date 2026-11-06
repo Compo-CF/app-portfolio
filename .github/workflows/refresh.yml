@@ -24,7 +24,14 @@ on:
   # stretch of the day is left uncovered: 19:41 through to the morning slot was
   # an 18-hour hole, and 04:57 splits it into two of about nine.
   #
-  # The morning slot is 10:05 America/Chicago. GitHub cron is UTC only and
+  # The morning slot is 08:33 America/Chicago — Apple publishes the previous
+  # day's sales report at 05:34-05:50 Pacific (measured from this repo's own
+  # history), so 08:33 Central leaves about three quarters of an hour of
+  # margin. It is :33 rather than :30 on purpose: :30 is one of the two
+  # busiest minutes of the hour, and the 14:30 slot this job used to run on
+  # is precisely the one that kept going missing.
+  #
+  # GitHub cron is UTC only and
   # knows nothing of daylight saving, so one wall-clock time needs two
   # entries, each restricted to the months its offset applies in; they never
   # both fire on the same day. The months approximate US DST — which really
@@ -32,8 +39,8 @@ on:
   # — so for a few days at each edge the run lands an hour off its mark.
   # Harmless: the job is idempotent and the other two slots still cover.
   schedule:
-    - cron: '5 16 * 11,12,1,2 *'  # 10:05 CST (UTC-6), November to February
-    - cron: '5 15 * 3-10 *'       # 10:05 CDT (UTC-5), March to October
+    - cron: '33 14 * 11,12,1,2 *'  # 08:33 CST (UTC-6), November to February
+    - cron: '33 13 * 3-10 *'       # 08:33 CDT (UTC-5), March to October
     - cron: '41 19 * * *'   # 19:41 UTC — a second chance the same day
     - cron: '57 4 * * *'    # 04:57 UTC — overnight, covering the long gap
   workflow_dispatch:
