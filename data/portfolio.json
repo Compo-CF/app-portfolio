@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-06T19:17:56+00:00",
+ "generated": "2026-11-06T23:50:18+00:00",
  "admob": {
   "2026-06-03": 0.0,
   "2026-06-04": 0.0,
@@ -155,7 +155,7 @@
   "2026-11-03": 1.71,
   "2026-11-04": 1.76,
   "2026-11-05": 1.71,
-  "2026-11-06": 0.8
+  "2026-11-06": 1.05
  },
  "payouts": [
   {
@@ -4223,6 +4223,11 @@
    "reviews": [],
    "versions": [
     {
+     "version": "2.0.1",
+     "state": "WAITING_FOR_REVIEW",
+     "created": "2026-11-06"
+    },
+    {
      "version": "2.0",
      "state": "READY_FOR_SALE",
      "created": "2026-10-26"
@@ -4274,7 +4279,7 @@
      "state": "VALID",
      "uploaded": "2026-11-05",
      "marketing": "2.0.1",
-     "attached": null
+     "attached": "2.0.1"
     },
     {
      "version": "71",
@@ -5743,7 +5748,7 @@
    "versions": [
     {
      "version": "3.1.1",
-     "state": "PREPARE_FOR_SUBMISSION",
+     "state": "WAITING_FOR_REVIEW",
      "created": "2026-11-05"
     },
     {
@@ -5769,11 +5774,16 @@
    ],
    "builds": [
     {
+     "version": "28",
+     "state": "VALID",
+     "uploaded": "2026-11-06",
+     "marketing": "3.1.1",
+     "attached": "3.1.1"
+    },
+    {
      "version": "27",
      "state": "VALID",
-     "uploaded": "2026-11-05",
-     "marketing": "3.1.1",
-     "attached": null
+     "uploaded": "2026-11-05"
     },
     {
      "version": "9",
@@ -5787,11 +5797,6 @@
     },
     {
      "version": "8",
-     "state": "VALID",
-     "uploaded": "2026-09-29"
-    },
-    {
-     "version": "7",
      "state": "VALID",
      "uploaded": "2026-09-29"
     }
@@ -6809,7 +6814,7 @@
    "versions": [
     {
      "version": "1.0.0",
-     "state": "WAITING_FOR_REVIEW",
+     "state": "READY_FOR_SALE",
      "created": "2026-11-04"
     }
    ],
