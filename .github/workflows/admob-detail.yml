@@ -1,0 +1,27 @@
+name: AdMob detail report
+
+# On demand only: a breakdown by app, format, ad unit and country, written to
+# the run's summary. The credentials live only in repo secrets, so this is the
+# way to query AdMob beyond the daily total that refresh.yml stores.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet requests
+      - name: AdMob breakdown
+        env:
+          ADMOB_PUBLISHER_ID: ${{ secrets.ADMOB_PUBLISHER_ID }}
+          ADMOB_CLIENT_ID: ${{ secrets.ADMOB_CLIENT_ID }}
+          ADMOB_CLIENT_SECRET: ${{ secrets.ADMOB_CLIENT_SECRET }}
+          ADMOB_REFRESH_TOKEN: ${{ secrets.ADMOB_REFRESH_TOKEN }}
+        run: python scripts/admob_detail.py
