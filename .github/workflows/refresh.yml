@@ -5,24 +5,35 @@ name: Refresh portfolio data
 # which runs from a separate machine.
 
 on:
-  # Three times, on odd minutes. GitHub drops scheduled runs under load and
-  # makes no promise about firing at all — the 14:30 run has silently gone
-  # missing more than once, leaving the page a day stale with nothing to say
-  # so. :00 and :30 are the busiest moments of any hour, because every cron in
-  # the world points at them, so these deliberately do not.
+  # Three times a day. GitHub drops scheduled runs under load and makes no
+  # promise about firing at all — the 14:30 run has silently gone missing
+  # more than once, leaving the page a day stale with nothing to say so. :00
+  # and :30 are the busiest moments of any hour, because every cron in the
+  # world points at them, so the two fallback slots deliberately sit on odd
+  # minutes. The morning slot is a wall-clock time that was asked for, so it
+  # keeps its :05 and accepts whatever queue that minute attracts.
   #
   # Extra attempts are free: when an earlier one has already landed the day's
   # data, the job finds nothing new and exits.
   #
   # The third slot fills the gap rather than shortening the wait. Observed
-  # runs land two to five hours after their cron time — 14:13 arriving near
-  # 18:00, 19:41 anywhere up to 00:56 the next day — and that lateness is
-  # queue load at GitHub's end, so moving a cron earlier does not make it run
-  # earlier. What a third slot buys is that no stretch of the day is left
-  # uncovered: 19:41 to 14:13 was an 18-hour hole, and 04:57 splits it into
-  # two of about nine.
+  # runs land two to five hours after their cron time — the morning slot
+  # arriving three or four hours late, 19:41 anywhere up to 00:56 the next
+  # day — and that lateness is queue load at GitHub's end, so moving a cron
+  # earlier does not make it run earlier. What a third slot buys is that no
+  # stretch of the day is left uncovered: 19:41 through to the morning slot was
+  # an 18-hour hole, and 04:57 splits it into two of about nine.
+  #
+  # The morning slot is 10:05 America/Chicago. GitHub cron is UTC only and
+  # knows nothing of daylight saving, so one wall-clock time needs two
+  # entries, each restricted to the months its offset applies in; they never
+  # both fire on the same day. The months approximate US DST — which really
+  # begins the second Sunday of March and ends the first Sunday of November
+  # — so for a few days at each edge the run lands an hour off its mark.
+  # Harmless: the job is idempotent and the other two slots still cover.
   schedule:
-    - cron: '13 14 * * *'   # 14:13 UTC — mid-morning Central, report is up
+    - cron: '5 16 * 11,12,1,2 *'  # 10:05 CST (UTC-6), November to February
+    - cron: '5 15 * 3-10 *'       # 10:05 CDT (UTC-5), March to October
     - cron: '41 19 * * *'   # 19:41 UTC — a second chance the same day
     - cron: '57 4 * * *'    # 04:57 UTC — overnight, covering the long gap
   workflow_dispatch:
