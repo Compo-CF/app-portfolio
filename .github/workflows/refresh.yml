@@ -55,8 +55,11 @@ on:
 
 permissions:
   contents: write
-  # Lets the runner mint the OIDC token Google exchanges for credentials.
-  # Without it the auth step fails with a bare "unable to get token".
+  # Lets the deploy job below publish the site.
+  pages: write
+  # Lets the runner mint the OIDC token Google exchanges for credentials,
+  # and the one deploy-pages uses. Without it the auth step fails with a
+  # bare "unable to get token".
   id-token: write
 
 concurrency:
@@ -185,3 +188,45 @@ jobs:
 
           echo "::error::Could not land the data after 3 attempts."
           exit 1
+
+  # Publishing. The legacy branch-source Jekyll pipeline failed six builds in
+  # a row on 6 November 2026, every one in zero seconds - it never started,
+  # and a forced rebuild of an unchanged tree failed identically, so it was
+  # not the content. Fresh data sat in the repository for hours while the
+  # page served a morning-old copy and said nothing was wrong.
+  #
+  # Deploying from here instead means the site goes out in the same run that
+  # fetched the data, with real logs in the Actions tab rather than a bare
+  # "Page build failed", and no second queue between commit and publish.
+  deploy:
+    needs: refresh
+    runs-on: ubuntu-latest
+    # One Pages site cannot take two deployments at once. This is a different
+    # group from the data one above, which serialises the fetch instead.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      # ref matters: the default checkout is github.sha, the commit the run
+      # started from, which is one behind the data the refresh job has just
+      # pushed. Without this every deploy would publish the previous state -
+      # exactly the staleness this job exists to end.
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/configure-pages@v5
+
+      # The whole tree, as the legacy pipeline published it. Uploading only
+      # index.html, revenue.js and data/ would be tidier, but then any asset
+      # added later and not listed here would 404 with nothing to explain it.
+      # The repository is public, so there is nothing here to withhold.
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - id: pages
+        uses: actions/deploy-pages@v4

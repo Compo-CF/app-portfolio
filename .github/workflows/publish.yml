@@ -1,0 +1,46 @@
+name: Publish the page
+
+# Deploys the site after a person pushes - an edit to index.html or
+# revenue.js that would otherwise sit unpublished until the next scheduled
+# refresh, hours later.
+#
+# This does not double up with the deploy job inside refresh.yml. A push made
+# with the built-in GITHUB_TOKEN deliberately does not trigger other
+# workflows, so the bot's data commits never reach this file; refresh.yml
+# publishes those itself, in the same run. Only human pushes land here.
+
+on:
+  push:
+    branches: [main]
+    # Nothing the site serves lives in these, so skip the deploy.
+    paths-ignore:
+      - 'scripts/**'
+      - '.github/**'
+      - 'README.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# The same group refresh.yml's deploy job uses, so the two serialise against
+# each other rather than racing for the one Pages site.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - id: pages
+        uses: actions/deploy-pages@v4
