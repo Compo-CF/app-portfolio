@@ -46,7 +46,12 @@ ASC = "https://api.appstoreconnect.apple.com/v1"
 # These reports are versioned separately from the sales ones, and asking for a
 # version the account cannot serve is a 400 rather than a 404 - so the newest
 # is tried first and older ones are a fallback, not an assumption.
-APPLE_VERSIONS = ["1_4", "1_3", "1_2"]
+# None means "send no filter[version] at all", which is how the SALES report
+# is asked for in revenue.py and the only form known to work on this account.
+# Apple answers a bad combination here with "Invalid vendor number specified",
+# naming a parameter that is in fact correct - so the version is discovered by
+# trying, not asserted, and the real objection is logged each time.
+APPLE_VERSIONS = [None, "1_4", "1_3", "1_2"]
 
 # How far back a first run reaches. Apple keeps these about a year; there is
 # no point asking for longer than the subscriptions have existed.
@@ -109,15 +114,21 @@ def _apple_day(day, rtype, versions, bearer, vendor, note):
     served and the next is tried; anything else is said once.
     """
     for ver in versions:
+        params = {"filter[frequency]": "DAILY",
+                  "filter[reportType]": rtype,
+                  "filter[reportSubType]": "SUMMARY",
+                  "filter[vendorNumber]": vendor,
+                  "filter[reportDate]": day}
+        if ver:
+            params["filter[version]"] = ver
         try:
+            # The Accept header matters: revenue.py's working SALES call sends
+            # it, this one did not, and a report asked for without it is one
+            # of the ways Apple produces that misleading vendor-number error.
             r = requests.get(f"{ASC}/salesReports", timeout=60,
-                             headers={"Authorization": f"Bearer {bearer}"},
-                             params={"filter[frequency]": "DAILY",
-                                     "filter[reportType]": rtype,
-                                     "filter[reportSubType]": "SUMMARY",
-                                     "filter[vendorNumber]": vendor,
-                                     "filter[version]": ver,
-                                     "filter[reportDate]": day})
+                             headers={"Authorization": f"Bearer {bearer}",
+                                      "Accept": "application/a-gzip"},
+                             params=params)
         except requests.RequestException as e:
             note(f"{rtype} {day}: unreachable ({type(e).__name__})")
             return None
@@ -143,8 +154,9 @@ def _apple_day(day, rtype, versions, bearer, vendor, note):
         if r.status_code != 400:
             note(f"{rtype}: refused ({r.status_code}) {detail}")
             return None
-        note(f"{rtype} v{ver}: {detail}")
-    note(f"{rtype}: no version accepted of {', '.join(versions)}")
+        note(f"{rtype} v{ver or '(none)'}: {detail}")
+    note(f"{rtype}: refused for every version tried "
+         f"({', '.join(str(v or '(none)') for v in versions)})")
     return None
 
 
@@ -190,7 +202,8 @@ def apple(days_back=BACKFILL, held=None):
                 ver, head, rows = res
                 if "state" not in shown:
                     shown.add("state")
-                    note(f"SUBSCRIPTION v{ver} columns: {', '.join(head)}")
+                    note(f"SUBSCRIPTION v{ver or '(none)'} columns: "
+                         f"{', '.join(head)}")
                 per = {}
                 for row in rows:
                     sku = (row.get("Subscription Apple ID")
@@ -220,7 +233,8 @@ def apple(days_back=BACKFILL, held=None):
                 ver, head, rows = res
                 if "events" not in shown:
                     shown.add("events")
-                    note(f"SUBSCRIPTION_EVENT v{ver} columns: {', '.join(head)}")
+                    note(f"SUBSCRIPTION_EVENT v{ver or '(none)'} columns: "
+                         f"{', '.join(head)}")
                 per = {}
                 for row in rows:
                     sku = (row.get("Subscription Apple ID")
@@ -243,75 +257,54 @@ def apple(days_back=BACKFILL, held=None):
 
 
 def google():
-    """Play's subscription counts per package.
+    """Play subscription activity, derived from the earnings reports.
 
-    Same bucket and the same UTF-16 encoding as the install reports, under a
-    different prefix. {"through": day, "days": {day: {sku: {...}}}, "names": {}}
+    Google publishes no subscription report in the reporting bucket for this
+    account - stats/ holds crashes, installs and store_performance and
+    nothing else, which a run confirmed rather than assumed. What it does
+    publish is the earnings archive, and every charge there carries a
+    Product Type. So a subscription's renewals are counted from its charges.
+
+    This is a **derived** figure and labelled as one everywhere it is shown.
+    A charge is a renewal that was paid; it cannot see a subscriber who has
+    cancelled but not yet lapsed, nor one in a free trial who has paid
+    nothing. For an account with one subscriber that distinction is academic;
+    at scale it would not be, and the dashboard says so rather than implying
+    Google reported a number it never reported.
+
+    {"through": day, "derived": True, "months": {month: {sku: {...}}},
+     "names": {sku: label}}
     """
-    try:
-        from google.cloud import storage
-    except ImportError:
-        print("  subs: google-cloud-storage not installed")
-        return {}
-    try:
-        client = (storage.Client(project=play.PROJECT) if play.PROJECT
-                  else storage.Client())
-    except Exception as e:                           # noqa: BLE001
-        print(f"  subs: no Google credentials ({type(e).__name__})")
+    data = play.earnings() or {}
+    products = data.get("products") or {}
+    if not products:
+        print("  subs: no Play earnings to derive subscriptions from")
         return {}
 
-    try:
-        blobs = list(client.list_blobs(play.BUCKET, prefix=PLAY_PREFIX))
-    except Exception as e:                           # noqa: BLE001
-        print(f"  subs: cannot list {PLAY_PREFIX} "
-              f"({type(e).__name__}: {str(e)[:80]})")
-        return {}
-
-    if not blobs:
-        # Saying "nothing there" is useless when the prefix itself may be
-        # wrong. Name what the bucket actually holds so the real one can be
-        # read off the log rather than guessed at a second time.
-        print(f"  subs: Google has nothing under {PLAY_PREFIX}")
-        try:
-            seen = set()
-            for b in client.list_blobs(play.BUCKET, prefix="stats/",
-                                       max_results=400):
-                parts = b.name.split("/")
-                if len(parts) > 1:
-                    seen.add("/".join(parts[:2]) + "/")
-            print("  subs: stats/ actually contains: "
-                  + (", ".join(sorted(seen)) or "(nothing)"))
-        except Exception as e:                       # noqa: BLE001
-            print(f"  subs: could not list stats/ ({type(e).__name__})")
-        return {}
-
-    days, names, shown = {}, {}, False
-    for blob in sorted(blobs, key=lambda b: b.name):
-        m = _PLAY_NAME.search(blob.name)
-        if not m:
-            continue
-        if not play.PACKAGES.get(m.group("pkg")):
-            print(f"  subs: no app mapped for package {m.group('pkg')}; skipped")
-            continue
-        rows = play._rows(blob)                      # noqa: SLF001
-        if rows and not shown:
-            shown = True
-            print(f"  subs: Play columns: {', '.join(rows[0].keys())}")
-        for row in rows:
-            day = (row.get("Date") or "").strip()
-            sku = (row.get("Subscription ID") or row.get("Sku Id")
-                   or row.get("Product ID") or "").strip()
-            if not day or not sku:
+    months, names = {}, {}
+    for app_id, items in products.items():
+        for sku, item in items.items():
+            if "subscription" not in (item.get("kind") or "").lower():
                 continue
-            names.setdefault(sku, sku)
-            slot = days.setdefault(day, {}).setdefault(sku, {})
-            slot["active"] = _num(row, "Active Subscriptions")
-            slot["new"] = _num(row, "New Subscriptions")
-            slot["cancelled"] = _num(row, "Cancelled Subscriptions")
+            names[sku] = item.get("title") or sku
+            for day, units in (item.get("byDay") or {}).items():
+                if not units:
+                    continue
+                slot = months.setdefault(day[:7], {}).setdefault(
+                    sku, {"charges": 0, "days": []})
+                slot["charges"] += units
+                slot["days"].append(day)
 
-    through = max(days) if days else None
-    print(f"  subs: Play {len(days)} day(s), through {through or '-'}")
-    return {"through": through, "days": days, "names": names}
+    for by_sku in months.values():
+        for slot in by_sku.values():
+            slot["days"] = sorted(set(slot["days"]))
+
+    through = data.get("through")
+    total = sum(v["charges"] for m in months.values() for v in m.values())
+    print(f"  subs: Play {len(names)} subscription(s), {total} charge(s) "
+          f"across {len(months)} month(s), through {through or '-'}")
+    return {"through": through, "derived": True,
+            "months": dict(sorted(months.items())), "names": names}
 
 
 def main():
@@ -343,10 +336,11 @@ def main():
 
     live_apple = sum(v.get("active", 0) + v.get("trial", 0) for v in
                      ((a.get("state") or {}).get(a.get("through")) or {}).values())
-    live_play = sum(v.get("active", 0) for v in
-                    ((g.get("days") or {}).get(g.get("through")) or {}).values())
+    newest_month = max((g.get("months") or {}), default=None)
+    live_play = sum(v.get("charges", 0) for v in
+                    ((g.get("months") or {}).get(newest_month) or {}).values())
     print(f"wrote {OUT.name}: App Store {live_apple} active, "
-          f"Play {live_play} active")
+          f"Play {live_play} charge(s) in {newest_month or '-'} (derived)")
 
 
 if __name__ == "__main__":

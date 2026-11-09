@@ -437,7 +437,7 @@ def earnings():
                              if opt["title"] else "",
                     "kind": (row.get(opt["kind"]) or "").strip()
                             if opt["kind"] else "",
-                    "units": 0, "currency": {},
+                    "units": 0, "currency": {}, "byDay": {},
                 })
                 if not item["title"] and opt["title"]:
                     item["title"] = (row.get(opt["title"]) or "").strip()
@@ -445,10 +445,16 @@ def earnings():
                 by_day[day] = round(by_day.get(day, 0.0) + money, 6)
                 event = ((row.get(opt["event"]) or "").strip().lower()
                          if opt["event"] else "")
+                # Per day as well as in total. Play publishes no subscription
+                # report in this bucket - stats/ holds only crashes, installs
+                # and store_performance - so a subscription's renewals have
+                # to be counted from its charges here, and that needs dates.
                 if event == "charge":
                     item["units"] += 1
+                    item["byDay"][day] = item["byDay"].get(day, 0) + 1
                 elif event in ("charge refund", "refund"):
                     item["units"] -= 1
+                    item["byDay"][day] = item["byDay"].get(day, 0) - 1
 
     if unmapped:
         print("  play: earnings exist for packages this dashboard does not "
@@ -469,6 +475,7 @@ def earnings():
         for item in app.values():
             item["currency"] = {c: dict(sorted(d.items()))
                                 for c, d in item["currency"].items()}
+            item["byDay"] = dict(sorted(item["byDay"].items()))
     return {"through": through, "apps": apps, "products": products}
 
 
