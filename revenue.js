@@ -193,21 +193,41 @@
       k === "Other" ? COLORS[COLORS.length - 1] : colorOf(k)}"></i>${esc(k)}</span>`).join("")}</div></div>`;
 
     /* ---- app x period table ---- */
+    // Settled periods, then the unsettled days, then a total that counts only
+    // what Apple has actually settled - the same column set and the same rule
+    // as the purchase table below. The last column is headed "Settled" rather
+    // than "Total" because it deliberately excludes the open days: folding an
+    // estimate into it would make the one authoritative figure on the row
+    // unreliable, and there would be nothing on screen to say so.
     const shown = periods.slice(-6);
-    const cols = `grid-template-columns:minmax(0,1.6fr) repeat(${shown.length + 1},minmax(0,1fr))`;
+    const appCols = [...shown, ...(OPEN ? [OPEN] : [])];
+    // Narrow screens keep the newest settled period, the open days and the
+    // settled total. Seven columns do not fit a phone.
+    const keepApp = (i) => i >= shown.length - 1;
+    const acls = (p, i) => [keepApp(i) ? "" : "rv-hide-sm", p.open ? "rv-open" : ""].join(" ").trim();
+    const cols = `--lg:minmax(0,1.6fr) repeat(${appCols.length + 1},minmax(0,1fr));` +
+      `--sm:minmax(0,1.6fr) repeat(${appCols.filter((_, i) => keepApp(i)).length + 1},minmax(0,1fr))`;
+    const appHead = (p, i) => (p.open
+      ? `<span class="${acls(p, i)}" title="Not settled yet: Apple's daily sales reports, ${day(p.start)} – ${day(p.end)}">${nameOf(p)}</span>`
+      : `<span class="${acls(p, i)}" title="${fyLabel(p)}, ${day(p.start)} – ${day(p.end)}">${monthName(p).slice(0, 3)} ${monthName(p).slice(-2)}</span>`);
+    // Rows come from the settled ranking plus anything that has only ever sold
+    // in the open days - a newly launched app would otherwise be missing from
+    // this table entirely on the one day its first sale matters most.
+    const appRows = [...new Set([...apps, ...(OPEN ? OPEN.rows.map((r) => r.app) : [])])];
     html += `<div class="rv-h">By app</div><div class="months">
-      <div class="rv-grid head" style="${cols}"><span>App</span>${shown.map((p) =>
-        `<span title="${fyLabel(p)}, ${day(p.start)} – ${day(p.end)}">${monthName(p).slice(0, 3)} ${monthName(p).slice(-2)}</span>`).join("")}<span>Total</span></div>`;
-    for (const a of apps) {
-      const cells = shown.map((p) => {
+      <div class="rv-grid head m" style="${cols}"><span>App</span>${appCols.map(appHead).join("")}
+        <span title="All settled periods, the open days excluded">Settled</span></div>`;
+    for (const a of appRows) {
+      const cells = appCols.map((p, i) => {
         const rs = p.rows.filter((r) => r.app === a);
         const v = sum(rs, (r) => r.usd);
-        return `<span title="${esc(native(rs) || "none")}">${v ? usd(v) : "—"}</span>`;
+        const mark = rs.some((r) => r.currency !== "USD") ? "≈" : "";
+        return `<span class="${acls(p, i)}" title="${esc(native(rs) || "none")}">${v ? mark + usd(v) : "—"}</span>`;
       });
-      html += `<div class="rv-grid" style="${cols}"><span>${esc(a)}</span>${cells.join("")}<b>${usd(appTotals[a])}</b></div>`;
+      html += `<div class="rv-grid m" style="${cols}"><span>${esc(a)}</span>${cells.join("")}<b>${usd(appTotals[a] || 0)}</b></div>`;
     }
-    html += `<div class="rv-grid total" style="${cols}"><span>Total</span>${shown.map((p) =>
-      `<span>${approx(p)}${usd(totalOf(p))}</span>`).join("")}<span>${usd(all)}</span></div></div>`;
+    html += `<div class="rv-grid total m" style="${cols}"><span>Total</span>${appCols.map((p, i) =>
+      `<span class="${acls(p, i)}">${approx(p)}${usd(totalOf(p))}</span>`).join("")}<span>${usd(all)}</span></div></div>`;
 
     /* ---- purchase x period table ---- */
     // Every purchase ever bought, a column per settled period, the open days
