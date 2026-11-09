@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-09T16:18:29+00:00",
+ "generated": "2026-11-09T16:29:56+00:00",
  "admob": {
   "2026-06-03": 0.0,
   "2026-06-04": 0.0,
@@ -3057,7 +3057,7 @@
    "versions": [
     {
      "version": "3.4.1",
-     "state": "WAITING_FOR_REVIEW",
+     "state": "IN_REVIEW",
      "created": "2026-11-08"
     },
     {
