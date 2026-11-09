@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-09T13:28:50Z",
+ "generated": "2026-11-09T16:06:41Z",
  "fx": {
   "2026-10-31": {
    "CAD": 0.715871,
@@ -897,5 +897,23 @@
     }
    ]
   }
+ },
+ "play": {
+  "through": "2026-10-31",
+  "products": [
+   {
+    "sku": "stier_plus_monthly",
+    "title": "S-Tier Plus (S-Tier Eats)",
+    "kind": "Subscription",
+    "units": 1,
+    "currency": {
+     "USD": {
+      "2026-10-23": 2.54
+     }
+    },
+    "appId": "6773501518",
+    "app": "S-Tier Eats"
+   }
+  ]
  }
 }
