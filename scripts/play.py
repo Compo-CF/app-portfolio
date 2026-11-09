@@ -22,7 +22,8 @@ import csv
 import io
 import os
 import re
-from datetime import date
+import zipfile
+from datetime import date, datetime, timedelta
 
 # Apple's id is the key the dashboard already uses, so Play data merges into
 # the record that is there rather than creating a parallel set of apps.
@@ -40,6 +41,7 @@ PACKAGES = {
 
 BUCKET = os.environ.get("PLAY_BUCKET", "pubsite_prod_6691100777752209003")
 PREFIX = "stats/installs/"
+EARNINGS = "earnings/"
 
 # Google Cloud attributes every Storage call to a project for quota, even when
 # reading a bucket the project does not own — and the Play reporting bucket is
@@ -216,6 +218,204 @@ def installs():
         entry["installs"] = dict(sorted(entry["installs"].items()))
         entry["active"] = dict(sorted(entry["active"].items()))
     return out
+
+
+# ---------------------------------------------------------------------------
+# Earnings
+#
+# Installs were the only thing read here for months, while the dashboard
+# printed Google Play revenue as a flat $0 with a note saying neither Play app
+# sold anything. That was true when it was written and stopped being true the
+# day S-Tier Eats shipped a subscription on Android: the zero was not a
+# measured figure, it was a number nobody was fetching.
+#
+# Two things differ from the install reports:
+#
+#   * They are **zipped**, one archive per month, and the archive name carries
+#     a merchant id written down nowhere in this repository - so they are
+#     discovered by listing rather than addressed by name.
+#   * They are **monthly and in arrears**. Google publishes a month's earnings
+#     after that month has ended, so the current month has no report at all.
+#     The coverage date is therefore reported alongside the figures, because
+#     an unpublished month must not read as a month that earned nothing. That
+#     distinction is the entire point of this module.
+#
+# A row is one financial event: a charge, Google's fee on it, tax, or a refund
+# of any of those. Fees and refunds are already negative, so net proceeds are
+# the plain sum and no row has to be classified by type to come out right.
+
+_EARN = re.compile(r"earnings[-_](?P<month>\d{6})", re.I)
+
+# Column names, lowercased. Google has shipped more than one spelling of some
+# of these, so each is a list of candidates rather than a single string.
+_COLS = {
+    "day": ["transaction date", "order charged date", "date"],
+    "amount": ["amount (merchant currency)", "amount merchant currency"],
+    "currency": ["merchant currency"],
+    "package": ["product id", "package name", "product_id"],
+}
+
+
+def _pick(headers, wanted):
+    """The first candidate column actually present, matched case-blind."""
+    low = {(h or "").strip().lower(): h for h in headers or []}
+    for cand in _COLS[wanted]:
+        if cand in low:
+            return low[cand]
+    return None
+
+
+def _day(raw):
+    """Google has written this date several ways; accept the ones seen."""
+    raw = (raw or "").strip()
+    if not raw:
+        return None
+    for fmt in ("%Y-%m-%d", "%b %d, %Y", "%B %d, %Y",
+                "%m/%d/%Y", "%m/%d/%y", "%d %b %Y"):
+        try:
+            return datetime.strptime(raw, fmt).date().isoformat()
+        except ValueError:
+            continue
+    return None
+
+
+def _money(raw):
+    """A money cell, tolerating separators and bracketed negatives."""
+    t = (raw or "").strip().replace(",", "").replace("$", "")
+    if not t:
+        return 0.0
+    if t.startswith("(") and t.endswith(")"):
+        t = "-" + t[1:-1]
+    try:
+        return float(t)
+    except ValueError:
+        return 0.0
+
+
+def _coverage(blobs):
+    """The last day the newest published monthly report covers.
+
+    Taken from the file name rather than from the rows: a quiet final week
+    would otherwise shorten the coverage and make a genuine zero look like a
+    gap in the feed, which is the confusion this is here to prevent.
+    """
+    months = sorted(m.group("month") for m in
+                    (_EARN.search(b.name) for b in blobs) if m)
+    if not months:
+        return None
+    y, mo = int(months[-1][:4]), int(months[-1][4:])
+    first_next = date(y + (mo == 12), 1 if mo == 12 else mo + 1, 1)
+    return (first_next - timedelta(days=1)).isoformat()
+
+
+def earnings():
+    """Net Play proceeds per app, per currency, per day.
+
+    Returns {"through": iso_day, "apps": {app_id: {currency: {day: amount}}}}.
+    The caller needs "through" to tell "sold nothing" from "not published
+    yet"; without it a month Google has not filed yet is indistinguishable
+    from a month with no sales.
+
+    Fails soft, exactly as installs() does: on any credentials or permission
+    problem it says so and returns nothing, so a bad run leaves the committed
+    history alone rather than rewriting real figures to zero.
+    """
+    try:
+        from google.cloud import storage
+    except ImportError:
+        print("  play: google-cloud-storage not installed")
+        return {}
+
+    try:
+        client = storage.Client(project=PROJECT) if PROJECT else storage.Client()
+    except Exception as e:                           # noqa: BLE001
+        print(f"  play: no credentials for earnings ({type(e).__name__})")
+        return {}
+
+    try:
+        blobs = [b for b in client.list_blobs(BUCKET, prefix=EARNINGS)
+                 if b.name.lower().endswith(".zip")]
+    except Exception as e:                           # noqa: BLE001
+        # No by-name fallback here, unlike installs(): the file names carry a
+        # merchant id this code does not know, so without listing there is
+        # nothing to ask for. Say which identity was refused.
+        print(f"  play: cannot list earnings ({type(e).__name__}: {str(e)[:90]})")
+        print(f"  play: acting as {_whoami()}")
+        return {}
+
+    if not blobs:
+        print(f"  play: no earnings reports under {EARNINGS} in {BUCKET}")
+        return {}
+
+    apps, unmapped, shown = {}, set(), False
+    for blob in sorted(blobs, key=lambda b: b.name):
+        try:
+            archive = zipfile.ZipFile(io.BytesIO(blob.download_as_bytes()))
+        except (zipfile.BadZipFile, OSError) as e:
+            print(f"  play: {blob.name} unreadable as a zip ({type(e).__name__})")
+            continue
+
+        for member in archive.namelist():
+            if not member.lower().endswith(".csv"):
+                continue
+            raw = archive.read(member)
+            text = None
+            for enc in ("utf-8-sig", "utf-8", "utf-16"):
+                try:
+                    text = raw.decode(enc)
+                    break
+                except (UnicodeDecodeError, UnicodeError):
+                    continue
+            if text is None:
+                print(f"  play: {member} is in no encoding this understands")
+                continue
+
+            reader = csv.DictReader(io.StringIO(text))
+            cols = {k: _pick(reader.fieldnames, k) for k in _COLS}
+            if not shown:
+                # Printed once a run. The schema belongs to Google, and when
+                # they change it the symptom would otherwise be a silent
+                # return to zero - the precise failure this module ends.
+                print("  play: earnings columns: "
+                      + ", ".join(reader.fieldnames or ["(none)"]))
+                shown = True
+            missing = [k for k, v in cols.items() if not v]
+            if missing:
+                print(f"  play: {member} has no column for "
+                      f"{', '.join(missing)}; skipped")
+                continue
+
+            for row in reader:
+                package = (row.get(cols["package"]) or "").strip()
+                app_id = PACKAGES.get(package)
+                if not app_id:
+                    if package:
+                        unmapped.add(package)
+                    continue
+                day = _day(row.get(cols["day"]))
+                if not day:
+                    continue
+                cur = (row.get(cols["currency"]) or "").strip().upper() or "USD"
+                series = apps.setdefault(app_id, {}).setdefault(cur, {})
+                series[day] = round(series.get(day, 0.0)
+                                    + _money(row.get(cols["amount"])), 6)
+
+    if unmapped:
+        print("  play: earnings exist for packages this dashboard does not "
+              "map, so their revenue is being discarded: "
+              + ", ".join(sorted(unmapped)))
+        print("  play: add them to PACKAGES in scripts/play.py")
+
+    for app in apps.values():
+        for cur in app:
+            app[cur] = dict(sorted(app[cur].items()))
+
+    through = _coverage(blobs)
+    total = sum(v for app in apps.values()
+                for days in app.values() for v in days.values())
+    print(f"  play: earnings for {len(apps)} app(s) through {through or '-'}"
+          f", {total:,.2f} in merchant currency")
+    return {"through": through, "apps": apps}
 
 
 if __name__ == "__main__":

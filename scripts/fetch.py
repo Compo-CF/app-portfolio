@@ -455,12 +455,26 @@ def main():
         android[app_id] = {
             "installs": dict(held.get("installs") or {}),
             "active": dict(held.get("active") or {}),
+            "revenue": {c: dict(d) for c, d in (held.get("revenue") or {}).items()},
         }
     for app_id, entry in play.installs().items():
         if app_id not in android:
             continue
         android[app_id]["installs"].update(entry["installs"])
         android[app_id]["active"].update(entry["active"])
+
+    # Play money, kept per currency per day exactly as Apple's is, because
+    # Google settles in the merchant currency and one app can earn in more
+    # than one. Merged onto what is held rather than replacing it, so a run
+    # that cannot reach the bucket leaves real history alone instead of
+    # zeroing it - the same rule the install series follows above.
+    play_money = play.earnings() or {}
+    for app_id, by_cur in (play_money.get("apps") or {}).items():
+        if app_id not in android:
+            continue
+        held_rev = android[app_id].setdefault("revenue", {})
+        for cur, days in by_cur.items():
+            held_rev.setdefault(cur, {}).update(days)
 
     # How long since Google last gave us a day it had not given us before.
     #
@@ -487,6 +501,12 @@ def main():
         moved = play_through > (prev_play.get("through") or "")
         play_feed = {
             "through": play_through,
+            # Earnings run on their own clock: monthly and in arrears, where
+            # installs are daily and about four days behind. One coverage
+            # date cannot stand for both, and conflating them would let an
+            # unpublished month read as a month that earned nothing.
+            "revenueThrough": (play_money.get("through")
+                               or (prev_play or {}).get("revenueThrough")),
             # The first run after this was added cannot know when the date
             # really last moved, so it claims today and reads as healthy. It
             # corrects itself the first time Google actually publishes.

@@ -917,7 +917,12 @@ function coverage(data) {
   const dl = {};
   for (const a of data.apps || [])
     for (const day of Object.keys(a.downloads || {})) dl[day] = 1;
-  return { apple: newest(dl), ads: newest(data.admob) };
+  // Play earnings keep their own clock: monthly, published after the month
+  // ends, where installs are daily. So this is revenueThrough, not through -
+  // using the install coverage would mark the current month as reported and
+  // reinstate the very zero this replaced.
+  return { apple: newest(dl), ads: newest(data.admob),
+           play: (data.play || {}).revenueThrough || null };
 }
 
 // Which month the calendar is showing. Outside the render so paging back a
@@ -989,11 +994,18 @@ function renderCalendar(data) {
   const apps = data.apps || [];
   const apple = proceedsUSD(apps, data.fx).usd;
   const ads = data.admob || {};
+  // Google settles in the merchant currency, usually but not always dollars,
+  // so Play goes through the same conversion Apple's does rather than being
+  // assumed to be USD. proceedsUSD reads `revenue`, so each app is handed its
+  // Android series under that name.
+  const play = proceedsUSD(
+    apps.map((a) => ({ revenue: (a.android || {}).revenue })), data.fx).usd;
   const through = coverage(data);
 
   const today = new Date().toISOString().slice(0, 10);
   const thisMonth = today.slice(0, 7);
-  const earliest = [...Object.keys(apple), ...Object.keys(ads)].sort()[0];
+  const earliest = [...Object.keys(apple), ...Object.keys(ads),
+                    ...Object.keys(play)].sort()[0];
   if (!earliest) { host.innerHTML = ""; return; }
 
   // Clamped every render: data can arrive that moves the ends, and a stored
@@ -1014,8 +1026,15 @@ function renderCalendar(data) {
     const future = d > today;
     const haveApple = !future && through.apple && d <= through.apple;
     const haveAds = !future && through.ads && d <= through.ads;
-    const reported = haveApple || haveAds;
-    const amount = (haveApple ? apple[d] || 0 : 0) + (haveAds ? ads[d] || 0 : 0);
+    const havePlay = !future && through.play && d <= through.play;
+    const reported = haveApple || haveAds || havePlay;
+    const amount = (haveApple ? apple[d] || 0 : 0) + (haveAds ? ads[d] || 0 : 0)
+                 + (havePlay ? play[d] || 0 : 0);
+    // Play is deliberately not part of this. The star means a feed that
+    // should have reported has not; Play's earnings are monthly and in
+    // arrears by design, so including it would star every day of the
+    // current month, for ever, and the marker would stop meaning
+    // anything on the days Apple or AdMob really are late.
     const partial = reported && !(haveApple && haveAds);
     if (reported) monthTotal += amount;
     if (partial) anyPartial = true;
@@ -1043,7 +1062,8 @@ function renderCalendar(data) {
                 : "";
             })()
           + `, AdMob ${haveAds ? money2(ads[d] || 0) : "not reported yet"}`
-          + `, Google Play ${money2(0)} (neither Play app sells anything)`
+          + `, Google Play ${havePlay ? money2(play[d] || 0)
+              : "not reported yet (Google files earnings monthly, in arrears)"}`
           + `; ${money2(amount)} in total`;
 
     // Three figures, one per source, rather than a single total. A total
@@ -1051,15 +1071,17 @@ function renderCalendar(data) {
     // differently: App Store money is lumpy and arrives per purchase, AdMob
     // trickles daily, and Play is structurally nil.
     //
-    // Google Play is shown at zero rather than left out. Neither Play app
-    // sells anything — S-Tier Eats carries ads and the church app carries
-    // nothing — so Android income reaches this page through AdMob, and a row
-    // that silently vanished would read as a missing feed rather than as the
-    // fact that there is nothing to collect.
+    // Google Play was hardcoded to zero here, on the reasoning that neither
+    // Play app sold anything. True when written, and false from the day
+    // S-Tier Eats shipped a subscription on Android - after which the page
+    // went on asserting a zero nobody was measuring. It now comes from the
+    // earnings reports, and a day Google has not filed yet shows a dash
+    // rather than a zero, because "not published" and "earned nothing" are
+    // different facts and only one of them is good news.
     const src = [
       ["ios", haveApple ? apple[d] || 0 : null],
       ["ads", haveAds ? ads[d] || 0 : null],
-      ["play", future ? null : 0],
+      ["play", havePlay ? play[d] || 0 : null],
     ];
     const rows = src.map(([k, v]) => `<span class="src ${k}">${
       v === null ? "&ndash;" : v === 0 ? '<i>0</i>' : money2(v)}</span>`).join("");
