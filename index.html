@@ -1109,11 +1109,12 @@ function renderCalendar(data) {
       reads as one figure; hover a day to see what it was made of. Apple
       converts at its own rate, so these are estimates — the reconciliation
       below measures them against what Apple actually settled.
-      Play is zero because neither Play app sells anything: S-Tier Eats
-      carries ads and the church app carries nothing, so Android income
-      arrives under AdMob.${
-        anyMissing ? " A dash is a day neither source has reported yet." : ""}${
-        anyPartial ? ' <span class="part">*</span> marks a day only one source has reported, so it will rise.' : ""}`,
+      Play comes from Google's earnings reports, net of its fee. Those are
+      filed monthly and in arrears, so the current month shows a dash rather
+      than a zero until Google publishes it— earning nothing and not being
+      reported yet are different things.${
+        anyMissing ? " A dash is a day no source has reported yet." : ""}${
+        anyPartial ? ' <span class="part">*</span> marks a day only one of App Store and AdMob has reported, so it will rise. Play is excluded from that mark, being monthly by design.' : ""}`,
   });
 
   host.querySelectorAll("[data-go]").forEach((b) =>
