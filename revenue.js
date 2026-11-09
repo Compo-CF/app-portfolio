@@ -41,6 +41,14 @@
       margin-top:4px;opacity:.55}
     .rv-grid.m{grid-template-columns:var(--lg)}
     .rv-open{color:var(--soft);font-style:italic}
+    /* The unsettled bar, dashed and below a rule, so it cannot be mistaken
+       for a settled period at a glance. */
+    .rv-bar.open{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+    .rv-bar.open span,.rv-bar.open b{color:var(--soft);font-style:italic}
+    .rv-bar.open .track{box-sizing:border-box;border:1px dashed var(--soft);
+      background:transparent}
+    .rv-bar.open .track i{opacity:.55}
+    #revenue .stat.prov{border-style:dashed}
     #revenue .range{flex-wrap:wrap;row-gap:6px}
     @media (max-width:640px){
       .rv-grid.m{grid-template-columns:var(--sm)}
@@ -80,6 +88,8 @@
   };
   const range = (a, b) => (a.slice(0, 7) === b.slice(0, 7)
     ? `${day(a)}–${+b.slice(8)}` : `${day(a)} – ${day(b)}`);
+  // Inclusive, so a period that starts and ends on the same day is one day.
+  const spanDays = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5) + 1;
 
   let DATA = null;
   let PICK = null;
@@ -136,23 +146,49 @@
       [`${((sum(latest.rows.filter((r) => r.app === apps[0]), (r) => r.usd) / lt) * 100).toFixed(0)}%`,
         `${esc(apps[0])} share`, monthName(latest)],
     ];
-    let html = `<div class="totals">${stats.map(([v, l, e]) =>
-      `<div class="stat"><b>${v}</b><span>${l}</span><em>${e}</em></div>`).join("")}</div>`;
+    // The running, unsettled total goes first: it is the only figure on this
+    // tab that moves daily, and it is the question being asked by anyone
+    // opening the tab mid-period. Per-day sits beside it because the open
+    // window is shorter than a fiscal period, so the totals are not
+    // comparable on their own.
+    if (OPEN) {
+      const ot = totalOf(OPEN);
+      const perDay = (p, t) => t / Math.max(spanDays(p.start, p.end), 1);
+      stats.unshift([`${approx(OPEN)}${usd(ot)}`,
+        `${range(OPEN.start, OPEN.end)}, unsettled`,
+        `${usd(perDay(OPEN, ot))}/day vs ${usd(perDay(latest, lt))} in ${monthName(latest)}`,
+        "prov"]);
+    }
+    let html = `<div class="totals">${stats.map(([v, l, e, c]) =>
+      `<div class="stat${c ? " " + c : ""}"><b>${v}</b><span>${l}</span><em>${e}</em></div>`).join("")}</div>`;
 
     /* ---- bars per period ---- */
-    const max = Math.max(...periods.map(totalOf));
-    html += `<div class="rv-h">Proceeds by fiscal period</div><div class="rv-bars">`;
-    for (const p of periods) {
+    // The unsettled days ride along at the end, drawn dashed. Leaving them out
+    // was the whole complaint: a month's earnings in hand and nothing on the
+    // chart to show for it. Counted in max too, so its bar cannot overflow
+    // the track on a month that outruns every settled period - which is
+    // exactly what November 2026 was doing when this was added.
+    const bars = [...periods, ...(OPEN ? [OPEN] : [])];
+    const max = Math.max(...bars.map(totalOf));
+    html += `<div class="rv-h">Proceeds by period</div><div class="rv-bars">`;
+    for (const p of bars) {
       const t = totalOf(p);
       const byKey = {};
       for (const r of p.rows) byKey[keyName(r.app)] = (byKey[keyName(r.app)] || 0) + (r.usd || 0);
       const segs = Object.entries(byKey).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
         `<i style="width:${(v / max) * 100}%;background:${k === "Other" ? COLORS[COLORS.length - 1] : colorOf(k)}"
             title="${esc(k)}: ${usd(v)}"></i>`).join("");
-      html += `<div class="rv-bar" title="${fyLabel(p)}, ${day(p.start)} – ${day(p.end)}">
-        <span>${monthName(p)}</span><div class="track">${segs}</div><b>${approx(p)}${usd(t)}</b></div>`;
+      const tip = p.open
+        ? `Not settled yet: Apple's daily sales reports, ${day(p.start)} – ${day(p.end)}`
+        : `${fyLabel(p)}, ${day(p.start)} – ${day(p.end)}`;
+      html += `<div class="rv-bar${p.open ? " open" : ""}" title="${esc(tip)}">
+        <span>${nameOf(p)}</span><div class="track">${segs}</div><b>${approx(p)}${usd(t)}</b></div>`;
     }
-    const keys = [...new Set(apps.map(keyName))];
+    // Keys for what is drawn, not all-time: an app whose first sale falls in
+    // the open days maps to "Other" and would otherwise be a colour on the
+    // chart with nothing in the legend to name it.
+    const keys = [...new Set(bars.flatMap((p) => p.rows.map((r) => keyName(r.app))))]
+      .sort((a, b) => (a === "Other") - (b === "Other") || (appTotals[b] || 0) - (appTotals[a] || 0));
     html += `<div class="rv-key">${keys.map((k) => `<span><i style="background:${
       k === "Other" ? COLORS[COLORS.length - 1] : colorOf(k)}"></i>${esc(k)}</span>`).join("")}</div></div>`;
 
