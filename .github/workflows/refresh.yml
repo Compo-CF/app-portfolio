@@ -139,6 +139,20 @@ jobs:
           PLAY_PROJECT: app-portfolio-tooling
         run: python scripts/revenue.py
 
+      # Subscriptions: counts and events, which neither the finance reports
+      # nor the sales reports carry. Optional like the revenue step - a
+      # failure here must not cost the main refresh, and data/subs.json is
+      # simply left as it was committed.
+      - name: Subscription counts and events
+        continue-on-error: true
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          ASC_VENDOR_NUMBER: ${{ secrets.ASC_VENDOR_NUMBER }}
+          PLAY_PROJECT: app-portfolio-tooling
+        run: python scripts/subs.py
+
       - name: Commit if anything moved
         # The same credentials as the fetch step, because the retry below
         # regenerates the file and would otherwise run without them — a
@@ -175,7 +189,7 @@ jobs:
           # both the accumulated history and any field a newer parser has
           # started writing. Forcing our copy over would silently drop them.
           for attempt in 1 2 3; do
-            git add data/portfolio.json data/revenue.json
+            git add data/portfolio.json data/revenue.json data/subs.json
             # Nothing new is the normal case on a quiet day and must not fail.
             if git diff --staged --quiet; then echo "nothing new"; exit 0; fi
 
@@ -191,6 +205,7 @@ jobs:
             git reset -q --hard "origin/$GITHUB_REF_NAME"
             python scripts/fetch.py
             python scripts/revenue.py || echo "::warning::revenue.py failed on retry; revenue.json left as committed"
+            python scripts/subs.py || echo "::warning::subs.py failed on retry; subs.json left as committed"
           done
 
           echo "::error::Could not land the data after 3 attempts."
