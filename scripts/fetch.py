@@ -55,9 +55,10 @@ APPS = [
     ("6809621921", "Fiber Field Kit"),
     ("6817339425", "Critter Conga"),
     ("6821057970", "Alchemica"),
-    # Both in review when added, listed then for the reason above.
+    # Each of these was in review when added, listed then for the reason above.
     ("6823629432", "Merge BBQ: Low & Slow"),
     ("6830660705", "Ghostline: Idle Racer"),
+    ("6832097718", "Neatly: Cozy Organizing"),
 ]
 
 

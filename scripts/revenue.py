@@ -56,6 +56,8 @@ APPS = {
     "alchemica": ("6821057970", "Alchemica"),
     "lowandslow": ("6823629432", "Merge BBQ"),
     "ghostline": ("6830660705", "Ghostline"),
+    # Bundle com.compofelice.neatly, so the segment is "neatly" like the rest.
+    "neatly": ("6832097718", "Neatly"),
 }
 
 
