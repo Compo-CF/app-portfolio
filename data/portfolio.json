@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-09T22:56:27+00:00",
+ "generated": "2026-11-09T23:46:27+00:00",
  "admob": {
   "2026-06-03": 0.0,
   "2026-06-04": 0.0,
@@ -158,7 +158,7 @@
   "2026-11-06": 1.46,
   "2026-11-07": 2.33,
   "2026-11-08": 2.88,
-  "2026-11-09": 1.18
+  "2026-11-09": 1.27
  },
  "payouts": [
   {
@@ -2759,27 +2759,23 @@
    },
    "android": null,
    "rating": {
-    "average": 4.33,
-    "count": 24,
+    "average": 4.32,
+    "count": 25,
     "source": "itunes-lookup",
     "storefronts": {
      "US": {
       "average": 4.07,
-      "count": 14
+      "count": 15
      },
      "GB": {
       "average": 5.0,
-      "count": 5
+      "count": 6
      },
      "BR": {
       "average": 5.0,
       "count": 1
      },
      "CA": {
-      "average": 5.0,
-      "count": 1
-     },
-     "FR": {
       "average": 5.0,
       "count": 1
      },
@@ -2827,11 +2823,11 @@
      }
     },
     "2026-11-09": {
-     "avg": 4.33,
-     "count": 24,
+     "avg": 4.32,
+     "count": 25,
      "us": {
       "avg": 4.07,
-      "count": 14
+      "count": 15
      }
     }
    },
@@ -5934,6 +5930,11 @@
    "reviews": [],
    "versions": [
     {
+     "version": "3.1.2",
+     "state": "PREPARE_FOR_SUBMISSION",
+     "created": "2026-11-09"
+    },
+    {
      "version": "3.1.1",
      "state": "READY_FOR_SALE",
      "created": "2026-11-05"
@@ -5961,11 +5962,16 @@
    ],
    "builds": [
     {
+     "version": "30",
+     "state": "VALID",
+     "uploaded": "2026-11-09",
+     "marketing": "3.1.2",
+     "attached": null
+    },
+    {
      "version": "28",
      "state": "VALID",
-     "uploaded": "2026-11-06",
-     "marketing": "3.1.1",
-     "attached": "3.1.1"
+     "uploaded": "2026-11-06"
     },
     {
      "version": "27",
@@ -5981,11 +5987,6 @@
      "version": "8",
      "state": "VALID",
      "uploaded": "2026-10-06"
-    },
-    {
-     "version": "8",
-     "state": "VALID",
-     "uploaded": "2026-09-29"
     }
    ]
   },
@@ -7270,6 +7271,80 @@
      "version": "19",
      "state": "VALID",
      "uploaded": "2026-11-04"
+    }
+   ]
+  },
+  {
+   "id": "6832097718",
+   "name": "Neatly: Cozy Organizing",
+   "url": "https://apps.apple.com/app/id6832097718",
+   "downloads": {
+    "2026-11-02": 0,
+    "2026-11-03": 0,
+    "2026-11-04": 0,
+    "2026-11-05": 0,
+    "2026-11-06": 0,
+    "2026-11-07": 0,
+    "2026-11-08": 0
+   },
+   "downloadsBasis": "pacific",
+   "downloadsProvisional": [],
+   "downloadsGapsFromSales": [],
+   "downloadsUtc": {},
+   "downloadsSales": {
+    "2026-11-02": 0,
+    "2026-11-03": 0,
+    "2026-11-04": 0,
+    "2026-11-05": 0,
+    "2026-11-06": 0,
+    "2026-11-07": 0,
+    "2026-11-08": 0
+   },
+   "analytics": {},
+   "revenue": {},
+   "iaps": 8,
+   "iapUnits": {},
+   "countries": {},
+   "android": null,
+   "rating": null,
+   "storeRatingHistory": {},
+   "reviewRating": null,
+   "reviewRatingHistory": {},
+   "reviews": [],
+   "versions": [
+    {
+     "version": "1.0.0",
+     "state": "WAITING_FOR_REVIEW",
+     "created": "2026-11-07"
+    }
+   ],
+   "builds": [
+    {
+     "version": "23",
+     "state": "VALID",
+     "uploaded": "2026-11-09",
+     "marketing": "1.0.0",
+     "attached": "1.0.0"
+    },
+    {
+     "version": "22",
+     "state": "VALID",
+     "uploaded": "2026-11-09"
+    },
+    {
+     "version": "21",
+     "state": "VALID",
+     "uploaded": "2026-11-09"
+    },
+    {
+     "version": "20",
+     "state": "VALID",
+     "uploaded": "2026-11-09"
+    },
+    {
+     "version": "19",
+     "state": "VALID",
+     "uploaded": "2026-11-09"
     }
    ]
   }
