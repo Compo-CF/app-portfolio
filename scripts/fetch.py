@@ -473,8 +473,12 @@ def main():
         if app_id not in android:
             continue
         held_rev = android[app_id].setdefault("revenue", {})
-        for cur, days in by_cur.items():
-            held_rev.setdefault(cur, {}).update(days)
+        # Deliberately not `cur, days`: main() is long, and `days` is the
+        # backfill window set from BACKFILL_DAYS several hundred lines up.
+        # Rebinding it here turned an int into a dict and only blew up much
+        # later, in code that had nothing to do with Play.
+        for money_cur, day_rows in by_cur.items():
+            held_rev.setdefault(money_cur, {}).update(day_rows)
 
     # How long since Google last gave us a day it had not given us before.
     #
