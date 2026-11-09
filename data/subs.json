@@ -1,10 +1,14 @@
 {
- "generated": "2026-11-09T16:50:28Z",
+ "generated": "2026-11-09T17:04:37Z",
  "apple": {
   "through": null,
   "state": {},
   "events": {},
-  "names": {}
+  "names": {},
+  "unavailable": [
+   "SUBSCRIPTION",
+   "SUBSCRIPTION_EVENT"
+  ]
  },
  "play": {
   "through": "2026-10-31",
