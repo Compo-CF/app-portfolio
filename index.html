@@ -349,6 +349,8 @@
             aria-selected="false">Payments</button>
     <button role="tab" id="tab-revenue" aria-controls="panel-revenue"
             aria-selected="false">Revenue</button>
+    <button role="tab" id="tab-subs" aria-controls="panel-subs"
+            aria-selected="false">Subscriptions</button>
     <button role="tab" id="tab-ratings" aria-controls="panel-ratings"
             aria-selected="false">Ratings</button>
     <button role="tab" id="tab-map" aria-controls="panel-map"
@@ -377,6 +379,9 @@
   </div>
   <div role="tabpanel" id="panel-revenue" aria-labelledby="tab-revenue" hidden>
     <div id="revenue"></div>
+  </div>
+  <div role="tabpanel" id="panel-subs" aria-labelledby="tab-subs" hidden>
+    <div id="subs"></div>
   </div>
   <div role="tabpanel" id="panel-ratings" aria-labelledby="tab-ratings" hidden>
     <div id="ratings"></div>
@@ -2743,5 +2748,6 @@ load()
   });
 </script>
 <script src="revenue.js"></script>
+<script src="subs.js"></script>
 </body>
 </html>
