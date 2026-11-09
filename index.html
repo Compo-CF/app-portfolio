@@ -168,6 +168,11 @@
   /* A date with no figure behind it. Deliberately not green: it is not money
      yet, only a day Apple's calendar says one is due. */
   .day.waiting{border-color:var(--faint);border-style:dashed}
+  /* AdMob, projected rather than reported: Google's colour, dashed like
+     every other cell that is a date we worked out rather than one we
+     were told. */
+  .day.ads{border-color:var(--play);border-style:dashed}
+  .day.ads .amt{color:var(--play)}
   .day .amt i.wait{font-style:normal;font-weight:400;color:var(--faint);
        font-size:9.5px}
   .day.due .amt{color:var(--good)}
@@ -1186,7 +1191,61 @@ function deposits(data) {
     const day = addDays(soon.end, PAY_LAG_DAYS);
     (out[day] = out[day] || []).push(soon);
   }
+  const ads = admobPayout(data);
+  if (ads) (out[ads.day] = out[ads.day] || []).push(ads);
   return out;
+}
+
+/** AdMob's one predictable date, projected.
+ *
+ *  Google pays monthly, but only once the balance clears the threshold: if it
+ *  does so by the end of a month, payment issues on or around the 21st of the
+ *  following month, moved to the next weekday when the 21st falls at a
+ *  weekend. Under the threshold the balance simply rolls on, which is why
+ *  this account has never been paid at all.
+ *
+ *  Nothing here is a figure AdMob has published. The date comes from that
+ *  rule and the amount from the recent run rate, so both are drawn as a
+ *  projection and neither is added to the month total.
+ */
+function admobPayout(data) {
+  const ad = data.admob || {};
+  const days = Object.keys(ad).sort();
+  if (!days.length) return null;
+
+  const last = days[days.length - 1];
+  const balance = days.reduce((n, d) => n + (ad[d] || 0), 0);
+  // Thirty days of run rate: long enough to ride out a quiet week, short
+  // enough to follow a portfolio that keeps adding apps.
+  const since = addDays(last, -29);
+  const recent = days.filter((d) => d >= since);
+  const rate = recent.reduce((n, d) => n + (ad[d] || 0), 0) / Math.max(recent.length, 1);
+
+  // Where the balance first clears the threshold: historically if it already
+  // has, otherwise carried forward at that rate.
+  let run = 0, cross = null;
+  for (const d of days) { run += ad[d] || 0; if (run >= ADMOB_THRESHOLD) { cross = d; break; } }
+  let projected = false;
+  if (!cross) {
+    // A flat line never arrives. Better to show nothing than a date built on
+    // dividing by zero.
+    if (rate <= 0) return null;
+    projected = true;
+    cross = addDays(last, Math.ceil((ADMOB_THRESHOLD - balance) / rate));
+  }
+
+  const [cy, cm] = cross.split("-").map(Number);
+  const pay = new Date(Date.UTC(cm === 12 ? cy + 1 : cy, cm === 12 ? 0 : cm, 21));
+  while (pay.getUTCDay() === 0 || pay.getUTCDay() === 6) pay.setUTCDate(pay.getUTCDate() + 1);
+
+  // AdMob pays the balance standing at the end of the clearing month, not the
+  // threshold that triggered it, so carry the rate out to that month end.
+  const ym = cross.slice(0, 7);
+  const monthEnd = `${ym}-${String(monthParts(ym).len).padStart(2, "0")}`;
+  const ahead = Math.max(Math.round((Date.parse(monthEnd) - Date.parse(last)) / 864e5), 0);
+
+  return {ads: true, day: pay.toISOString().slice(0, 10), amount: balance + rate * ahead,
+          balance, rate, cross, projected, monthEnd, through: last};
 }
 
 let DEP_MONTH = null;
@@ -1200,9 +1259,11 @@ let DEP_MONTH = null;
  *  it clears that region's minimum. So a period with foreign sales is shown
  *  converted at the ECB period-end rate and marked approximate.
  *
- *  AdMob has no entry at all. It pays only once the balance passes $100 and
- *  gives no date before then, so a cell would be an invention; the balance is
- *  stated in the note instead.
+ *  AdMob gets a cell too, but a projected one. It pays only once the balance
+ *  passes $100 and gives no date before then, so the date comes from its
+ *  published rule and the amount from the recent run rate. It is drawn
+ *  dashed, in Google's colour, and kept out of the month total, so it cannot
+ *  be mistaken for a deposit anyone has actually confirmed.
  */
 function renderDeposits(data) {
   const host = $("#deposits");
@@ -1227,14 +1288,17 @@ function renderDeposits(data) {
 
   const { len } = monthParts(DEP_MONTH);
   const cells = [];
-  let monthTotal = 0, allPast = true, pendingThisMonth = false;
+  let monthTotal = 0, allPast = true, pendingThisMonth = false, adsThisMonth = null;
   for (let n = 1; n <= len; n++) {
     const d = `${DEP_MONTH}-${String(n).padStart(2, "0")}`;
     const here = due[d] || [];
     // A projected period has no figure, so it must not reach the month total
-    // or the total would silently read as complete when it is not.
-    const settled = here.filter((p) => !p.pending);
-    const waiting = here.filter((p) => p.pending);
+    // or the total would silently read as complete when it is not. The AdMob
+    // projection does have a figure, but it is ours rather than Google's, so
+    // it is kept out of the total for the same reason.
+    const settled = here.filter((p) => !p.pending && !p.ads);
+    const waiting = here.filter((p) => p.pending && !p.ads);
+    const adsDue = here.find((p) => p.ads);
     const amount = settled.reduce((s, p) => s + p.amount, 0);
     const foreign = settled.reduce((s, p) => s + (p.foreign || 0), 0);
     const approx = foreign >= 0.005 ? "≈" : "";
@@ -1242,10 +1306,15 @@ function renderDeposits(data) {
     const landed = settled.length && d <= today;
     if (settled.length && !landed) allPast = false;
     if (waiting.length) pendingThisMonth = true;
+    if (adsDue) adsThisMonth = adsDue;
 
+    // Apple's state wins the cell when both land on one day, so a real
+    // deposit is never dressed as a projection; the AdMob note still rides
+    // along in the tooltip.
     const cls = ["day", d === today ? "today" : "",
                  settled.length ? (landed ? "paid" : "due")
-                 : waiting.length ? "waiting" : "future"]
+                 : waiting.length ? "waiting"
+                 : adsDue ? "ads" : "future"]
                 .filter(Boolean).join(" ");
     const span = (p) => {
       const [fy, per] = p.period.split("-");
@@ -1262,11 +1331,23 @@ function renderDeposits(data) {
           + "Apple has not published the finance report for this period, so "
           + "there is a date but no figure."
         : d;
+    const adsTip = adsDue
+      ? `AdMob, projected: about ${money2(adsDue.amount)} on or around the 21st. `
+        + `Google pays monthly once the balance clears ${money2(ADMOB_THRESHOLD)}; `
+        + (adsDue.projected
+            ? `at the last 30 days' rate of ${money2(adsDue.rate)} a day the `
+              + `balance of ${money2(adsDue.balance)} reaches it around ${adsDue.cross}, `
+            : `the balance cleared it on ${adsDue.cross}, `)
+        + `so the payment follows in the next month. Neither the date nor the `
+        + `amount is confirmed by Google.`
+      : "";
 
-    cells.push(`<div class="${cls}" title="${tip}">
+    cells.push(`<div class="${cls}" title="${adsTip ? (settled.length || waiting.length
+        ? tip + " — also: " + adsTip : adsTip) : tip}">
       <span class="n">${n}</span>
       <span class="amt">${settled.length ? approx + money2(amount)
-        : waiting.length ? '<i class="wait">expected</i>' : ""}</span>
+        : waiting.length ? '<i class="wait">expected</i>'
+        : adsDue ? "≈" + money2(adsDue.amount) : ""}</span>
     </div>`);
   }
 
@@ -1276,6 +1357,7 @@ function renderDeposits(data) {
     (s, d) => s + due[d].filter((p) => !p.pending)
                         .reduce((t, p) => t + p.amount, 0), 0);
   const ads = Object.values(data.admob || {}).reduce((n, v) => n + v, 0);
+  const adsPlan = admobPayout(data);
 
   host.innerHTML = `<div class="section">Deposits</div>` + calShell({
     month: DEP_MONTH,
@@ -1285,6 +1367,10 @@ function renderDeposits(data) {
       // "$0.00 due this month" is wrong when a payment is expected and only
       // its size is unknown. Saying nothing about an amount beats saying zero.
       ? `<b>&mdash;</b> one payment expected, amount not published yet`
+      : monthTotal === 0 && adsThisMonth
+      // Same again for a month whose only entry is the AdMob projection: a
+      // cell showing a figure above a total reading $0.00 contradicts itself.
+      ? `<b>&mdash;</b> AdMob projected, about ${money2(adsThisMonth.amount)}`
       : `<b>${money2(monthTotal)}</b> ${
           monthTotal === 0 ? "due this month"
             : allPast ? "due by now this month" : "expected this month"}`,
@@ -1304,8 +1390,14 @@ function renderDeposits(data) {
       amount is simply not known yet. Periods run four or five weeks, so a
       five-week one steps over a whole calendar month — nothing at all pays in
       November 2026, between 29 October and 3 December.
-      AdMob is not shown: it holds earnings until $100 and names no date before
-      then — the balance is ${money2(ads)}.`,
+      AdMob now has a cell of its own, in Google's colour and dashed because it
+      is a projection rather than a date Google has given: it holds earnings
+      until ${money2(ADMOB_THRESHOLD)}, then pays on or around the 21st of the
+      month after the balance clears. The balance is ${money2(ads)}${adsPlan
+        ? `, rising about ${money2(adsPlan.rate)} a day, so on that rate it
+      clears around ${adsPlan.cross} and pays about ${money2(adsPlan.amount)}
+      on ${adsPlan.day}` : ""}. That cell is left out of the month total above,
+      which counts only what Apple has actually reported.`,
   });
 
   host.querySelectorAll("[data-go]").forEach((b) =>
