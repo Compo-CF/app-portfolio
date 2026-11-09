@@ -37,7 +37,17 @@ jobs:
       name: github-pages
       url: ${{ steps.pages.outputs.page_url }}
     steps:
+      # The branch tip, not github.sha. Both this workflow and refresh.yml's
+      # deploy job publish the same Pages site, and the `pages` concurrency
+      # group orders them but does not make the newest content win: whichever
+      # runs last is what the site serves. Checking out the triggering commit
+      # meant a push of code could land after a data commit and republish the
+      # tree as it stood before that data existed - which is exactly what
+      # happened on 9 November, leaving the site with new code and a
+      # revenue.json nearly three hours stale.
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
