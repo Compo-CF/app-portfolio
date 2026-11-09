@@ -260,6 +260,24 @@ _COLS = {
     "package": ["package id", "product id", "package name", "product_id"],
 }
 
+# Wanted where present, but never required: a report missing one of these is
+# still worth every figure in it, so they are checked separately from _COLS.
+# Losing the product breakdown is a smaller loss than losing the money.
+_OPT = {
+    "sku": ["sku id", "sku_id", "sku"],
+    "title": ["product title", "title"],
+    "kind": ["product type"],
+    "event": ["transaction type"],
+}
+
+
+def _pick_opt(headers, wanted):
+    low = {(h or "").strip().lower(): h for h in headers or []}
+    for cand in _OPT[wanted]:
+        if cand in low:
+            return low[cand]
+    return None
+
 
 def _pick(headers, wanted):
     """The first candidate column actually present, matched case-blind."""
@@ -352,7 +370,7 @@ def earnings():
         print(f"  play: no earnings reports under {EARNINGS} in {BUCKET}")
         return {}
 
-    apps, unmapped, shown = {}, set(), False
+    apps, products, unmapped, shown = {}, {}, set(), False
     for blob in sorted(blobs, key=lambda b: b.name):
         try:
             archive = zipfile.ZipFile(io.BytesIO(blob.download_as_bytes()))
@@ -377,6 +395,7 @@ def earnings():
 
             reader = csv.DictReader(io.StringIO(text))
             cols = {k: _pick(reader.fieldnames, k) for k in _COLS}
+            opt = {k: _pick_opt(reader.fieldnames, k) for k in _OPT}
             if not shown:
                 # Printed once a run. The schema belongs to Google, and when
                 # they change it the symptom would otherwise be a silent
@@ -401,9 +420,35 @@ def earnings():
                 if not day:
                     continue
                 cur = (row.get(cols["currency"]) or "").strip().upper() or "USD"
+                money = _money(row.get(cols["amount"]))
                 series = apps.setdefault(app_id, {}).setdefault(cur, {})
-                series[day] = round(series.get(day, 0.0)
-                                    + _money(row.get(cols["amount"])), 6)
+                series[day] = round(series.get(day, 0.0) + money, 6)
+
+                # The same money again, split by what was bought. One sale
+                # writes several rows here - the charge, Google's fee, tax -
+                # so the amounts are summed and only the charge rows are
+                # counted as units, less any charge that was refunded.
+                sku = (row.get(opt["sku"]) or "").strip() if opt["sku"] else ""
+                if not sku:
+                    continue
+                item = products.setdefault(app_id, {}).setdefault(sku, {
+                    "sku": sku,
+                    "title": (row.get(opt["title"]) or "").strip()
+                             if opt["title"] else "",
+                    "kind": (row.get(opt["kind"]) or "").strip()
+                            if opt["kind"] else "",
+                    "units": 0, "currency": {},
+                })
+                if not item["title"] and opt["title"]:
+                    item["title"] = (row.get(opt["title"]) or "").strip()
+                by_day = item["currency"].setdefault(cur, {})
+                by_day[day] = round(by_day.get(day, 0.0) + money, 6)
+                event = ((row.get(opt["event"]) or "").strip().lower()
+                         if opt["event"] else "")
+                if event == "charge":
+                    item["units"] += 1
+                elif event in ("charge refund", "refund"):
+                    item["units"] -= 1
 
     if unmapped:
         print("  play: earnings exist for packages this dashboard does not "
@@ -420,7 +465,11 @@ def earnings():
                 for days in app.values() for v in days.values())
     print(f"  play: earnings for {len(apps)} app(s) through {through or '-'}"
           f", {total:,.2f} in merchant currency")
-    return {"through": through, "apps": apps}
+    for app in products.values():
+        for item in app.values():
+            item["currency"] = {c: dict(sorted(d.items()))
+                                for c, d in item["currency"].items()}
+    return {"through": through, "apps": apps, "products": products}
 
 
 if __name__ == "__main__":

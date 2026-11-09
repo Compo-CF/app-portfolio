@@ -120,16 +120,23 @@ jobs:
           BACKFILL_DAYS: ${{ github.event.inputs.backfill_days || '7' }}
         run: python scripts/fetch.py
 
-      # The Revenue tab: the same Apple financial reports at product level, in
-      # data/revenue.json. Optional, so a failure here never costs the main
-      # refresh; the committed revenue history is simply left as it was.
-      - name: Apple proceeds by app and product
+      # The Revenue tab: the same Apple financial reports at product level,
+      # plus Google Play's earnings at product level, in data/revenue.json.
+      # Optional, so a failure here never costs the main refresh; the
+      # committed revenue history is simply left as it was.
+      #
+      # PLAY_PROJECT is needed here as well as on the fetch step: Storage
+      # bills every call to a project, and without it the Play read fails in
+      # a way that looks exactly like a permissions problem. The credentials
+      # themselves are already exported by the auth step above.
+      - name: Proceeds by app and product
         continue-on-error: true
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
           ASC_VENDOR_NUMBER: ${{ secrets.ASC_VENDOR_NUMBER }}
+          PLAY_PROJECT: app-portfolio-tooling
         run: python scripts/revenue.py
 
       - name: Commit if anything moved

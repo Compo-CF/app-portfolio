@@ -303,6 +303,81 @@
       <span>${sum(pick.rows, (r) => r.units)}</span>
       <span class="rv-hide-sm"></span><span>${approx(pick)}${usd(pt)}</span></div></div>`;
 
+    /* ---- Google Play, by product ---- */
+    // Deliberately its own section rather than a column in the tables above.
+    // Apple settles by fiscal period and Google by calendar month, so a
+    // shared column would set Play's October against Apple's 27 Sep - 31 Oct
+    // and misattribute both. These figures are already net of Google's fee
+    // and already in the merchant currency, so no conversion is applied and
+    // no approximation mark is earned.
+    const PLAY = DATA.play && (DATA.play.products || []).length ? DATA.play : null;
+    if (PLAY) {
+      // Google settles in the merchant currency, which for this account is
+      // dollars - but "normally one currency" is not "always one currency",
+      // and a plain sum over r.currency would add pounds to dollars and look
+      // entirely convincing doing it. Convert like everything else here, and
+      // say so when a day has no rate rather than quietly dropping it.
+      const playNet = (r) => {
+        let usd = 0;
+        const short = [];
+        for (const [cur, days] of Object.entries(r.currency))
+          for (const [d, v] of Object.entries(days)) {
+            if (cur === "USD") { usd += v; continue; }
+            const rate = (DATA.fx[d] || {})[cur];
+            if (rate === undefined) { if (!short.includes(cur)) short.push(cur); continue; }
+            usd += v * rate;
+          }
+        return {usd, short,
+                foreign: Object.keys(r.currency).some((c) => c !== "USD")};
+      };
+      const amt = (r) => playNet(r).usd;
+      const ptot = sum(PLAY.products, amt);
+      const pshort = [...new Set(PLAY.products.flatMap((r) => playNet(r).short))];
+      const gcols = "--lg:minmax(0,2fr) minmax(0,.7fr) minmax(0,1.2fr) minmax(0,1fr);" +
+        "--sm:minmax(0,2fr) minmax(0,.7fr) minmax(0,1fr)";
+      html += `<div class="rv-h">Google Play</div><div class="months">
+        <div class="rv-grid head m" style="${gcols}"><span>Product</span><span>Units</span>
+          <span class="rv-hide-sm">Days</span><span>Net</span></div>`;
+      for (const r of PLAY.products) {
+        const net = playNet(r);
+        // A row whose every currency failed to convert has an unknown value,
+        // not a zero value. Printing "$0.00" against real money is the same
+        // lie the hardcoded Play zero told; a dash with the native amount on
+        // hover says what is actually known.
+        const unknown = net.usd === 0 && net.short.length;
+        const days = Object.values(r.currency)
+          .flatMap((d) => Object.keys(d)).sort();
+        const when = days.length
+          ? (days[0] === days[days.length - 1] ? day(days[0])
+             : `${day(days[0])} – ${day(days[days.length - 1])}`)
+          : "—";
+        html += `<div class="rv-grid m" style="${gcols}">
+          <span>${esc(r.title || r.sku)}<small>${esc(r.app)}${
+            r.kind ? ` · ${esc(r.kind)}` : ""}</small></span>
+          <span>${r.units || "—"}</span>
+          <span class="rv-hide-sm" style="font-size:12px;color:var(--soft)">${esc(when)}</span>
+          <b title="${esc(native(Object.entries(r.currency).flatMap(([c, d]) =>
+            Object.values(d).map((v) => ({currency: c, amount: v}))))
+            + (net.short.length
+               ? ` (${net.short.join(", ")} not converted: no ECB rate)` : ""))
+            }">${unknown ? "—"
+                 : (net.foreign ? "≈" : "") + usd(net.usd)}</b></div>`;
+      }
+      html += `<div class="rv-grid total m" style="${gcols}"><span>Total</span>
+        <span>${sum(PLAY.products, (r) => r.units || 0)}</span>
+        <span class="rv-hide-sm"></span><span>${
+          PLAY.products.some((r) => playNet(r).foreign) ? "≈" : ""}${usd(ptot)}</span></div></div>`;
+      html += `<div class="caveat">Google Play earnings, net of Google's fee,
+        in the currency Google settled them in${pshort.length
+          ? ` — and ${pshort.join(", ")} could not be converted, for want of
+        an ECB rate on the day, so ${pshort.length > 1 ? "those are" : "that is"}
+        left out of the total` : ""}.
+        Filed monthly and in arrears: this covers through
+        <b>${esc(PLAY.through || "—")}</b>, and the current month will not
+        appear until Google publishes it. Apple's periods above are fiscal and
+        Google's are calendar months, so the two are not set side by side.</div>`;
+    }
+
     html += `<div class="caveat">From Apple's financial reports: what Apple settled for each
       fiscal period, net of its commission, before tax and banking. Apple's fiscal months run
       Sunday to Saturday, so “${monthName(latest)}” is ${day(latest.start)} – ${day(latest.end)}.

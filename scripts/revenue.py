@@ -34,6 +34,7 @@ import jwt
 import requests
 
 import fx as fxrates
+import play
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "revenue.json"
@@ -340,10 +341,38 @@ def main():
     for d, rows in ((open_ or {}).get("days") or {}).items():
         convert(rows, d)
 
+    # Google Play, kept apart from Apple's periods rather than merged into
+    # them. Play settles by calendar month and Apple by fiscal period, so a
+    # shared column would put Play's October against Apple's 27 Sep - 31 Oct
+    # and quietly misattribute both. Its figures are already net of Google's
+    # fee and already in the merchant currency.
+    #
+    # Optional: a failure here must not cost the Apple breakdown, which is
+    # what this file is mainly for. Keep whatever was held instead.
+    try:
+        play_rev = play.earnings() or {}
+    except Exception as e:                           # noqa: BLE001
+        print(f"revenue: Play earnings unavailable ({type(e).__name__})")
+        play_rev = {}
+    # Play reports a package, not a display name. APPS already maps the
+    # dashboard's app ids to names for Apple, so invert it rather than keep a
+    # second list that can drift out of step with the first.
+    names = {app_id: name for app_id, name in APPS.values()}
+    play_items = []
+    for app_id, items in (play_rev.get("products") or {}).items():
+        for item in items.values():
+            play_items.append({**item, "appId": app_id,
+                               "app": names.get(app_id, app_id)})
+    play_items.sort(key=lambda r: -sum(
+        v for d in r["currency"].values() for v in d.values()))
+    play_block = ({"through": play_rev.get("through"), "products": play_items}
+                  if play_items else prev.get("play"))
+
     out = {"generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
            "fx": {d: v for d, v in rates.items() if d in wanted},
            "periods": periods,
-           "open": open_}
+           "open": open_,
+           "play": play_block}
     if prev and {k: v for k, v in out.items() if k != "generated"} == \
             {k: v for k, v in prev.items() if k != "generated"}:
         print(f"revenue: nothing new ({len(periods)} periods)")
