@@ -252,7 +252,12 @@ _COLS = {
     "day": ["transaction date", "order charged date", "date"],
     "amount": ["amount (merchant currency)", "amount merchant currency"],
     "currency": ["merchant currency"],
-    "package": ["product id", "package name", "product_id"],
+    # "Package ID" is the real one, confirmed from a published report; the
+    # others are kept because Google has used them elsewhere and an extra
+    # candidate costs nothing. Getting this wrong is cheap to miss and
+    # expensive to notice: the file parses, every row is dropped for want of
+    # an app to attach it to, and the total comes out a convincing 0.00.
+    "package": ["package id", "product id", "package name", "product_id"],
 }
 
 
