@@ -180,11 +180,14 @@ def apple(days_back=BACKFILL, held=None):
     names = dict(held.get("names") or {})
 
     said = set()
+    refused = set()
 
     def note(msg):
         if msg not in said:
             said.add(msg)
             print(f"  subs: {msg}")
+        if "refused for every version" in msg:
+            refused.add(msg.split(":")[0])
 
     # Apple files a day the following morning Pacific, so yesterday is the
     # newest that can exist. Days already held are never re-asked: a closed
@@ -245,6 +248,30 @@ def apple(days_back=BACKFILL, held=None):
                 events[day] = per
                 got_events += 1
 
+    # A control, run only when the subscription reports were refused.
+    #
+    # Apple answers these with "Invalid vendor number specified" even though
+    # the same vendor number fetches SALES and financeReports every day. That
+    # leaves two very different explanations - this code asks wrongly, or
+    # Apple has no subscription report for this account to give - and the
+    # error text actively points at the wrong one.
+    #
+    # So ask for a report that is known to exist, through this same function,
+    # with these same credentials and headers. If SALES comes back, the code
+    # path is sound and the refusal belongs to the report type. That turns a
+    # misleading error into a fact worth writing on the page.
+    if refused:
+        probe = (date.today() - timedelta(days=2)).isoformat()
+        ctrl = _apple_day(probe, "SALES", [None], bearer, vendor, note)
+        if ctrl:
+            note(f"control: SALES for {probe} fetched fine with the same "
+                 "credentials, headers and code, so the refusal above is "
+                 "specific to the subscription report types - not to this "
+                 "vendor number, whatever Apple's error says")
+        else:
+            note(f"control: SALES for {probe} returned nothing either, so "
+                 "the problem may be broader than the subscription reports")
+
     covered = sorted(set(state) | set(events))
     through = covered[-1] if covered else None
     if got_state or got_events:
@@ -253,7 +280,11 @@ def apple(days_back=BACKFILL, held=None):
     else:
         print("  subs: Apple published nothing new; holding "
               f"{len(covered)} day(s), through {through or '-'}")
-    return {"through": through, "state": state, "events": events, "names": names}
+    return {"through": through, "state": state, "events": events,
+            "names": names,
+            # What the page needs to say "Apple has never published one of
+            # these" instead of drawing a zero as though it were measured.
+            "unavailable": sorted(refused)}
 
 
 def google():
