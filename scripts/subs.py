@@ -130,9 +130,20 @@ def _apple_day(day, rtype, versions, bearer, vendor, note):
                 text = r.content.decode("utf-8", "replace")
             head, rows = _rows(text)
             return ver, head, rows
+        # A 400 is Apple telling us *why* in the body, and the first version
+        # of this swallowed it - leaving "no version accepted" with no way to
+        # tell a wrong version from a wrong date from an entitlement the key
+        # does not have. Keep the detail; it is the whole diagnosis.
+        detail = r.text[:200]
+        try:
+            err = r.json()["errors"][0]
+            detail = f'{err.get("code")} :: {err.get("detail", "")[:160]}'
+        except Exception:                            # noqa: BLE001
+            pass
         if r.status_code != 400:
-            note(f"{rtype}: refused ({r.status_code}) {r.text[:90]}")
+            note(f"{rtype}: refused ({r.status_code}) {detail}")
             return None
+        note(f"{rtype} v{ver}: {detail}")
     note(f"{rtype}: no version accepted of {', '.join(versions)}")
     return None
 
@@ -257,7 +268,21 @@ def google():
         return {}
 
     if not blobs:
+        # Saying "nothing there" is useless when the prefix itself may be
+        # wrong. Name what the bucket actually holds so the real one can be
+        # read off the log rather than guessed at a second time.
         print(f"  subs: Google has nothing under {PLAY_PREFIX}")
+        try:
+            seen = set()
+            for b in client.list_blobs(play.BUCKET, prefix="stats/",
+                                       max_results=400):
+                parts = b.name.split("/")
+                if len(parts) > 1:
+                    seen.add("/".join(parts[:2]) + "/")
+            print("  subs: stats/ actually contains: "
+                  + (", ".join(sorted(seen)) or "(nothing)"))
+        except Exception as e:                       # noqa: BLE001
+            print(f"  subs: could not list stats/ ({type(e).__name__})")
         return {}
 
     days, names, shown = {}, {}, False
