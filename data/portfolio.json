@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-11T16:57:28+00:00",
+ "generated": "2026-11-11T21:33:15+00:00",
  "admob": {
   "2026-06-03": 0.0,
   "2026-06-04": 0.0,
@@ -160,7 +160,7 @@
   "2026-11-08": 2.87,
   "2026-11-09": 2.02,
   "2026-11-10": 2.76,
-  "2026-11-11": 0.8
+  "2026-11-11": 1.4
  },
  "payouts": [
   {
@@ -2850,13 +2850,13 @@
    },
    "android": null,
    "rating": {
-    "average": 4.37,
-    "count": 27,
+    "average": 4.39,
+    "count": 28,
     "source": "itunes-lookup",
     "storefronts": {
      "US": {
-      "average": 4.07,
-      "count": 15
+      "average": 4.12,
+      "count": 16
      },
      "GB": {
       "average": 5.0,
@@ -2934,11 +2934,11 @@
      }
     },
     "2026-11-11": {
-     "avg": 4.37,
-     "count": 27,
+     "avg": 4.39,
+     "count": 28,
      "us": {
-      "avg": 4.07,
-      "count": 15
+      "avg": 4.12,
+      "count": 16
      }
     }
    },
@@ -4507,6 +4507,11 @@
    "reviews": [],
    "versions": [
     {
+     "version": "2.0.3",
+     "state": "WAITING_FOR_REVIEW",
+     "created": "2026-11-11"
+    },
+    {
      "version": "2.0.2",
      "state": "READY_FOR_SALE",
      "created": "2026-11-09"
@@ -4550,20 +4555,20 @@
      "version": "1.3.1",
      "state": "READY_FOR_SALE",
      "created": "2026-07-31"
-    },
-    {
-     "version": "1.3",
-     "state": "READY_FOR_SALE",
-     "created": "2026-07-24"
     }
    ],
    "builds": [
     {
+     "version": "84",
+     "state": "VALID",
+     "uploaded": "2026-11-11",
+     "marketing": "2.0.3",
+     "attached": "2.0.3"
+    },
+    {
      "version": "82",
      "state": "VALID",
-     "uploaded": "2026-11-09",
-     "marketing": "2.0.2",
-     "attached": "2.0.2"
+     "uploaded": "2026-11-09"
     },
     {
      "version": "76",
@@ -4579,11 +4584,6 @@
      "version": "61",
      "state": "VALID",
      "uploaded": "2026-10-19"
-    },
-    {
-     "version": "1",
-     "state": "VALID",
-     "uploaded": "2026-10-06"
     }
    ]
   },
