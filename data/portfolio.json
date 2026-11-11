@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-11T14:02:52+00:00",
+ "generated": "2026-11-11T16:57:28+00:00",
  "admob": {
   "2026-06-03": 0.0,
   "2026-06-04": 0.0,
@@ -157,10 +157,10 @@
   "2026-11-05": 1.71,
   "2026-11-06": 1.46,
   "2026-11-07": 2.3,
-  "2026-11-08": 2.88,
+  "2026-11-08": 2.87,
   "2026-11-09": 2.02,
   "2026-11-10": 2.76,
-  "2026-11-11": 0.51
+  "2026-11-11": 0.8
  },
  "payouts": [
   {
@@ -2850,13 +2850,13 @@
    },
    "android": null,
    "rating": {
-    "average": 4.39,
-    "count": 28,
+    "average": 4.37,
+    "count": 27,
     "source": "itunes-lookup",
     "storefronts": {
      "US": {
-      "average": 4.12,
-      "count": 16
+      "average": 4.07,
+      "count": 15
      },
      "GB": {
       "average": 5.0,
@@ -2934,11 +2934,11 @@
      }
     },
     "2026-11-11": {
-     "avg": 4.39,
-     "count": 28,
+     "avg": 4.37,
+     "count": 27,
      "us": {
-      "avg": 4.12,
-      "count": 16
+      "avg": 4.07,
+      "count": 15
      }
     }
    },
@@ -3227,11 +3227,16 @@
    ],
    "builds": [
     {
-     "version": "129",
+     "version": "136",
      "state": "VALID",
      "uploaded": "2026-11-11",
-     "marketing": "4.0.0",
+     "marketing": "4.0.1",
      "attached": null
+    },
+    {
+     "version": "129",
+     "state": "VALID",
+     "uploaded": "2026-11-11"
     },
     {
      "version": "127",
@@ -3247,11 +3252,6 @@
      "version": "92",
      "state": "VALID",
      "uploaded": "2026-11-10"
-    },
-    {
-     "version": "91",
-     "state": "VALID",
-     "uploaded": "2026-11-09"
     }
    ]
   },
@@ -7107,7 +7107,7 @@
    "versions": [
     {
      "version": "1.0",
-     "state": "PREPARE_FOR_SUBMISSION",
+     "state": "WAITING_FOR_REVIEW",
      "created": "2026-10-16"
     }
    ],
@@ -7302,6 +7302,11 @@
    "reviews": [],
    "versions": [
     {
+     "version": "1.1.0",
+     "state": "WAITING_FOR_REVIEW",
+     "created": "2026-11-11"
+    },
+    {
      "version": "1.0.0",
      "state": "READY_FOR_SALE",
      "created": "2026-11-07"
@@ -7309,11 +7314,21 @@
    ],
    "builds": [
     {
+     "version": "30",
+     "state": "VALID",
+     "uploaded": "2026-11-11",
+     "marketing": "1.1.0",
+     "attached": "1.1.0"
+    },
+    {
+     "version": "27",
+     "state": "VALID",
+     "uploaded": "2026-11-11"
+    },
+    {
      "version": "24",
      "state": "VALID",
-     "uploaded": "2026-11-10",
-     "marketing": "1.0.1",
-     "attached": null
+     "uploaded": "2026-11-10"
     },
     {
      "version": "23",
@@ -7322,16 +7337,6 @@
     },
     {
      "version": "22",
-     "state": "VALID",
-     "uploaded": "2026-11-09"
-    },
-    {
-     "version": "21",
-     "state": "VALID",
-     "uploaded": "2026-11-09"
-    },
-    {
-     "version": "20",
      "state": "VALID",
      "uploaded": "2026-11-09"
     }
