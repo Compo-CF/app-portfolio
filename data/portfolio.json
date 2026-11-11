@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-10T21:01:19+00:00",
+ "generated": "2026-11-11T00:14:55+00:00",
  "admob": {
   "2026-06-03": 0.0,
   "2026-06-04": 0.0,
@@ -159,7 +159,7 @@
   "2026-11-07": 2.33,
   "2026-11-08": 2.88,
   "2026-11-09": 2.02,
-  "2026-11-10": 1.61
+  "2026-11-10": 2.12
  },
  "payouts": [
   {
@@ -1276,6 +1276,14 @@
       "avg": 4.92,
       "count": 12
      }
+    },
+    "2026-11-11": {
+     "avg": 4.92,
+     "count": 12,
+     "us": {
+      "avg": 4.92,
+      "count": 12
+     }
     }
    },
    "reviewRating": {
@@ -1451,6 +1459,10 @@
      "count": 7
     },
     "2026-11-10": {
+     "avg": 5.0,
+     "count": 7
+    },
+    "2026-11-11": {
      "avg": 5.0,
      "count": 7
     }
@@ -2802,8 +2814,8 @@
    },
    "android": null,
    "rating": {
-    "average": 4.32,
-    "count": 25,
+    "average": 4.37,
+    "count": 27,
     "source": "itunes-lookup",
     "storefronts": {
      "US": {
@@ -2814,11 +2826,15 @@
       "average": 5.0,
       "count": 6
      },
+     "CA": {
+      "average": 5.0,
+      "count": 2
+     },
      "BR": {
       "average": 5.0,
       "count": 1
      },
-     "CA": {
+     "FR": {
       "average": 5.0,
       "count": 1
      },
@@ -2876,6 +2892,14 @@
     "2026-11-10": {
      "avg": 4.32,
      "count": 25,
+     "us": {
+      "avg": 4.07,
+      "count": 15
+     }
+    },
+    "2026-11-11": {
+     "avg": 4.37,
+     "count": 27,
      "us": {
       "avg": 4.07,
       "count": 15
@@ -3057,6 +3081,10 @@
     "2026-11-10": {
      "avg": 3.67,
      "count": 6
+    },
+    "2026-11-11": {
+     "avg": 3.67,
+     "count": 6
     }
    },
    "reviews": [
@@ -3111,6 +3139,11 @@
    ],
    "versions": [
     {
+     "version": "4.0.0",
+     "state": "WAITING_FOR_REVIEW",
+     "created": "2026-11-10"
+    },
+    {
      "version": "3.4.3",
      "state": "READY_FOR_SALE",
      "created": "2026-11-09"
@@ -3154,20 +3187,25 @@
      "version": "3.0.5",
      "state": "READY_FOR_SALE",
      "created": "2026-10-06"
-    },
-    {
-     "version": "3.0.4",
-     "state": "READY_FOR_SALE",
-     "created": "2026-09-30"
     }
    ],
    "builds": [
     {
-     "version": "92",
+     "version": "127",
      "state": "VALID",
      "uploaded": "2026-11-10",
-     "marketing": "3.5.0",
-     "attached": null
+     "marketing": "4.0.0",
+     "attached": "4.0.0"
+    },
+    {
+     "version": "126",
+     "state": "VALID",
+     "uploaded": "2026-11-10"
+    },
+    {
+     "version": "92",
+     "state": "VALID",
+     "uploaded": "2026-11-10"
     },
     {
      "version": "91",
@@ -3178,16 +3216,6 @@
      "version": "90",
      "state": "VALID",
      "uploaded": "2026-11-09"
-    },
-    {
-     "version": "89",
-     "state": "VALID",
-     "uploaded": "2026-11-08"
-    },
-    {
-     "version": "88",
-     "state": "VALID",
-     "uploaded": "2026-11-05"
     }
    ]
   },
@@ -4416,6 +4444,14 @@
      }
     },
     "2026-11-10": {
+     "avg": 4.5,
+     "count": 8,
+     "us": {
+      "avg": 4.5,
+      "count": 8
+     }
+    },
+    "2026-11-11": {
      "avg": 4.5,
      "count": 8,
      "us": {
@@ -6368,6 +6404,14 @@
       "avg": 1.0,
       "count": 1
      }
+    },
+    "2026-11-11": {
+     "avg": 1.0,
+     "count": 1,
+     "us": {
+      "avg": 1.0,
+      "count": 1
+     }
     }
    },
    "reviewRating": {
@@ -6439,6 +6483,10 @@
      "count": 1
     },
     "2026-11-10": {
+     "avg": 1.0,
+     "count": 1
+    },
+    "2026-11-11": {
      "avg": 1.0,
      "count": 1
     }
@@ -7005,7 +7053,7 @@
    "versions": [
     {
      "version": "1.0",
-     "state": "WAITING_FOR_REVIEW",
+     "state": "REJECTED",
      "created": "2026-10-16"
     }
    ],
@@ -7182,7 +7230,7 @@
    "versions": [
     {
      "version": "1.0.0",
-     "state": "WAITING_FOR_REVIEW",
+     "state": "READY_FOR_SALE",
      "created": "2026-11-07"
     }
    ],
