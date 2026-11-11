@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-10T16:16:08Z",
+ "generated": "2026-11-11T14:02:56Z",
  "fx": {
   "2026-10-31": {
    "CAD": 0.715871,
@@ -46,6 +46,11 @@
   },
   "2026-11-09": {
    "GBP": 1.341598
+  },
+  "2026-11-10": {
+   "GBP": 1.342264,
+   "EUR": 1.121403,
+   "AUD": 0.690369
   }
  },
  "periods": [
@@ -470,7 +475,7 @@
  ],
  "open": {
   "start": "2026-11-01",
-  "through": "2026-11-09",
+  "through": "2026-11-10",
   "missing": [],
   "days": {
    "2026-11-01": [
@@ -949,6 +954,68 @@
      "units": 1,
      "amount": 2.1,
      "usd": 2.1
+    }
+   ],
+   "2026-11-10": [
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "AUD",
+     "units": 1,
+     "amount": 5.08,
+     "usd": 3.51
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "GBP",
+     "units": 1,
+     "amount": 2.89,
+     "usd": 3.88
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "USD",
+     "units": 3,
+     "amount": 10.5,
+     "usd": 10.5
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Remove Ads",
+     "sku": "com.centricfiber.cosmica.removeads",
+     "currency": "USD",
+     "units": 1,
+     "amount": 2.1,
+     "usd": 2.1
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Stardust Doubler",
+     "sku": "com.centricfiber.cosmica.stardust_doubler",
+     "currency": "EUR",
+     "units": 1,
+     "amount": 5.59,
+     "usd": 6.27
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Stardust Doubler",
+     "sku": "com.centricfiber.cosmica.stardust_doubler",
+     "currency": "USD",
+     "units": 1,
+     "amount": 5.6,
+     "usd": 5.6
     }
    ]
   }
