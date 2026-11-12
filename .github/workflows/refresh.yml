@@ -5,40 +5,38 @@ name: Refresh portfolio data
 # which runs from a separate machine.
 
 on:
-  # Three times a day. GitHub drops scheduled runs under load and makes no
-  # promise about firing at all - the old 14:30 slot silently went missing
-  # more than once, leaving the page a day stale with nothing to say so. :00
-  # and :30 are the busiest minutes of any hour, because every cron in the
-  # world points at them, so every slot here deliberately avoids them.
+  # Once a day, at 08:00 America/Chicago.
   #
-  # Extra attempts are free: when an earlier one has already landed the day's
-  # data, the job finds nothing new and exits.
+  # Apple publishes the previous day's sales report between 05:34 and 05:50
+  # Pacific - measured from this repo's own history rather than from Apple's
+  # documentation - which is 07:34 to 07:50 Central year round, since the two
+  # zones shift together. So 08:00 leaves only about ten minutes of margin.
+  # On a morning Apple runs late the job simply finds nothing new and the
+  # page waits a day, because there is no second attempt any more.
   #
-  # The morning slot is 08:33 America/Chicago. Apple publishes the previous
-  # day's sales report between 05:34 and 05:50 Pacific - measured from this
-  # repo's own history, not from Apple's documentation - so 08:33 Central
-  # leaves about three quarters of an hour of margin. On a morning Apple is
-  # late, this run finds nothing and the later slots collect it instead.
-  #
-  # GitHub cron is UTC only and knows nothing of daylight saving, so that one
+  # GitHub cron is UTC only and knows nothing of daylight saving, so one
   # wall-clock time needs two entries, each restricted to the months its
   # offset applies in; they never both fire on the same day. The months
   # approximate US DST - which really begins the second Sunday of March and
   # ends the first Sunday of November - so for a few days at each edge the
   # run lands an hour off. Harmless: the job is idempotent.
   #
-  # Runs land two to five hours after their cron time, and that lag is queue
-  # load at GitHub's end. The lag is added to the cron time rather than
-  # replacing it, so an earlier cron does land earlier on average - what it
-  # cannot do is make any single run punctual.
+  # Two things to know about this schedule, both deliberate choices rather
+  # than oversights:
   #
-  # The two later slots fill gaps rather than shortening the wait: 19:41
-  # through to the next morning was an 18-hour hole, and 04:57 splits it.
+  #  * GitHub drops scheduled runs under load and promises nothing about
+  #    firing at all. This workflow used to carry three slots for that
+  #    reason, and the old 14:30 slot did silently go missing more than
+  #    once. With a single slot a dropped run means the page stays a day
+  #    stale, and the Refresh button on the page is the way to recover.
+  #  * Runs land two to five hours after their cron time - queue load at
+  #    GitHub's end, added to the cron time rather than replacing it. :00 is
+  #    the busiest minute of any hour because every cron in the world points
+  #    at it, so this slot is the worst-contended one available. Moving a
+  #    few minutes off the hour would measurably improve it.
   schedule:
-    - cron: '33 14 * 11,12,1,2 *'  # 08:33 CST (UTC-6), November to February
-    - cron: '33 13 * 3-10 *'       # 08:33 CDT (UTC-5), March to October
-    - cron: '41 19 * * *'   # 19:41 UTC — a second chance the same day
-    - cron: '57 4 * * *'    # 04:57 UTC — overnight, covering the long gap
+    - cron: '0 14 * 11,12,1,2 *'  # 08:00 CST (UTC-6), November to February
+    - cron: '0 13 * 3-10 *'       # 08:00 CDT (UTC-5), March to October
   workflow_dispatch:
     inputs:
       backfill_days:
