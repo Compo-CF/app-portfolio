@@ -643,25 +643,42 @@ def main():
         #  - days inside the UTC range that Apple hasn't delivered (the stretch
         #    between an old snapshot and the first ongoing report) are filled
         #    from the sales series and listed, rather than drawn as zero.
+        #
+        # Everything *before* App Analytics' first day is carried over from the
+        # sales series too. App Analytics only goes back as far as Apple
+        # generated it, which for an app that switched recently is a handful of
+        # days; taking the UTC series as the whole truth threw away every month
+        # that came before it, so an app with 161 days of history redrew itself
+        # as 9. The prefix is Pacific-day data joined onto UTC-day data, which
+        # is a real seam — downloadsAnalyticsFrom says where it is — but a
+        # one-day boundary is a far smaller lie than five missing months.
         sales_dl, utc_dl = series[app_id], utc[app_id]
         newest_sales = max(sales_dl) if sales_dl else None
         on_utc = bool(utc_dl) and (
             not newest_sales
             or max(utc_dl) >= (date.fromisoformat(newest_sales) - timedelta(days=3)).isoformat())
         gap_days = []
+        analytics_from = None
         if on_utc:
             shown = dict(utc_dl)
             lo, hi = min(utc_dl), max(utc_dl)
+            analytics_from = lo
             # App Analytics omits days with no downloads, so a missing day is
             # usually a real zero; the sales series (which has every day,
             # zeros included) fills them. Only days where sales saw downloads
             # are listed as "not yet delivered" — listing every quiet day
             # would bury the few that matter.
+            #
+            # Days before `lo` are the pre-Analytics prefix and are kept
+            # without being listed: they are not missing deliveries, they are
+            # history from before App Analytics covered this app, and listing
+            # a hundred of them would bury the few real gaps.
             for d in sales_dl:
-                if lo <= d <= hi and d not in utc_dl:
-                    shown[d] = sales_dl[d]
-                    if sales_dl[d]:
-                        gap_days.append(d)
+                if d > hi or d in utc_dl:
+                    continue
+                shown[d] = sales_dl[d]
+                if d >= lo and sales_dl[d]:
+                    gap_days.append(d)
             gap_days.sort()
         else:
             shown = sales_dl
@@ -695,6 +712,11 @@ def main():
                                      if on_utc else []),
             # Days in the UTC range filled from the sales report (Pacific days).
             "downloadsGapsFromSales": gap_days,
+            # Where the series changes basis: the first App Analytics day.
+            # Everything before it is the sales report's Pacific-day history,
+            # kept so the chart does not start over when Apple switches an app
+            # on. Null when the whole series is one basis.
+            "downloadsAnalyticsFrom": analytics_from,
             "downloadsUtc": dict(sorted(utc[app_id].items())),
             "downloadsSales": dict(sorted(series[app_id].items())),
             "analytics": meta[app_id],

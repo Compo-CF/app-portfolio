@@ -2674,7 +2674,7 @@ function renderAppCards(all_apps) {
           <div class="meta">
             App Store · ${fmt(sumLast(dl, 30))} in 30d · ${fmt(sumLast(dl, 7))} in 7d
             ${a.downloadsBasis === "utc"
-              ? `<span title="App Analytics first-time downloads, UTC days — matches the App Analytics pages.${(a.downloadsProvisional || []).length ? " Still filling in: " + a.downloadsProvisional.join(", ") + "." : ""}${(a.downloadsGapsFromSales || []).length ? " Not yet delivered by App Analytics, shown from the sales report (Pacific days): " + a.downloadsGapsFromSales.join(", ") + "." : ""}">· UTC days</span>`
+              ? `<span title="App Analytics first-time downloads, UTC days — matches the App Analytics pages.${a.downloadsAnalyticsFrom ? " App Analytics covers this app from " + a.downloadsAnalyticsFrom + "; everything before that is the daily sales report (Pacific days)." : ""}${(a.downloadsProvisional || []).length ? " Still filling in: " + a.downloadsProvisional.join(", ") + "." : ""}${(a.downloadsGapsFromSales || []).length ? " Not yet delivered by App Analytics, shown from the sales report (Pacific days): " + a.downloadsGapsFromSales.join(", ") + "." : ""}">· UTC days</span>`
               : `<span title="Daily sales report, Pacific-time days. Switches to App Analytics UTC days once Apple delivers the first reports.">· Pacific days</span>`}
             ${r ? ` · <span title="All App Store star ratings, every storefront. ${storefronts(r)}">★ ${r.average} (${fmt(r.count)})</span>` : " · no ratings yet"}
             ${live ? ` <span class="pill" style="background:${stateColour(live.state)}">v${live.version} ${live.state}</span>` : ""}
