@@ -266,23 +266,6 @@
     .tabs button{padding:9px 9px;font-size:13.5px}
   }
   .empty{color:var(--faint);font-size:14px;padding:22px 2px}
-  .tabs .badge{display:inline-block;font-style:normal;min-width:17px;
-               padding:1px 5px;border-radius:9px;background:var(--warn);
-               color:#fff;font-size:11px;font-weight:700;text-align:center;
-               vertical-align:1px}
-  .tabs .has-bad .badge,.tabs button.has-bad .badge{background:var(--bad)}
-  .alert{border:1px solid var(--line);border-left:4px solid var(--warn);
-         background:var(--card);border-radius:10px;padding:11px 14px;
-         margin-bottom:8px}
-  .alert.bad{border-left-color:var(--bad)}
-  /* Not coloured as a severity: this is a statement of where a build is,
-     and a warm stripe beside it would read as a problem again. */
-  .alert.info{border-left-color:var(--line)}
-  .alert.info .what{font-weight:600;color:var(--soft)}
-  .alert .what{font-size:14px;font-weight:600}
-  .alert .who{color:var(--faint);font-weight:700;font-size:12px;
-              text-transform:uppercase;letter-spacing:.06em;margin-right:6px}
-  .alert .why{color:var(--soft);font-size:13px;margin-top:3px;line-height:1.45}
   .mapbar{display:flex;align-items:center;gap:9px;margin:0 0 12px;
           font-size:13px;color:var(--soft)}
   .mapbar select{appearance:none;background:var(--card);color:var(--ink);
@@ -345,20 +328,18 @@
             aria-selected="true">Installs</button>
     <button role="tab" id="tab-cumulative" aria-controls="panel-cumulative"
             aria-selected="false">Cumulative</button>
+    <button role="tab" id="tab-paydaily" aria-controls="panel-paydaily"
+            aria-selected="false">Payments Daily</button>
+    <button role="tab" id="tab-paycum" aria-controls="panel-paycum"
+            aria-selected="false">Payments Cumulative</button>
     <button role="tab" id="tab-payments" aria-controls="panel-payments"
             aria-selected="false">Payments</button>
-    <button role="tab" id="tab-revenue" aria-controls="panel-revenue"
-            aria-selected="false">Revenue</button>
     <button role="tab" id="tab-subs" aria-controls="panel-subs"
             aria-selected="false">Subscriptions</button>
-    <button role="tab" id="tab-ratings" aria-controls="panel-ratings"
-            aria-selected="false">Ratings</button>
     <button role="tab" id="tab-map" aria-controls="panel-map"
             aria-selected="false">Map</button>
-    <button role="tab" id="tab-reviews" aria-controls="panel-reviews"
-            aria-selected="false">Reviews</button>
-    <button role="tab" id="tab-issues" aria-controls="panel-issues"
-            aria-selected="false">Issues</button>
+    <button role="tab" id="tab-ratings" aria-controls="panel-ratings"
+            aria-selected="false">Ratings &amp; Reviews</button>
   </div>
 
   <div role="tabpanel" id="panel-installs" aria-labelledby="tab-installs">
@@ -368,32 +349,37 @@
   <div role="tabpanel" id="panel-cumulative" aria-labelledby="tab-cumulative" hidden>
     <div id="cumulative"></div>
   </div>
+  <div role="tabpanel" id="panel-paydaily" aria-labelledby="tab-paydaily" hidden>
+    <div id="paymode"></div>
+    <div class="totals" id="paytotals"></div>
+    <div id="payapps"></div>
+  </div>
+  <div role="tabpanel" id="panel-paycum" aria-labelledby="tab-paycum" hidden>
+    <div id="paycummode"></div>
+    <div id="curtoggle"></div>
+    <div id="paycum"></div>
+  </div>
+  <!-- The money that has actually moved, and the record behind it: the two
+       calendars, the by-month table, Apple's settlement comparison, and the
+       per-period proceeds that used to live on their own Revenue tab. No
+       charts here; the two tabs above own those. -->
   <div role="tabpanel" id="panel-payments" aria-labelledby="tab-payments" hidden>
     <div id="calendar"></div>
     <div id="deposits"></div>
     <div id="kpis"></div>
     <div id="settled"></div>
-    <div id="curtoggle"></div>
-    <div id="money"></div>
-    <div id="payments"></div>
-  </div>
-  <div role="tabpanel" id="panel-revenue" aria-labelledby="tab-revenue" hidden>
+    <div class="section">Proceeds, by period and by app</div>
     <div id="revenue"></div>
   </div>
   <div role="tabpanel" id="panel-subs" aria-labelledby="tab-subs" hidden>
     <div id="subs"></div>
   </div>
-  <div role="tabpanel" id="panel-ratings" aria-labelledby="tab-ratings" hidden>
-    <div id="ratings"></div>
-  </div>
   <div role="tabpanel" id="panel-map" aria-labelledby="tab-map" hidden>
     <div id="map"></div>
   </div>
-  <div role="tabpanel" id="panel-reviews" aria-labelledby="tab-reviews" hidden>
+  <div role="tabpanel" id="panel-ratings" aria-labelledby="tab-ratings" hidden>
+    <div id="ratings"></div>
     <div id="reviews"></div>
-  </div>
-  <div role="tabpanel" id="panel-issues" aria-labelledby="tab-issues" hidden>
-    <div id="attention"></div>
   </div>
   <footer>
     Data from App Store Connect, refreshed daily by GitHub Actions.
@@ -828,9 +814,7 @@ function renderCurrencyToggle(data) {
     try { localStorage.setItem(HIDE_USD_KEY, e.target.checked ? "1" : "0"); }
     catch { /* ignore */ }
     // Only the two views built from currency series need redrawing.
-    renderMoney(DATA);
-    renderPayments(DATA.apps);
-    renderCurrencyToggle(DATA);
+    renderPayCumulative(DATA);
   });
 }
 
@@ -845,23 +829,210 @@ function everyCurrency(apps) {
   return out;
 }
 
-function renderMoney(data) {
-  const apps = data.apps || [];
-  const host = $("#money");
-  if (!host) return;
+/* ---- earned or received, the switch both money tabs share --------------- */
 
-  const usd = proceedsUSD(apps, data.fx).usd;
-  const units = combined(apps, (a) => a.iapUnits);
-  if (!Object.keys(usd).length && !Object.keys(units).length) {
-    host.innerHTML = "";
+/*  Two different questions, and conflating them is the mistake this switch
+ *  exists to prevent. "Earned" is what the stores report was sold: it has a
+ *  value most days and is what the proceeds figures everywhere else mean.
+ *  "Received" is money in the bank, which arrives as one lump per fiscal
+ *  period about a month after that period closes. A chart of one labelled as
+ *  the other would be wrong by roughly a month and by every sale not yet
+ *  settled.
+ */
+const MONEY_KEY = "portfolio.money";
+
+const moneyMode = () => {
+  try {
+    return localStorage.getItem(MONEY_KEY) === "received" ? "received" : "earned";
+  } catch { return "earned"; }
+};
+
+/** Apple's deposits, each placed on the day it lands.
+ *
+ *  Built from the closed periods, and deliberately NOT from deposits(): that
+ *  one also carries the next period and the AdMob projection so the calendar
+ *  can show what is coming. Neither has been paid, and a chart of money
+ *  received must not contain money nobody has received.
+ */
+function receivedSeries(data) {
+  const periods = (data.settled || []).length
+    ? (data.settled || []).map((x) => ({ end: x.end, amount: x.apple }))
+    : (data.payouts || []).filter((x) => x.currency === "USD")
+        .map((x) => ({ end: x.end, amount: x.amount }));
+  const today = new Date().toISOString().slice(0, 10);
+  const out = {};
+  for (const x of periods) {
+    if (!(x.amount >= APPLE_MIN_USD)) continue;
+    const day = addDays(x.end, PAY_LAG_DAYS);
+    if (day > today) continue;           // due, not yet paid
+    out[day] = (out[day] || 0) + x.amount;
+  }
+  return out;
+}
+
+/** Payouts cover the whole account at once, so there is nothing per app to
+ *  draw. Splitting the lump by each app's share of proceeds would read as a
+ *  record of what each app was paid, which is not a thing that exists. */
+const NO_APP_SPLIT = `<div class="caveat"><b>Payouts are not split by app.</b>
+  Apple pays one amount per fiscal period covering the whole account, and that
+  lump is the only form the payment exists in. Dividing it by each app&rsquo;s
+  share of proceeds would look like a record and would in fact be a guess.
+  Switch to <b>Earned</b> for the per-app view.</div>`;
+
+function renderMoneyMode(sel) {
+  const host = $(sel);
+  if (!host) return;
+  const mode = moneyMode();
+  host.innerHTML = `<div class="range"><span>Money</span>`
+    + `<button type="button" data-m="earned" aria-pressed="${mode === "earned"
+       }" title="What the stores report was sold, by day">Earned</button>`
+    + `<button type="button" data-m="received" aria-pressed="${mode === "received"
+       }" title="What Apple has actually paid out">Received</button></div>`;
+  host.querySelectorAll("button").forEach((b) =>
+    b.addEventListener("click", () => {
+      try { localStorage.setItem(MONEY_KEY, b.dataset.m); } catch { /* ignore */ }
+      if (!DATA) return;
+      renderPayDaily(DATA);
+      renderPayCumulative(DATA);
+    }));
+}
+
+/** One app's Play earnings in dollars, stopping on Play's last reported day.
+ *
+ *  Same rule as playRun() and for the same reason: Google files monthly and
+ *  in arrears, so carrying the series to today would draw a collapse to zero
+ *  that is really just Google not having spoken yet.
+ */
+function playMoney(app, fx, from, to, carry = false) {
+  const out = {};
+  for (const [cur, days] of Object.entries((app.android || {}).revenue || {}))
+    for (const [day, amt] of Object.entries(days)) {
+      if (!amt) continue;
+      const rate = cur === "USD" ? 1 : (fx[day] || {})[cur];
+      if (rate === undefined) continue;
+      out[day] = (out[day] || 0) + amt * rate;
+    }
+  const days = Object.keys(out).sort();
+  if (!days.length) return null;
+  const last = days[days.length - 1];
+  return last < from ? null : daily(out, from, last < to ? last : to, carry);
+}
+
+/* ---- Payments Daily: the Installs tab, in money ------------------------- */
+
+function renderPayDaily(data) {
+  renderMoneyMode("#paymode");
+  const apps = data.apps || [];
+  const host = $("#payapps"), tiles = $("#paytotals");
+  if (!host || !tiles) return;
+
+  const [from, to] = rangeSpan(apps);
+  const stat = (label, v, note) =>
+    `<div class="stat"><b>${v}</b><span>${label}</span>${
+      note ? `<em>${note}</em>` : ""}</div>`;
+
+  if (moneyMode() === "received") {
+    const got = receivedSeries(data);
+    const days = Object.keys(got).sort();
+    const last = days[days.length - 1];
+    const all = days.reduce((x, d) => x + got[d], 0);
+    const here = days.filter((d) => d >= from && d <= to);
+
+    tiles.innerHTML =
+      stat("Received, all time", money2(all), `${days.length} payment${
+        days.length === 1 ? "" : "s"}`)
+      + stat("Last payment", last ? money2(got[last]) : "&mdash;", last || "none yet")
+      + stat("In this range", money2(here.reduce((x, d) => x + got[d], 0)),
+             rangeWords(from, to))
+      + stat("Paid by", "Apple only", "AdMob has never reached its $100 threshold");
+
+    host.innerHTML = `
+      <div class="card">
+        <div class="head">
+          <div class="name">Deposits</div>
+          <div class="meta">One per fiscal period, about a month after it
+            closes &mdash; single days with nothing between them</div>
+        </div>
+        ${here.length
+          ? chart(daily(got, from, to), rangeDays(), money2, [], null, true)
+          : `<div class="empty">No payment landed ${rangeWords(from, to)}.${
+              days.length ? ` The last one was ${last}.` : ""}</div>`}
+      </div>` + NO_APP_SPLIT;
     return;
   }
 
-  // Span taken from downloads, which every app has, so both charts share an
-  // x-axis with the rest of the page instead of starting at the first sale.
+  const all = proceedsUSD(apps, data.fx).usd;
+  const units = combined(apps, (a) => a.iapUnits);
+  tiles.innerHTML =
+    stat("Earned, 7 days", money2(sumLast(all, 7)))
+    + stat("Earned, 30 days", money2(sumLast(all, 30)))
+    + stat("Earned, 365 days", money2(sumLast(all, 365)))
+    + stat("Purchases, 30 days", fmt(sumLast(units, 30)),
+           "in-app purchases and subscriptions");
+
+  // Only apps that have taken money. A row of flat zeros for the other ten
+  // says nothing the Installs tab does not already say.
+  const earners = apps
+    .map((a) => ({ app: a, usd: proceedsUSD([a], data.fx).usd }))
+    .filter((e) => total(e.usd) > 0)
+    .sort((x, y) => sumLast(y.usd, 30) - sumLast(x.usd, 30));
+
+  if (!earners.length) {
+    host.innerHTML = '<div class="empty">No app has taken a payment yet.</div>';
+    return;
+  }
+
+  host.innerHTML = earners.map(({ app, usd }) => `
+      <div class="card">
+        <div class="head">
+          <div class="name"><a href="${app.url}" rel="noopener">${app.name}</a></div>
+          <div class="meta">
+            <span class="money">${money2(sumLast(usd, 30))}</span> in 30d ·
+            ${money2(sumLast(usd, 7))} in 7d${
+              app.iapUnits
+                ? ` · <b>${fmt(sumLast(app.iapUnits, 30))}</b> purchases in 30d`
+                : ""}
+            <span title="Proceeds after the store's cut, foreign currencies converted at the European Central Bank rate for the day of each sale.">· USD</span>
+          </div>
+        </div>
+        ${chart(daily(usd, from, to), rangeDays(), money2, releaseMarks(app),
+                playMoney(app, data.fx || {}, from, to), true)}
+      </div>`).join("");
+}
+
+/* ---- Payments Cumulative: the Cumulative tab, in money ------------------ */
+
+function renderPayCumulative(data) {
+  renderMoneyMode("#paycummode");
+  renderCurrencyToggle(data);
+  const apps = data.apps || [];
+  const host = $("#paycum");
+  if (!host) return;
+
   const [from, to] = rangeSpan(apps);
-  const earned = Object.values(usd).reduce((n, v) => n + v, 0);
-  const sold = Object.values(units).reduce((n, v) => n + v, 0);
+
+  if (moneyMode() === "received") {
+    const got = receivedSeries(data);
+    const paid = Object.keys(got).length;
+    const all = Object.values(got).reduce((x, v) => x + v, 0);
+    host.innerHTML = `
+      <div class="card">
+        <div class="head">
+          <div class="name">Everything received</div>
+          <div class="meta"><span class="money">${money2(all)}</span> paid out
+            to date, across ${paid} payment${paid === 1 ? "" : "s"}</div>
+        </div>
+        ${paid
+          ? chart(daily(got, from, to, true), ALL, money2)
+          : '<div class="empty">Nothing has been paid out yet.</div>'}
+      </div>` + NO_APP_SPLIT;
+    return;
+  }
+
+  const usd = proceedsUSD(apps, data.fx).usd;
+  const units = combined(apps, (a) => a.iapUnits);
+  const earned = Object.values(usd).reduce((x, v) => x + v, 0);
+  const sold = Object.values(units).reduce((x, v) => x + v, 0);
 
   // Listed as what the dollar figure is made of, not as money beside it.
   // These used to be printed as "plus EUR 45.89", which was honest while the
@@ -870,12 +1041,19 @@ function renderMoney(data) {
   for (const app of apps)
     for (const [cur, days] of Object.entries(app.revenue || {}))
       if (cur !== "USD")
-        others[cur] = (others[cur] || 0) + Object.values(days).reduce((n, v) => n + v, 0);
+        others[cur] = (others[cur] || 0)
+          + Object.values(days).reduce((x, v) => x + v, 0);
+
+  const slots = currencySlots(apps, data.fx || {});
+  const earners = apps
+    .map((a) => ({ app: a, usd: proceedsUSD([a], data.fx).usd }))
+    .filter((e) => total(e.usd) > 0)
+    .sort((x, y) => total(y.usd) - total(x.usd));
 
   host.innerHTML = `
     <div class="card">
       <div class="head">
-        <div class="name">Cumulative proceeds</div>
+        <div class="name">Every app together</div>
         <div class="meta"><span class="money">${earned.toFixed(2)} USD</span> to date${
           Object.keys(others).length
             ? ` <span class="conv">including ` + Object.entries(others)
@@ -884,17 +1062,39 @@ function renderMoney(data) {
             : ""}</div>
       </div>
       ${multiChart(
-          currencySeries({ revenue: everyCurrency(apps) }, data.fx || {},
-                         currencySlots(apps, data.fx || {})), from, to)}
+          currencySeries({ revenue: everyCurrency(apps) }, data.fx || {}, slots),
+          from, to)}
     </div>
     <div class="card">
       <div class="head">
         <div class="name">In-app purchases</div>
         <div class="meta"><b>${fmt(sold)}</b> bought across the portfolio</div>
       </div>
-      ${chart(daily(units, from, to), ALL)}
+      ${chart(daily(units, from, to, true), ALL)}
     </div>
-    ${adsCard(data, from, to)}`;
+    ${adsCard(data, from, to)}
+    ${earners.length ? '<div class="section">By app</div>' : ""}
+    ${earners.map(({ app, usd: appUsd }) => {
+      const other = Object.entries(app.revenue || {}).filter(([c]) => c !== "USD");
+      return `
+      <div class="card">
+        <div class="head">
+          <div class="name"><a href="${app.url}" rel="noopener">${app.name}</a></div>
+          <div class="meta">
+            <span class="money">${total(appUsd).toFixed(2)} USD</span>${
+              // Inside the figure, not beside it. Printed as a second money
+              // value it reads as more money on top of the dollars, which is
+              // exactly what it stopped being once the total was converted.
+              other.length
+                ? ` <span class="conv">incl. ` + other.map(([c, days]) =>
+                    `${total(days).toLocaleString()} ${c}`).join(", ") + `</span>`
+                : ""}
+            ${app.iapUnits ? ` · <b>${fmt(total(app.iapUnits))}</b> purchases` : ""}
+          </div>
+        </div>
+        ${multiChart(currencySeries(app, DATA.fx || {}, slots), from, to)}
+      </div>`;
+    }).join("")}`;
 }
 
 // AdMob holds earnings until the balance passes this, then pays monthly.
@@ -1697,12 +1897,6 @@ function playRun(installs, from, to, carry = true) {
     : daily(installs, from, last < to ? last : to, carry);
 }
 
-/** Payments per app over time, cumulative and in USD.
- *
- *  Only apps that have taken money appear. A chart of a flat zero says
- *  nothing an empty section does not say more briefly, and the Installs tab
- *  already marks which apps cannot earn at all.
- */
 /** Currency slots, fixed once for the whole portfolio.
  *
  *  Colour follows the currency, not its rank on the card being drawn. If the
@@ -1872,46 +2066,6 @@ function multiChart(series, from, to, show = money0) {
     </div>`;
 }
 
-function renderPayments(apps) {
-  const host = $("#payments");
-  if (!host) return;
-
-  const [from, to] = rangeSpan(apps);
-
-  const slots = currencySlots(apps, DATA.fx || {});
-  const earners = apps
-    .map((a) => ({ app: a, usd: proceedsUSD([a], DATA.fx).usd }))
-    .filter((e) => total(e.usd) > 0)
-    .sort((x, y) => total(y.usd) - total(x.usd));
-
-  if (!earners.length) {
-    host.innerHTML = '<div class="empty">No app has taken a payment yet.</div>';
-    return;
-  }
-
-  host.innerHTML = '<div class="section">By app</div>' + earners.map(({ app, usd }) => {
-    const other = Object.entries(app.revenue || {}).filter(([c]) => c !== "USD");
-    return `
-      <div class="card">
-        <div class="head">
-          <div class="name"><a href="${app.url}" rel="noopener">${app.name}</a></div>
-          <div class="meta">
-            <span class="money">${total(usd).toFixed(2)} USD</span>${
-              // Inside the figure, not beside it. Printed as a second money
-              // value it reads as more money on top of the dollars, which is
-              // exactly what it stopped being once the total was converted.
-              other.length
-                ? ` <span class="conv">incl. ` + other.map(([c, days]) =>
-                    `${total(days).toLocaleString()} ${c}`).join(", ") + `</span>`
-                : ""}
-            ${app.iapUnits ? ` · <b>${fmt(total(app.iapUnits))}</b> purchases` : ""}
-          </div>
-        </div>
-        ${multiChart(currencySeries(app, DATA.fx || {}, slots), from, to)}
-      </div>`;
-  }).join("");
-}
-
 /** Every review, newest first, across every app.
  *
  *  Sorted by date rather than grouped by app: what you want from this page is
@@ -2015,147 +2169,16 @@ function renderRangeControl() {
       renderRangeControl();
       renderAppCards(DATA.apps);
       renderCumulative(DATA.apps);
-      renderMoney(DATA);
-      renderPayments(DATA.apps);
+      renderPayDaily(DATA);
+      renderPayCumulative(DATA);
       renderRatings(DATA.apps);
     });
   });
 }
 
-/* ---- what needs looking at ---------------------------------------------- */
-
-/** Version strings compared the way a person reads them: 1.10 after 1.9. */
-function newerVersion(a, b) {
-  const pa = String(a || "0").split(".").map(Number);
-  const pb = String(b || "0").split(".").map(Number);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const d = (pa[i] || 0) - (pb[i] || 0);
-    if (d) return d > 0;
-  }
-  return false;
-}
-
+/** Whole days between a date and now, for the run-rate window. */
 const daysSince = (date) =>
   Math.floor((Date.now() - new Date(date + "T00:00:00Z")) / 86400000);
-
-/** Things that will not fix themselves.
- *
- *  Every rule here is a failure that has actually happened rather than one
- *  worth imagining. The first is the expensive one: a build can process
- *  cleanly, sit in TestFlight, and never reach review because no version
- *  record exists to attach it to. Nothing warns you; the build list looks
- *  like progress. That stranded a release for a fortnight.
- */
-// Days without a new Play day before it is worth saying something. Observed
-// normal jitter is one fetch; the stalled stretch through late September ran
-// six. Three separates them without crying wolf.
-const PLAY_STALL_DAYS = 3;
-
-function attention(apps, play) {
-  const items = [];
-
-  // Google publishes Android installs as a monthly file it rewrites as days
-  // settle, so the feed does not fail — it just stops containing anything
-  // new, and nothing on the page looks wrong. `advanced` is the last fetch
-  // that brought a day we did not already have.
-  //
-  // Phrased as "no new data", not "Google has not published": a run whose
-  // credentials failed leaves the date exactly as still as a Google stall
-  // does, and from here the two are indistinguishable.
-  if (play && play.advanced) {
-    const quiet = daysSince(play.advanced);
-    if (quiet >= PLAY_STALL_DAYS) {
-      items.push({
-        level: "warn", app: "Google Play",
-        what: `No new Play data for ${quiet} days`,
-        why: `Still reporting through ${play.through}. Android installs `
-           + "normally advance most days, about four days behind. Either "
-           + "Google has stopped publishing or the bucket read is failing — "
-           + "the refresh log says which.",
-      });
-    }
-  }
-
-  for (const app of apps) {
-    const build = (app.builds || [])[0];
-    const live = (app.versions || [])
-      .slice()
-      .sort((x, y) => (newerVersion(x.version, y.version) ? -1 : 1))[0];
-
-    // "attached" is the version record this build belongs to, or null.
-    // Asked of Apple rather than inferred, because builds[].version is
-    // CFBundleVersion — 90, or 20260930.639 — and comparing that against a
-    // versionString like 2.6 flags every app on the account.
-    if (build && build.attached === null && build.state === "VALID") {
-      const label = build.marketing ? `${build.marketing} (${build.version})`
-                                    : build.version;
-      // Stated, not alarmed about. An unattached build is a build in
-      // TestFlight, and nothing in the API distinguishes one parked there on
-      // purpose from one forgotten — so claiming it is a problem is guessing
-      // at intent. Saying where it is lets the reader judge.
-      items.push({
-        level: "info", app: app.name,
-        what: `Build ${label} is in TestFlight`,
-        why: "Not attached to a version record, so it is not queued for review.",
-      });
-    }
-
-    if (live && /PREPARE_FOR_SUBMISSION/.test(live.state || "") && live.created) {
-      const age = daysSince(live.created);
-      if (age >= 14) {
-        items.push({
-          level: "warn", app: app.name,
-          what: `v${live.version} unsubmitted for ${age} days`,
-          why: "Sitting in Prepare for Submission. Either submit it or it is not real.",
-        });
-      }
-    }
-
-    for (const r of (app.reviews || []).slice(0, 20)) {
-      if ((r.rating || 5) <= 2 && daysSince(r.date) <= 30) {
-        items.push({
-          level: "warn", app: app.name,
-          what: `${r.rating}★ review ${daysSince(r.date)} days ago`,
-          why: `${r.title ? `"${r.title}" — ` : ""}${r.nickname || "anonymous"}. `
-             + "Apple lets you reply to this.",
-        });
-      }
-    }
-  }
-
-  // Things to act on first, things merely worth knowing last.
-  const rank = { bad: 0, warn: 1, info: 2 };
-  items.sort((a, b) => rank[a.level] - rank[b.level]);
-  return items;
-}
-
-function renderAttention(apps, play) {
-  const host = $("#attention");
-  if (!host) return;
-  const items = attention(apps, play);
-
-  // A count on the tab, because moving this off the top means nobody sees it
-  // unless something draws the eye. Only things worth acting on are counted —
-  // badging the TestFlight notes would make the number permanent furniture
-  // and therefore ignorable.
-  const tab = $("#tab-issues");
-  if (tab) {
-    const live = items.filter((i) => i.level !== "info").length;
-    tab.innerHTML = "Issues" + (live ? ` <i class="badge">${live}</i>` : "");
-    tab.classList.toggle("has-bad", items.some((i) => i.level === "bad"));
-  }
-
-  if (!items.length) {
-    host.innerHTML = '<div class="empty">Nothing wants attention.</div>';
-    return;
-  }
-
-  host.innerHTML = items.map((i) => `
-    <div class="alert ${i.level}">
-      <div class="what"><span class="who">${i.app}</span> ${i.what}</div>
-      <div class="why">${i.why}</div>
-    </div>`).join("");
-}
 
 /* ---- ratings over time --------------------------------------------------- */
 
@@ -2579,18 +2602,16 @@ function render(d) {
     ["Average store rating", avg],
   ].map(([label, v]) => `<div class="stat"><b>${v}</b><span>${label}</span></div>`).join("");
 
-  renderMoney(d);
   renderCalendar(d);
   renderDeposits(d);
   renderPayouts(d);
   renderSettled(d);
-  renderCurrencyToggle(d);
   renderCumulative(d.apps);
-  renderPayments(d.apps);
+  renderPayDaily(d);
+  renderPayCumulative(d);
   renderReviews(d.apps);
   renderMap(d.apps);
   renderRatings(d.apps);
-  renderAttention(d.apps, d.play);
 
   renderAppCards(d.apps);
 }
