@@ -571,6 +571,22 @@ function chart(series, days, show = fmt, marks = [], play = null, bars = false) 
             top:${pct(v)}%;transform:${nudge}">${show(v)}</span>`;
   };
 
+  // The App Store line ends in a figure, so the Play line does too. It is
+  // anchored at Play's own last reported day rather than the right-hand edge,
+  // for the same reason the line stops there: everything after it is
+  // unreported, and a number parked at the edge would claim otherwise.
+  //
+  // Dropped in the one case where it cannot be read - Play reported through
+  // nearly the same day at nearly the same total, so the two labels would sit
+  // on top of each other. 13 is a little over one 10px label in the 118-unit
+  // box.
+  const playEnd = iPlayLast < 0 ? "" : (() => {
+    const v = playVals[iPlayLast];
+    const leftPct = (iPlayLast / (keys.length - 1)) * 100;
+    if (100 - leftPct < 9 && Math.abs(y(v) - y(last)) < 13) return "";
+    return label(v, leftPct, "play");
+  })();
+
   // Centred on the bar itself, not on the line chart's point spacing, which
   // put a label off to one side of the bar it described.
   const centre = (i, offset) => ((i * slot + offset + bw / 2) / W) * 100;
@@ -603,7 +619,9 @@ function chart(series, days, show = fmt, marks = [], play = null, bars = false) 
       <div class="canvas">
         <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"
              aria-label="Daily downloads from ${first} to ${latest}, peak ${peak} a day,
-                         latest ${last}. Scale runs 0 to ${max} in steps of ${step}.">
+                         latest ${last}.${hasPlay && iPlayLast >= 0
+                           ? ` Google Play ${playVals[iPlayLast]}, through ${playLast}.` : ""}
+                         Scale runs 0 to ${max} in steps of ${step}.">
           ${ticks.map((t) => `<line x1="0" y1="${y(t).toFixed(1)}" x2="${W}" y2="${y(t).toFixed(1)}"
              stroke="var(--line)" stroke-width="1" vector-effect="non-scaling-stroke"
              opacity="${t === 0 ? 1 : 0.55}"/>`).join("")}
@@ -631,7 +649,7 @@ function chart(series, days, show = fmt, marks = [], play = null, bars = false) 
           // behind), so each series is labelled at its own bars, never at a
           // shared right-hand edge.
           ? barLabels
-          : peak > 0 ? label(last, 100) : ""}
+          : (peak > 0 ? label(last, 100) : "") + playEnd}
       </div>
     </div>
     <div class="axis"><span>${first}</span><span>${latest}</span></div>
