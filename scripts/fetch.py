@@ -50,7 +50,10 @@ APPS = [
     ("6804512540", "Good Shepherd The Woodlands"),
     ("6785576912", "Woodlands Trail Guide"),
     ("6773332173", "The Woodlands Fishing Guide"),
-    ("6796323432", "Houston BBQ Guide"),
+    # Houston BBQ Guide taken off the list 2026-11-12. Still in
+    # PREPARE_FOR_SUBMISSION and never released, so it contributed a
+    # permanent row of zeros. Put this line back when it ships.
+    # ("6796323432", "Houston BBQ Guide"),
     ("6797896315", "Pupduko"),
     ("6809621921", "Fiber Field Kit"),
     ("6817339425", "Critter Conga"),

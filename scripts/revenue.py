@@ -47,6 +47,8 @@ APPS = {
     "WoodlandsEats": ("6773501518", "S-Tier Eats"),
     "WoodlandsTrailGuide": ("6785576912", "Woodlands Trail Guide"),
     "WoodlandsFishing": ("6773332173", "The Woodlands Fishing Guide"),
+    # Off the dashboard 2026-11-12, unreleased; kept here so that if it
+    # ever does sell, the sku still resolves to a name instead of a id.
     "houbbq": ("6796323432", "Houston BBQ Guide"),
     "pupdoku": ("6797896315", "Pupdoku"),
     "pupduko": ("6797896315", "Pupdoku"),
