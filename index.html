@@ -239,6 +239,11 @@
   #refresh-note{margin-left:8px;font-size:11.5px;color:var(--faint)}
   .stale{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:9px;
          background:var(--warn);color:#fff;font-size:11px;font-weight:700}
+  /* Carries the Play colour as a dot rather than colouring the words, which
+     at 13px on the faint grey of the byline would read as a warning. */
+  .playas{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+  .playas i{width:6px;height:6px;border-radius:50%;background:var(--play);
+            display:inline-block;flex:none}
   .range{display:flex;align-items:center;gap:5px;margin:18px 0 0;
          font-size:12px;color:var(--faint)}
   .range span{margin-right:4px;text-transform:uppercase;letter-spacing:.07em;
@@ -2597,8 +2602,23 @@ function render(d) {
   // job has not run" from "Apple has not published".
   const covered = Object.keys(combined(d.apps, (a) => a.downloads)).sort().pop();
 
+  // Google is its own horizon, and a slower one. Play's install export is
+  // published 3-7 days in arrears, so on any given day the Android figures
+  // end several days short of the Apple ones. That used to be stated only in
+  // the footer of a chart that had Play data, which meant the first thing you
+  // noticed was the gap rather than the reason for it. Saying it beside
+  // Apple's date puts the two horizons side by side.
+  //
+  // The newest day any app has, not the oldest: this reports how far Google
+  // has published, and each chart still states its own app's last day.
+  const playCovered = Object.keys(
+    combined(d.apps, (a) => (a.android || {}).installs)).sort().pop();
+
   $("#generated").innerHTML =
     `${d.apps.length} apps · built ${age}, covering to ${covered}`
+    + (playCovered
+        ? ` · <span class="playas"><i></i>Play through ${playCovered}</span>`
+        : "")
     + (hours >= 36
         ? ` <span class="stale">refresh has not run since ${builtAt.toLocaleDateString()}</span>`
         : "");
