@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-13T15:51:02Z",
+ "generated": "2026-11-14T18:59:04Z",
  "fx": {
   "2026-10-31": {
    "CAD": 0.715871,
@@ -63,6 +63,9 @@
    "DKK": 0.148234,
    "EUR": 1.108095,
    "AUD": 0.682082
+  },
+  "2026-11-13": {
+   "GBP": 1.322664
   }
  },
  "periods": [
@@ -487,7 +490,7 @@
  ],
  "open": {
   "start": "2026-11-01",
-  "through": "2026-11-12",
+  "through": "2026-11-13",
   "missing": [],
   "days": {
    "2026-11-01": [
@@ -1212,6 +1215,38 @@
      "units": 1,
      "amount": 9.1,
      "usd": 9.1
+    }
+   ],
+   "2026-11-13": [
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Remove Ads",
+     "sku": "com.centricfiber.cosmica.removeads",
+     "currency": "USD",
+     "units": 2,
+     "amount": 4.64,
+     "usd": 4.64
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Stardust Doubler",
+     "sku": "com.centricfiber.cosmica.stardust_doubler",
+     "currency": "USD",
+     "units": 1,
+     "amount": 5.6,
+     "usd": 5.6
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Ultimate Bundle",
+     "sku": "com.centricfiber.cosmica.ultimate_bundle",
+     "currency": "GBP",
+     "units": 2,
+     "amount": 15.06,
+     "usd": 19.92
     }
    ]
   }
