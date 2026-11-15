@@ -1125,14 +1125,6 @@ function renderPayCumulative(data) {
 // single most useful thing this section can tell you.
 const ADMOB_THRESHOLD = 100;
 
-// Apple's Small Business Program took the commission from 30% to 15% for
-// sales from 13 Nov 2026 (sales reports: proceeds/price 0.70 through the
-// 12th, 0.85 from the 14th, both on the 13th). Earlier days in the sales
-// report are at 70%. The run-rate tiles lift those days to 85% so they show
-// the pace from here on; nothing else on the page is rescaled.
-const SMALL_BUSINESS_FROM = "2026-11-13";
-const SMALL_BUSINESS_LIFT = 0.85 / 0.70;
-
 /* ---- the month calendar ------------------------------------------------- */
 
 /** How far each source has actually reported.
@@ -1760,14 +1752,7 @@ function renderPayouts(data) {
   const recent = (series) => Object.entries(series)
     .filter(([d]) => daysSince(d) <= 90)
     .reduce((n, [, v]) => n + v, 0);
-  // App Store days before the 15% commission, lifted to what they would pay
-  // now (see SMALL_BUSINESS_FROM). AdMob is untouched.
-  const appleNow = Object.fromEntries(Object.entries(appleDaily).map(([d, v]) =>
-    [d, d < SMALL_BUSINESS_FROM ? v * SMALL_BUSINESS_LIFT : v]));
-  const lifted = Object.keys(appleDaily)
-    .some((d) => d < SMALL_BUSINESS_FROM && daysSince(d) <= 90);
-  const rateNote = lifted ? "last 90 days, App Store at today's 85%" : "last 90 days";
-  const perDay = (recent(appleNow) + recent(adsDaily)) / 90;
+  const perDay = (recent(appleDaily) + recent(adsDaily)) / 90;
 
   const adsEarned = Object.values(adsDaily).reduce((n, v) => n + v, 0);
   const adsPerMonth = recent(adsDaily) / 3;
@@ -1780,8 +1765,8 @@ function renderPayouts(data) {
 
   host.innerHTML = `
     <div class="totals">
-      ${tile("Per week", money2(perDay * 7), rateNote)}
-      ${tile("Per month", money2(perDay * 30), rateNote)}
+      ${tile("Per week", money2(perDay * 7), "last 90 days")}
+      ${tile("Per month", money2(perDay * 30), "last 90 days")}
       ${tile(lastFull ? `${lastFull} earned` : "Last full month",
              money2((apple[lastFull] || 0) + (ads[lastFull] || 0)),
              "Apple pays this about a month after the month closes")}
@@ -1807,10 +1792,7 @@ function renderPayouts(data) {
     </div>
     <div class="caveat">Estimates in USD, not deposits. Apple reports proceeds
       before adjustments and pays about a month after each month closes, once
-      its own minimum is met.${lifted ? ` Per week and Per month are a forward
-      pace: App Store sales before ${SMALL_BUSINESS_FROM} paid 70% (30%
-      commission) and are counted there at today's 85% (Small Business
-      Program); the By month table shows what was actually earned.` : ""} AdMob holds earnings until $100. Foreign-currency
+      its own minimum is met. AdMob holds earnings until $100. Foreign-currency
       proceeds <em>are</em> included, converted at the European Central Bank's
       rate for the day of each sale; Apple converts at its own rate, so see
       how close that lands in the table below.</div>`;
