@@ -21,6 +21,8 @@
       font-size:13.5px;align-items:center;
       grid-template-columns:minmax(0,1.5fr) minmax(0,.8fr) minmax(0,1.4fr) minmax(0,.9fr) minmax(0,1.4fr) auto}
     .pl-row:last-child{border-bottom:0}
+    .pl-row.pl-play4{grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr))}
+    @media (max-width:720px){.pl-row.pl-play4{grid-template-columns:minmax(0,1fr)}}
     .pl-row.pl-head{font-size:11.5px;color:var(--soft);text-transform:uppercase;letter-spacing:.04em}
     .pl-app{font-weight:600;min-width:0;overflow-wrap:anywhere}
     .pl-mono{font-family:var(--mono);font-size:12.5px}
@@ -126,6 +128,48 @@
     }).join("");
   }
 
+  // Google Play, last 28 days: the Console home's three numbers, from the same bulk
+  // reports the Installs tab charts. Window = the 28 days ending at the last date Google
+  // has published (it lags ~4-8 days), so the figures say "through <date>", not "today".
+  function playHtml(portfolio, names) {
+    const apps = (portfolio?.apps || []).filter((a) => a.android && Object.keys(a.android.installs || {}).length);
+    if (!apps.length) return '<div class="pl-empty">No Google Play report data yet.</div>';
+    const shift = (iso, n) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+    const sum = (obj, from, to) => Object.entries(obj || {}).reduce((t, [d, v]) => d >= from && d <= to ? t + (+v || 0) : t, 0);
+    const through = portfolio?.play?.through || apps.map((a) => Object.keys(a.android.installs).sort().pop()).sort().pop();
+    const revThrough = portfolio?.play?.revenueThrough || through;
+    const from = shift(through, -27), prevFrom = shift(through, -55), prevTo = shift(through, -28);
+    const rFrom = shift(revThrough, -27);
+    const delta = (now, before) => {
+      if (!before) return "";
+      const pct = Math.round((now - before) / before * 100);
+      return pct ? ` <span class="pl-sub" style="display:inline;color:var(--${pct > 0 ? "good" : "bad"})">${pct > 0 ? "▲" : "▼"} ${Math.abs(pct)}%</span>` : "";
+    };
+    const lastVal = (obj, upto) => { const d = Object.keys(obj || {}).filter((k) => k <= upto).sort().pop(); return d ? +obj[d] || 0 : null; };
+    const money = (by) => {
+      const parts = Object.entries(by || {}).map(([cur, days]) => [cur, sum(days, rFrom, revThrough)]).filter(([, v]) => v > 0);
+      return parts.length ? parts.map(([c, v]) => v.toLocaleString(undefined, { style: "currency", currency: c })).join(" + ")
+                          : '<span class="pl-faint">-</span>';
+    };
+    const rows = apps.map((a) => {
+      const an = a.android;
+      const acq = sum(an.installs, from, through), acqPrev = sum(an.installs, prevFrom, prevTo);
+      const act = lastVal(an.active, through), actPrev = lastVal(an.active, prevTo);
+      return { name: names[a.id] || a.name, acq, acqPrev, act, actPrev, rev: money(an.revenue) };
+    }).sort((x, y) => y.acq - x.acq || x.name.localeCompare(y.name));
+    const fmt = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+    return `<div class="pl-note">28 days through ${esc(fmt(through))} (Google publishes these reports a few days late);
+        change vs the 28 days before. Revenue is Play earnings through ${esc(fmt(revThrough))}.
+        "Active devices" is Play's active device installs on the last day, which runs higher than the Console's "monthly active devices".</div>
+      <div class="pl-card">
+        <div class="pl-row pl-head pl-play4"><span>App</span><span>Acquisitions</span><span>Active devices</span><span>Revenue</span></div>
+        ${rows.map((r) => `<div class="pl-row pl-play4"><span class="pl-app">${esc(r.name)}</span>
+          <span class="pl-col" data-l="Acquisitions"><span class="pl-mono">${r.acq}</span>${delta(r.acq, r.acqPrev)}</span>
+          <span class="pl-col" data-l="Active devices"><span class="pl-mono">${r.act ?? "-"}</span>${r.act != null ? delta(r.act, r.actPrev) : ""}</span>
+          <span class="pl-col" data-l="Revenue"><span class="pl-mono">${r.rev}</span></span></div>`).join("")}
+      </div>`;
+  }
+
   function roadmapHtml(roadmap, names) {
     const items = roadmap?.items || [];
     const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -166,6 +210,8 @@
       <div class="pl-note">App Store state from App Store Connect; Google Play tracks as of ${esc(playAge)}.
         "CI" means the app builds and uploads from GitHub Actions.</div>
       <div class="pl-card">${stores(portfolio, pipeline, roadmap)}</div>
+      <div class="pl-h">Google Play, last 28 days</div>
+      ${playHtml(portfolio, names)}
       <div class="pl-h">Roadmap</div>
       <div class="pl-note">Updated ${esc(roadmap?.updated || "—")}. "Automated" items are done by the Store Ops automation; "You" needs a person.</div>
       ${roadmapHtml(roadmap, names)}`;

@@ -37,6 +37,10 @@ PACKAGES = {
     # Reached Play production 2026-11-01. Its reports were being read and
     # discarded until the run started naming unmapped packages.
     "com.compofelice.critterconga": "6817339425",
+    # Closed testing since 2026-11-12; the Console already counts its testers.
+    "com.compofelice.neatly": "6832097718",
+    # No Play app yet; listed so its figures arrive the day it is created.
+    "com.compofelice.ghostline": "6830660705",
 }
 
 BUCKET = os.environ.get("PLAY_BUCKET", "pubsite_prod_6691100777752209003")
