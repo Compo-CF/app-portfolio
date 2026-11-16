@@ -1,14 +1,28 @@
 {
- "generated": "2026-11-09T17:04:37Z",
+ "generated": "2026-11-16T18:26:59Z",
  "apple": {
-  "through": null,
-  "state": {},
-  "events": {},
-  "names": {},
-  "unavailable": [
-   "SUBSCRIPTION",
-   "SUBSCRIPTION_EVENT"
-  ]
+  "through": "2026-11-15",
+  "state": {
+   "2026-11-15": {
+    "6830662100": {
+     "active": 0,
+     "trial": 1,
+     "intro": 0,
+     "grace": 0
+    }
+   }
+  },
+  "events": {
+   "2026-11-15": {
+    "6830662100": {
+     "Start Introductory Offer": 1
+    }
+   }
+  },
+  "names": {
+   "6830662100": "Pit Club (Ghostline: Idle Racer)"
+  },
+  "unavailable": []
  },
  "play": {
   "through": "2026-10-31",
