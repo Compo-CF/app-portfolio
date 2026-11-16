@@ -149,10 +149,10 @@
   },
   {
    "app": "6796323432",
-   "date": "2026-11-20",
-   "title": "Tick App Attest on the App ID (entitlement already in the code), then a signed CI build",
-   "who": "you",
-   "status": "todo"
+   "date": "2026-11-16",
+   "title": "App Attest on: suggest-a-joint works on store builds (build 27 to external testers)",
+   "who": "auto",
+   "status": "done"
   },
   {
    "app": "6832097718",
@@ -282,10 +282,10 @@
   },
   {
    "app": "6797896315",
-   "date": "2026-11-23",
-   "title": "Ship the one-solution puzzle fix in the next build",
+   "date": "2026-11-16",
+   "title": "One-solution puzzle fix in build 39, sent to external testers",
    "who": "auto",
-   "status": "todo"
+   "status": "done"
   }
  ]
 }
