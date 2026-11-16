@@ -143,6 +143,17 @@ def main():
                        f"{int(r['AD_REQUESTS']):,}", f"{match(r):.0f}%",
                        f"{show(r):.0f}%", int(r["CLICKS"])] for r in rows]))
 
+    # 5. Last 7 days by day and ad unit: spots a one-day click spike (invalid-traffic risk)
+    last7 = end - timedelta(days=6)
+    rows = report(pub, token, last7, end, ["DATE", "AD_UNIT"])
+    rows = [r for r in rows if r["IMPRESSIONS"] or r["CLICKS"]]
+    rows.sort(key=lambda r: (r["DATE"], -r["CLICKS"]))
+    out.append(table(f"By day and ad unit, {last7}..{end}",
+                     ["Date", "Ad unit", "Impr.", "Clicks", "CTR", "Earnings"],
+                     [[r["DATE"], r["AD_UNIT"], f"{int(r['IMPRESSIONS']):,}", int(r["CLICKS"]),
+                       f"{(r['CLICKS'] / r['IMPRESSIONS'] * 100) if r['IMPRESSIONS'] else 0:.1f}%",
+                       f"${r['ESTIMATED_EARNINGS']:.2f}"] for r in rows]))
+
     text = "\n".join(out) + "\n"
     print(text)
     path = os.environ.get("GITHUB_STEP_SUMMARY")
