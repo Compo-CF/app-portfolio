@@ -79,10 +79,10 @@
   },
   {
    "app": "6797896315",
-   "date": "2026-11-23",
-   "title": "Fix a slow-to-compile view so CI can use the newest Xcode again",
+   "date": "2026-11-16",
+   "title": "CI back on the newest Xcode with tests; fixed Expert boards that could have two solutions",
    "who": "auto",
-   "status": "todo"
+   "status": "done"
   },
   {
    "app": "6784340038",
@@ -150,8 +150,8 @@
   {
    "app": "6796323432",
    "date": "2026-11-20",
-   "title": "Add the App Attest entitlement so the suggest-a-joint form works on store builds",
-   "who": "auto",
+   "title": "Tick App Attest on the App ID (entitlement already in the code), then a signed CI build",
+   "who": "you",
    "status": "todo"
   },
   {
@@ -279,6 +279,13 @@
    "title": "Lesson content needs the church; push notifications unbuilt",
    "who": "you",
    "status": "blocked"
+  },
+  {
+   "app": "6797896315",
+   "date": "2026-11-23",
+   "title": "Ship the one-solution puzzle fix in the next build",
+   "who": "auto",
+   "status": "todo"
   }
  ]
 }
