@@ -345,6 +345,8 @@
             aria-selected="false">Map</button>
     <button role="tab" id="tab-ratings" aria-controls="panel-ratings"
             aria-selected="false">Ratings</button>
+    <button role="tab" id="tab-pipeline" aria-controls="panel-pipeline"
+            aria-selected="false">Pipeline</button>
   </div>
 
   <div role="tabpanel" id="panel-installs" aria-labelledby="tab-installs">
@@ -385,6 +387,10 @@
   <div role="tabpanel" id="panel-ratings" aria-labelledby="tab-ratings" hidden>
     <div id="ratings"></div>
     <div id="reviews"></div>
+  </div>
+  <!-- Store state per app (App Store + Google Play) and the dated roadmap. pipeline.js. -->
+  <div role="tabpanel" id="panel-pipeline" aria-labelledby="tab-pipeline" hidden>
+    <div id="pipeline"></div>
   </div>
   <footer>
     Data from App Store Connect, refreshed daily by GitHub Actions.
@@ -2808,5 +2814,6 @@ load()
 </script>
 <script src="revenue.js"></script>
 <script src="subs.js"></script>
+<script src="pipeline.js"></script>
 </body>
 </html>

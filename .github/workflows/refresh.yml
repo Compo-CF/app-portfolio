@@ -151,12 +151,36 @@ jobs:
           PLAY_PROJECT: app-portfolio-tooling
         run: python scripts/subs.py
 
+      # Pipeline tab: Google Play release tracks. Play's publishing API needs the
+      # publisher account, which lives in a different Workload Identity pool
+      # (restaurantsfeed, shared with Compo-CF/store-ops) from the reports reader
+      # above. Authenticating again here replaces the credentials for the steps
+      # below only; everything that reads the reports bucket has already run.
+      - name: Authenticate as the Play publisher (read-only use)
+        id: publisher
+        continue-on-error: true
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/896206213654/locations/global/workloadIdentityPools/github/providers/compo-cf
+          service_account: play-publisher@restaurantsfeed.iam.gserviceaccount.com
+
+      - name: Play release tracks
+        if: steps.publisher.outcome == 'success'
+        continue-on-error: true
+        run: |
+          pip install --quiet google-api-python-client
+          python scripts/pipeline.py
+
       - name: Commit if anything moved
         # The same credentials as the fetch step, because the retry below
         # regenerates the file and would otherwise run without them — a
         # silent downgrade to an empty result on exactly the run that raced.
-        # GOOGLE_APPLICATION_CREDENTIALS is already exported by the auth step.
+        # GOOGLE_APPLICATION_CREDENTIALS is exported by the auth steps, but the
+        # Pipeline step authenticated again (as the Play publisher) after it, so
+        # point the retry back at the reports-reader file explicitly.
         env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.play.outputs.credentials_file_path }}
+          CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: ${{ steps.play.outputs.credentials_file_path }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
@@ -187,7 +211,7 @@ jobs:
           # both the accumulated history and any field a newer parser has
           # started writing. Forcing our copy over would silently drop them.
           for attempt in 1 2 3; do
-            git add data/portfolio.json data/revenue.json data/subs.json
+            git add data/portfolio.json data/revenue.json data/subs.json data/pipeline.json
             # Nothing new is the normal case on a quiet day and must not fail.
             if git diff --staged --quiet; then echo "nothing new"; exit 0; fi
 
@@ -198,9 +222,11 @@ jobs:
             fi
 
             echo "::notice::Push raced with another commit — rebuilding on top of ${GITHUB_REF_NAME}."
+            [ -f data/pipeline.json ] && cp data/pipeline.json "$RUNNER_TEMP/pipeline.json"
             git reset -q --hard HEAD~1
             git fetch -q origin "$GITHUB_REF_NAME"
             git reset -q --hard "origin/$GITHUB_REF_NAME"
+            [ -f "$RUNNER_TEMP/pipeline.json" ] && cp "$RUNNER_TEMP/pipeline.json" data/pipeline.json
             python scripts/fetch.py
             python scripts/revenue.py || echo "::warning::revenue.py failed on retry; revenue.json left as committed"
             python scripts/subs.py || echo "::warning::subs.py failed on retry; subs.json left as committed"
