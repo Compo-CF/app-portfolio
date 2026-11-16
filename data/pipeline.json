@@ -1,0 +1,124 @@
+{
+ "generated": "2026-11-16T17:26:32+00:00",
+ "play": {
+  "6832097718": {
+   "package": "com.compofelice.neatly",
+   "tracks": {
+    "alpha": {
+     "name": "33 (1.1.0)",
+     "status": "completed",
+     "versionCode": "33",
+     "fraction": null
+    },
+    "internal": {
+     "name": "1.1.1",
+     "status": "completed",
+     "versionCode": "36",
+     "fraction": null
+    }
+   },
+   "unanswered": 0
+  },
+  "6830660705": {
+   "package": "com.compofelice.ghostline",
+   "tracks": {},
+   "error": "not on Play yet"
+  },
+  "6785576912": {
+   "package": "com.compofelice.woodlandstrailguide_flutter",
+   "tracks": {
+    "production": {
+     "name": "1.0.0",
+     "status": "completed",
+     "versionCode": "9",
+     "fraction": null
+    },
+    "alpha": {
+     "name": "5 (1.0.0)",
+     "status": "completed",
+     "versionCode": "6",
+     "fraction": null
+    },
+    "internal": {
+     "name": "2",
+     "status": "completed",
+     "versionCode": "2",
+     "fraction": null
+    }
+   },
+   "unanswered": 0
+  },
+  "6817339425": {
+   "package": "com.compofelice.critterconga",
+   "tracks": {
+    "production": {
+     "name": "1.2.1",
+     "status": "completed",
+     "versionCode": "8",
+     "fraction": null
+    },
+    "alpha": {
+     "name": "1.1.0",
+     "status": "completed",
+     "versionCode": "5",
+     "fraction": null
+    },
+    "internal": {
+     "name": "1 (1.1.0)",
+     "status": "completed",
+     "versionCode": "1",
+     "fraction": null
+    }
+   },
+   "unanswered": 0
+  },
+  "6773501518": {
+   "package": "com.compofelice.stiereats",
+   "tracks": {
+    "production": {
+     "name": "16 (1.5.1)",
+     "status": "completed",
+     "versionCode": "16",
+     "fraction": null
+    },
+    "alpha": {
+     "name": "8 (1.1.3)",
+     "status": "completed",
+     "versionCode": "8",
+     "fraction": null
+    },
+    "internal": {
+     "name": "13 (1.5)",
+     "status": "completed",
+     "versionCode": "14",
+     "fraction": null
+    }
+   },
+   "unanswered": 0
+  },
+  "6804512540": {
+   "package": "com.compofelice.goodshepherd",
+   "tracks": {
+    "production": {
+     "name": "19 (1.2.0)",
+     "status": "completed",
+     "versionCode": "19",
+     "fraction": null
+    },
+    "alpha": {
+     "name": "1.1.0 (17) \u2014 first test build",
+     "status": "completed",
+     "versionCode": "17",
+     "fraction": null
+    },
+    "internal": {
+     "name": "1.3.0",
+     "status": "completed",
+     "versionCode": "20",
+     "fraction": null
+    }
+   },
+   "unanswered": 0
+  }
+ }
+}

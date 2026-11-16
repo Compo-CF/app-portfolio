@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-15T16:35:10Z",
+ "generated": "2026-11-16T17:18:09Z",
  "fx": {
   "2026-10-31": {
    "CAD": 0.715871,
@@ -71,6 +71,12 @@
    "CZK": 0.045251,
    "EUR": 1.105204,
    "GBP": 1.322664
+  },
+  "2026-11-15": {
+   "DKK": 0.147842,
+   "EUR": 1.105204,
+   "GBP": 1.322664,
+   "CAD": 0.701361
   }
  },
  "periods": [
@@ -495,7 +501,7 @@
  ],
  "open": {
   "start": "2026-11-01",
-  "through": "2026-11-14",
+  "through": "2026-11-15",
   "missing": [],
   "days": {
    "2026-11-01": [
@@ -1324,6 +1330,78 @@
      "units": 2,
      "amount": 21.24,
      "usd": 23.47
+    }
+   ],
+   "2026-11-15": [
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "DKK",
+     "units": 1,
+     "amount": 26.52,
+     "usd": 3.92
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Cosmica Everything Bundle",
+     "sku": "com.centricfiber.cosmica.everything_bundle",
+     "currency": "EUR",
+     "units": 1,
+     "amount": 4.21,
+     "usd": 4.65
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Time Warp 8h",
+     "sku": "com.centricfiber.cosmica.timewarp_8h",
+     "currency": "GBP",
+     "units": 1,
+     "amount": 1.41,
+     "usd": 1.86
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Ultimate Bundle",
+     "sku": "com.centricfiber.cosmica.ultimate_bundle",
+     "currency": "CAD",
+     "units": 1,
+     "amount": 15.29,
+     "usd": 10.72
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Ultimate Bundle",
+     "sku": "com.centricfiber.cosmica.ultimate_bundle",
+     "currency": "DKK",
+     "units": 1,
+     "amount": 67.32,
+     "usd": 9.95
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Ultimate Bundle",
+     "sku": "com.centricfiber.cosmica.ultimate_bundle",
+     "currency": "USD",
+     "units": 1,
+     "amount": 11.04,
+     "usd": 11.04
+    },
+    {
+     "appId": "6830660705",
+     "app": "Ghostline",
+     "product": "Pit Club",
+     "sku": "com.centricfiber.ghostline.club_monthly",
+     "currency": "GBP",
+     "units": 1,
+     "amount": 0.0,
+     "usd": 0.0
     }
    ]
   }
