@@ -167,6 +167,12 @@ jobs:
       - name: Play release tracks
         if: steps.publisher.outcome == 'success'
         continue-on-error: true
+        env:
+          # For the pre-launch apps' iOS versions/builds (pipeline.py PRELAUNCH).
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          ASC_VENDOR_NUMBER: ${{ secrets.ASC_VENDOR_NUMBER }}
         run: |
           pip install --quiet google-api-python-client
           python scripts/pipeline.py

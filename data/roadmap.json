@@ -53,6 +53,10 @@
   "6804512540": {
    "ios": true,
    "android": true
+  },
+  "6836013729": {
+   "ios": true,
+   "android": true
   }
  },
  "items": [
@@ -300,6 +304,48 @@
    "title": "One-solution puzzle fix in build 39, sent to external testers",
    "who": "auto",
    "status": "done"
+  },
+  {
+   "app": "6836013729",
+   "date": "2026-11-17",
+   "title": "Concept picked (garden connect puzzle); repo, bundle ID, CI signing, AdMob apps and App Store record set up",
+   "who": "auto",
+   "status": "done"
+  },
+  {
+   "app": "6836013729",
+   "date": "2026-11-18",
+   "title": "First TestFlight build from CI",
+   "who": "auto",
+   "status": "todo"
+  },
+  {
+   "app": "6836013729",
+   "date": "2026-11-19",
+   "title": "Pick the art direction from the mockups; generate final art",
+   "who": "you",
+   "status": "todo"
+  },
+  {
+   "app": "6836013729",
+   "date": "2026-11-20",
+   "title": "Create the Play app so Android CI can upload",
+   "who": "you",
+   "status": "todo"
+  },
+  {
+   "app": "6836013729",
+   "date": "2026-11-21",
+   "title": "Blossom Fair event, Garden Pass and decor; IAPs created by API",
+   "who": "auto",
+   "status": "todo"
+  },
+  {
+   "app": "6836013729",
+   "date": "2026-11-24",
+   "title": "Store-ready 1.0: screenshots, listing, submit to App Review",
+   "who": "auto",
+   "status": "todo"
   }
  ]
 }

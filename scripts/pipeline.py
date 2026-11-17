@@ -27,10 +27,45 @@ PLAY = {
     "6817339425": "com.compofelice.critterconga",
     "6773501518": "com.compofelice.stiereats",
     "6804512540": "com.compofelice.goodshepherd",
+    "6836013729": "com.compofelice.loopandbloom",
+}
+
+# Apps with an App Store record that fetch.py leaves out because they have not
+# launched (fetch.py's list feeds the installs/revenue tabs, where an unreleased
+# app is a row of zeros). The Pipeline tab still wants their versions and builds,
+# so they are asked for here. Move an app to fetch.py's APPS when it ships.
+PRELAUNCH = {
+    "6796323432": "Houston BBQ Guide",
+    "6836013729": "Loop & Bloom",
 }
 
 
+def prelaunch_ios():
+    """Versions + latest builds for PRELAUNCH apps, via fetch.py's ASC client.
+
+    Needs the ASC_* environment (refresh.yml passes it). Any failure leaves the
+    section empty rather than failing the Play half of this script.
+    """
+    out = {}
+    try:
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import fetch
+        for app_id, name in PRELAUNCH.items():
+            versions, _, _, builds, _ = fetch.app_detail(app_id)
+            out[app_id] = {"name": name, "versions": versions, "builds": builds}
+            print(app_id, name, [v["state"] for v in versions][:2], [b["version"] for b in builds][:1])
+    except Exception as e:
+        print("prelaunch iOS skipped:", type(e).__name__, e)
+    return out
+
+
 def main():
+    if "--ios-only" in __import__("sys").argv:   # local refresh of the iOS half only
+        data = json.loads(OUT.read_text(encoding="utf-8"))
+        data["ios"] = prelaunch_ios()
+        OUT.write_text(json.dumps(data, indent=1) + "\n", encoding="utf-8")
+        return
     creds, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/androidpublisher"])
     svc = build("androidpublisher", "v3", credentials=creds, cache_discovery=False)
     out = {"generated": datetime.now(timezone.utc).isoformat(timespec="seconds"), "play": {}}
@@ -55,6 +90,7 @@ def main():
             row["error"] = "not on Play yet" if "404" in str(e) else type(e).__name__
         out["play"][app_id] = row
         print(app_id, pkg, list(row["tracks"]) or row.get("error"))
+    out["ios"] = prelaunch_ios()
     OUT.write_text(json.dumps(out, indent=1) + "\n", encoding="utf-8")
 
 
