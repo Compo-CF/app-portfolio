@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-17T21:28:24+00:00",
+ "generated": "2026-11-17T22:04:44+00:00",
  "play": {
   "6832097718": {
    "package": "com.compofelice.neatly",
@@ -177,11 +177,16 @@
    ],
    "builds": [
     {
-     "version": "10",
+     "version": "13",
      "state": "VALID",
      "uploaded": "2026-11-17",
      "marketing": "1.0.0",
      "attached": null
+    },
+    {
+     "version": "10",
+     "state": "VALID",
+     "uploaded": "2026-11-17"
     }
    ]
   }
