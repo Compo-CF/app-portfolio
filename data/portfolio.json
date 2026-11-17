@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-17T14:48:51+00:00",
+ "generated": "2026-11-17T21:02:44+00:00",
  "admob": {
   "2026-06-03": 0.0,
   "2026-06-04": 0.0,
@@ -166,7 +166,7 @@
   "2026-11-14": 2.91,
   "2026-11-15": 3.27,
   "2026-11-16": 2.69,
-  "2026-11-17": 2.1
+  "2026-11-17": 2.76
  },
  "payouts": [
   {
@@ -3569,7 +3569,7 @@
    "versions": [
     {
      "version": "4.0.3",
-     "state": "PREPARE_FOR_SUBMISSION",
+     "state": "WAITING_FOR_REVIEW",
      "created": "2026-11-16"
     },
     {
@@ -6340,7 +6340,7 @@
    "versions": [
     {
      "version": "3.2.0",
-     "state": "PREPARE_FOR_SUBMISSION",
+     "state": "WAITING_FOR_REVIEW",
      "created": "2026-11-17"
     },
     {
