@@ -1,6 +1,6 @@
 {
  "_doc": "Pipeline tab roadmap. Maintained by the Store Ops hub (~/.claude/portfolio/roadmap.md is the private source; this is the PUBLIC subset: no people's names, client details or budgets). who: auto = automation does it, you = Anthony, apple/google = waiting on review. status: todo | done | blocked.",
- "updated": "2026-11-16",
+ "updated": "2026-11-17",
  "ci": {
   "6784340038": {
    "ios": true,
@@ -87,13 +87,20 @@
   {
    "app": "6784340038",
    "date": "2026-11-17",
-   "title": "4.0.2 offline-time fix: goes live on approval, then a device check",
+   "title": "4.0.2 offline-time fix is live",
    "who": "apple",
+   "status": "done"
+  },
+  {
+   "app": "6784340038",
+   "date": "2026-11-18",
+   "title": "Device check of 4.0.2: cold launch, warm resume, app switch",
+   "who": "you",
    "status": "todo"
   },
   {
    "app": "6823629432",
-   "date": "2026-11-17",
+   "date": "2026-11-18",
    "title": "1.0 in App Review (resubmitted after ATT fix); launch tasks on approval",
    "who": "apple",
    "status": "todo"
@@ -104,6 +111,13 @@
    "title": "Holiday Workshop event card publishes; Apple Ads test Nov 17-24",
    "who": "auto",
    "status": "todo"
+  },
+  {
+   "app": "6832097718",
+   "date": "2026-11-17",
+   "title": "Android closed test updated to 1.1.1 (automatic promote from internal)",
+   "who": "auto",
+   "status": "done"
   },
   {
    "app": "6832097718",
@@ -170,10 +184,10 @@
   },
   {
    "app": "6784340038",
-   "date": "2026-11-26",
-   "title": "4.0.3 prep: Shards Huge pack + paid boost fix (branch, tests, TestFlight)",
+   "date": "2026-11-16",
+   "title": "4.0.3 prep: Shards Huge pack + paid boost fix built and on TestFlight",
    "who": "auto",
-   "status": "todo"
+   "status": "done"
   },
   {
    "app": "6821057970",
