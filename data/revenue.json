@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-16T17:18:09Z",
+ "generated": "2026-11-17T14:48:54Z",
  "fx": {
   "2026-10-31": {
    "CAD": 0.715871,
@@ -501,7 +501,7 @@
  ],
  "open": {
   "start": "2026-11-01",
-  "through": "2026-11-15",
+  "through": "2026-11-16",
   "missing": [],
   "days": {
    "2026-11-01": [
@@ -1402,6 +1402,28 @@
      "units": 1,
      "amount": 0.0,
      "usd": 0.0
+    }
+   ],
+   "2026-11-16": [
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Supporter Pack",
+     "sku": "com.centricfiber.cosmica.supporter",
+     "currency": "USD",
+     "units": 1,
+     "amount": 2.54,
+     "usd": 2.54
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Time Warp 8h",
+     "sku": "com.centricfiber.cosmica.timewarp_8h",
+     "currency": "USD",
+     "units": 1,
+     "amount": 1.69,
+     "usd": 1.69
     }
    ]
   }
