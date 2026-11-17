@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-17T21:03:14+00:00",
+ "generated": "2026-11-17T21:28:24+00:00",
  "play": {
   "6832097718": {
    "package": "com.compofelice.neatly",
@@ -119,6 +119,11 @@
     }
    },
    "unanswered": 0
+  },
+  "6836013729": {
+   "package": "com.compofelice.loopandbloom",
+   "tracks": {},
+   "error": "not on Play yet"
   }
  },
  "ios": {
@@ -170,7 +175,15 @@
      "created": "2026-11-17"
     }
    ],
-   "builds": []
+   "builds": [
+    {
+     "version": "10",
+     "state": "VALID",
+     "uploaded": "2026-11-17",
+     "marketing": "1.0.0",
+     "attached": null
+    }
+   ]
   }
  }
 }
