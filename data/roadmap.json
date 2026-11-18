@@ -1,6 +1,6 @@
 {
  "_doc": "Pipeline tab roadmap. Maintained by the Store Ops hub (~/.claude/portfolio/roadmap.md is the private source; this is the PUBLIC subset: no people's names, client details or budgets). who: auto = automation does it, you = Anthony, apple/google = waiting on review. status: todo | done | blocked.",
- "updated": "2026-11-17",
+ "updated": "2026-11-18",
  "ci": {
   "6784340038": {
    "ios": true,
@@ -105,7 +105,7 @@
   {
    "app": "6823629432",
    "date": "2026-11-18",
-   "title": "1.0 in App Review (resubmitted after ATT fix); launch tasks on approval",
+   "title": "1.0 in App Review (resubmitted after ATT fix, 7 days waiting); launch tasks on approval",
    "who": "apple",
    "status": "todo"
   },
@@ -217,7 +217,7 @@
   {
    "app": "6784340038",
    "date": "2026-12-01",
-   "title": "Monetization re-check, then go/no-go on 4.0.3",
+   "title": "Monetization re-check after 4.0.3 (Shards Huge, boost changes)",
    "who": "you",
    "status": "todo"
   },
@@ -314,10 +314,10 @@
   },
   {
    "app": "6836013729",
-   "date": "2026-11-18",
+   "date": "2026-11-17",
    "title": "First TestFlight build from CI",
    "who": "auto",
-   "status": "todo"
+   "status": "done"
   },
   {
    "app": "6836013729",
@@ -345,6 +345,34 @@
    "date": "2026-11-24",
    "title": "Store-ready 1.0: screenshots, listing, submit to App Review",
    "who": "auto",
+   "status": "todo"
+  },
+  {
+   "app": null,
+   "date": "2026-11-18",
+   "title": "CI runs paused by a GitHub account issue; fix it to resume builds and Play automation",
+   "who": "you",
+   "status": "todo"
+  },
+  {
+   "app": "6797896315",
+   "date": "2026-11-18",
+   "title": "3.2.0 is live (one-solution puzzle fix, studio shelf)",
+   "who": "apple",
+   "status": "done"
+  },
+  {
+   "app": "6784340038",
+   "date": "2026-11-19",
+   "title": "4.0.3 in App Review (Shards Huge pack, boost changes); releases on approval",
+   "who": "apple",
+   "status": "todo"
+  },
+  {
+   "app": "6823629432",
+   "date": "2026-11-18",
+   "title": "Ask App Review for a status update",
+   "who": "you",
    "status": "todo"
   }
  ]
