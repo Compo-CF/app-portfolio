@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-18T16:17:42+00:00",
+ "generated": "2026-11-18T21:44:54+00:00",
  "play": {
   "6832097718": {
    "package": "com.compofelice.neatly",
@@ -177,11 +177,16 @@
    ],
    "builds": [
     {
-     "version": "21",
+     "version": "22",
      "state": "VALID",
      "uploaded": "2026-11-18",
      "marketing": "1.0.0",
-     "attached": null
+     "attached": "1.0.0"
+    },
+    {
+     "version": "21",
+     "state": "VALID",
+     "uploaded": "2026-11-18"
     },
     {
      "version": "19",
@@ -195,11 +200,6 @@
     },
     {
      "version": "13",
-     "state": "VALID",
-     "uploaded": "2026-11-17"
-    },
-    {
-     "version": "10",
      "state": "VALID",
      "uploaded": "2026-11-17"
     }
