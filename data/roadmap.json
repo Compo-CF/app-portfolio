@@ -1,6 +1,6 @@
 {
  "_doc": "Pipeline tab roadmap. Maintained by the Store Ops hub (~/.claude/portfolio/roadmap.md is the private source; this is the PUBLIC subset: no people's names, client details or budgets). who: auto = automation does it, you = Anthony, apple/google = waiting on review. status: todo | done | blocked.",
- "updated": "2026-11-18",
+ "updated": "2026-11-19",
  "ci": {
   "6784340038": {
    "ios": true,
@@ -104,8 +104,8 @@
   },
   {
    "app": "6823629432",
-   "date": "2026-11-18",
-   "title": "1.0 in App Review (resubmitted after ATT fix, 7 days waiting); launch tasks on approval",
+   "date": "2026-11-19",
+   "title": "1.0 in App Review (resubmitted after ATT fix, 8 days waiting); launch tasks on approval",
    "who": "apple",
    "status": "todo"
   },
@@ -114,7 +114,7 @@
    "date": "2026-11-17",
    "title": "Holiday Workshop event card publishes; Apple Ads test Nov 17-24",
    "who": "auto",
-   "status": "todo"
+   "status": "done"
   },
   {
    "app": "6832097718",
@@ -324,7 +324,7 @@
    "date": "2026-11-19",
    "title": "Pick the art direction from the mockups; generate final art",
    "who": "you",
-   "status": "todo"
+   "status": "done"
   },
   {
    "app": "6836013729",
@@ -338,21 +338,21 @@
    "date": "2026-11-21",
    "title": "Blossom Fair event, Garden Pass and decor; IAPs created by API",
    "who": "auto",
-   "status": "todo"
+   "status": "done"
   },
   {
    "app": "6836013729",
    "date": "2026-11-24",
    "title": "Store-ready 1.0: screenshots, listing, submit to App Review",
    "who": "auto",
-   "status": "todo"
+   "status": "done"
   },
   {
    "app": null,
-   "date": "2026-11-18",
-   "title": "CI runs paused by a GitHub account issue; fix it to resume builds and Play automation",
+   "date": "2026-11-19",
+   "title": "CI runs resumed after a GitHub account issue; builds and Play automation working again",
    "who": "you",
-   "status": "todo"
+   "status": "done"
   },
   {
    "app": "6797896315",
@@ -363,16 +363,37 @@
   },
   {
    "app": "6784340038",
-   "date": "2026-11-19",
-   "title": "4.0.3 in App Review (Shards Huge pack, boost changes); releases on approval",
+   "date": "2026-11-18",
+   "title": "4.0.3 is live (Shards Huge pack, boost changes)",
    "who": "apple",
-   "status": "todo"
+   "status": "done"
   },
   {
    "app": "6823629432",
    "date": "2026-11-18",
    "title": "Ask App Review for a status update",
    "who": "you",
+   "status": "todo"
+  },
+  {
+   "app": "6830660705",
+   "date": "2026-11-19",
+   "title": "1.0.3 is live (readable text pass, ad break card)",
+   "who": "apple",
+   "status": "done"
+  },
+  {
+   "app": "6836013729",
+   "date": "2026-11-19",
+   "title": "1.0 in App Review with all launch products; releases on approval",
+   "who": "apple",
+   "status": "todo"
+  },
+  {
+   "app": "6832097718",
+   "date": "2026-11-19",
+   "title": "1.1.2 build on TestFlight and the Android closed test; submit when approved",
+   "who": "auto",
    "status": "todo"
   }
  ]
