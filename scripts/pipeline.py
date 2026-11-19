@@ -28,6 +28,7 @@ PLAY = {
     "6773501518": "com.compofelice.stiereats",
     "6804512540": "com.compofelice.goodshepherd",
     "6836013729": "com.compofelice.loopandbloom",
+    "6836925909": "com.compofelice.wanderdeck",
 }
 
 # Apps with an App Store record that fetch.py leaves out because they have not
@@ -36,7 +37,7 @@ PLAY = {
 # so they are asked for here. Move an app to fetch.py's APPS when it ships.
 PRELAUNCH = {
     "6796323432": "Houston BBQ Guide",
-    "6836013729": "Loop & Bloom",
+    "6836925909": "Wanderdeck",
 }
 
 

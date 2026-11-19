@@ -88,7 +88,7 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   // Display names that differ from the data (fetch.py keeps "Pupduko" as its key), and apps
   // the installs tabs leave out because they have not launched.
-  const NAMES = { "6797896315": "Pupdoku", "6796323432": "Houston BBQ Guide", "6836013729": "Loop & Bloom" };
+  const NAMES = { "6797896315": "Pupdoku", "6796323432": "Houston BBQ Guide", "6836013729": "Loop & Bloom", "6836925909": "Wanderdeck" };
   const STATE = {
     READY_FOR_SALE: ["Live", "pl-good"], WAITING_FOR_REVIEW: ["Waiting for review", "pl-warn"],
     IN_REVIEW: ["In review", "pl-warn"], PENDING_DEVELOPER_RELEASE: ["Approved, release it", "pl-acc"],

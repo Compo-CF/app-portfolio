@@ -57,6 +57,10 @@
   "6836013729": {
    "ios": true,
    "android": true
+  },
+  "6836925909": {
+   "ios": true,
+   "android": null
   }
  },
  "items": [
@@ -105,9 +109,9 @@
   {
    "app": "6823629432",
    "date": "2026-11-19",
-   "title": "1.0 in App Review (resubmitted after ATT fix, 8 days waiting); launch tasks on approval",
+   "title": "1.0 approved and LIVE on the App Store",
    "who": "apple",
-   "status": "todo"
+   "status": "done"
   },
   {
    "app": "6832097718",
@@ -328,10 +332,10 @@
   },
   {
    "app": "6836013729",
-   "date": "2026-11-20",
-   "title": "Create the Play app so Android CI can upload",
+   "date": "2026-11-19",
+   "title": "Play app created; Android build on Internal testing, 16 products + Club active",
    "who": "you",
-   "status": "todo"
+   "status": "done"
   },
   {
    "app": "6836013729",
@@ -373,7 +377,7 @@
    "date": "2026-11-18",
    "title": "Ask App Review for a status update",
    "who": "you",
-   "status": "todo"
+   "status": "done"
   },
   {
    "app": "6830660705",
@@ -384,7 +388,7 @@
   },
   {
    "app": "6836013729",
-   "date": "2026-11-19",
+   "date": "2026-11-18",
    "title": "1.0 in App Review with all launch products; releases on approval",
    "who": "apple",
    "status": "todo"
@@ -393,6 +397,55 @@
    "app": "6832097718",
    "date": "2026-11-19",
    "title": "1.1.2 build on TestFlight and the Android closed test; submit when approved",
+   "who": "auto",
+   "status": "todo"
+  },
+  {
+   "app": "6823629432",
+   "date": "2026-11-19",
+   "title": "1.0.1 in App Review",
+   "who": "apple",
+   "status": "todo"
+  },
+  {
+   "app": "6823629432",
+   "date": "2026-11-21",
+   "title": "Recheck AdMob app-ads.txt verification",
+   "who": "auto",
+   "status": "todo"
+  },
+  {
+   "app": "6836013729",
+   "date": "2026-11-20",
+   "title": "Play App content forms, then closed test (12 testers x 14 days)",
+   "who": "you",
+   "status": "todo"
+  },
+  {
+   "app": "6836925909",
+   "date": "2026-11-19",
+   "title": "Concept picked (world-tour solitaire); 6-variant engine + solver, art, audio, campaign, shop built",
+   "who": "auto",
+   "status": "done"
+  },
+  {
+   "app": "6836925909",
+   "date": "2026-11-19",
+   "title": "Repo, bundle ID, CI signing and App Store record set up; signed iOS build from CI",
+   "who": "auto",
+   "status": "done"
+  },
+  {
+   "app": "6836925909",
+   "date": "2026-11-21",
+   "title": "IAPs, listing and screenshots by API; AdMob apps; privacy site",
+   "who": "auto",
+   "status": "todo"
+  },
+  {
+   "app": "6836925909",
+   "date": "2026-11-24",
+   "title": "First TestFlight build to testers",
    "who": "auto",
    "status": "todo"
   }

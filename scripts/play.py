@@ -41,6 +41,10 @@ PACKAGES = {
     "com.compofelice.neatly": "6832097718",
     # No Play app yet; listed so its figures arrive the day it is created.
     "com.compofelice.ghostline": "6830660705",
+    # Internal testing since 2026-11-19.
+    "com.compofelice.loopandbloom": "6836013729",
+    # No Play app yet.
+    "com.compofelice.wanderdeck": "6836925909",
 }
 
 BUCKET = os.environ.get("PLAY_BUCKET", "pubsite_prod_6691100777752209003")
