@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-19T22:00:45+00:00",
+ "generated": "2026-11-19T22:58:39+00:00",
  "play": {
   "6832097718": {
    "package": "com.compofelice.neatly",
@@ -183,7 +183,7 @@
    "versions": [
     {
      "version": "1.0.0",
-     "state": "READY_FOR_REVIEW",
+     "state": "WAITING_FOR_REVIEW",
      "created": "2026-11-19"
     }
    ],

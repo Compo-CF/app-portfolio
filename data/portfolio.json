@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-19T21:59:57+00:00",
+ "generated": "2026-11-19T22:58:17+00:00",
  "admob": {
   "2026-06-03": 0.0,
   "2026-06-04": 0.0,
@@ -168,7 +168,7 @@
   "2026-11-16": 2.69,
   "2026-11-17": 3.75,
   "2026-11-18": 2.08,
-  "2026-11-19": 1.04
+  "2026-11-19": 1.16
  },
  "payouts": [
   {
@@ -8449,6 +8449,66 @@
      "version": "13",
      "state": "VALID",
      "uploaded": "2026-11-17"
+    }
+   ]
+  },
+  {
+   "id": "6836989068",
+   "name": "Tong Shu: Chinese Almanac",
+   "url": "https://apps.apple.com/app/id6836989068",
+   "downloads": {
+    "2026-11-12": 0,
+    "2026-11-13": 0,
+    "2026-11-14": 0,
+    "2026-11-15": 0,
+    "2026-11-16": 0,
+    "2026-11-17": 0,
+    "2026-11-18": 0
+   },
+   "downloadsBasis": "pacific",
+   "downloadsProvisional": [],
+   "downloadsGapsFromSales": [],
+   "downloadsAnalyticsFrom": null,
+   "downloadsUtc": {},
+   "downloadsSales": {
+    "2026-11-12": 0,
+    "2026-11-13": 0,
+    "2026-11-14": 0,
+    "2026-11-15": 0,
+    "2026-11-16": 0,
+    "2026-11-17": 0,
+    "2026-11-18": 0
+   },
+   "analytics": {},
+   "revenue": {},
+   "iaps": 0,
+   "iapUnits": {},
+   "countries": {},
+   "android": null,
+   "rating": null,
+   "storeRatingHistory": {},
+   "reviewRating": null,
+   "reviewRatingHistory": {},
+   "reviews": [],
+   "versions": [
+    {
+     "version": "1.0.0",
+     "state": "WAITING_FOR_REVIEW",
+     "created": "2026-11-19"
+    }
+   ],
+   "builds": [
+    {
+     "version": "2",
+     "state": "VALID",
+     "uploaded": "2026-11-19",
+     "marketing": "1.0.0",
+     "attached": "1.0.0"
+    },
+    {
+     "version": "1",
+     "state": "VALID",
+     "uploaded": "2026-11-19"
     }
    ]
   }
