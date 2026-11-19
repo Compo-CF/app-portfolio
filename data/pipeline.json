@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-19T14:58:17+00:00",
+ "generated": "2026-11-19T19:21:45+00:00",
  "play": {
   "6832097718": {
    "package": "com.compofelice.neatly",
@@ -131,6 +131,11 @@
     }
    },
    "unanswered": 0
+  },
+  "6836925909": {
+   "package": "com.compofelice.wanderdeck",
+   "tracks": {},
+   "error": "not on Play yet"
   }
  },
  "ios": {
@@ -173,44 +178,16 @@
     }
    ]
   },
-  "6836013729": {
-   "name": "Loop & Bloom",
+  "6836925909": {
+   "name": "Wanderdeck",
    "versions": [
     {
-     "version": "1.0.0",
-     "state": "WAITING_FOR_REVIEW",
-     "created": "2026-11-17"
+     "version": "1.0",
+     "state": "PREPARE_FOR_SUBMISSION",
+     "created": "2026-11-19"
     }
    ],
-   "builds": [
-    {
-     "version": "22",
-     "state": "VALID",
-     "uploaded": "2026-11-18",
-     "marketing": "1.0.0",
-     "attached": "1.0.0"
-    },
-    {
-     "version": "21",
-     "state": "VALID",
-     "uploaded": "2026-11-18"
-    },
-    {
-     "version": "19",
-     "state": "VALID",
-     "uploaded": "2026-11-18"
-    },
-    {
-     "version": "17",
-     "state": "VALID",
-     "uploaded": "2026-11-18"
-    },
-    {
-     "version": "13",
-     "state": "VALID",
-     "uploaded": "2026-11-17"
-    }
-   ]
+   "builds": []
   }
  }
 }
