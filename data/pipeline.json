@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-19T19:21:45+00:00",
+ "generated": "2026-11-19T22:00:45+00:00",
  "play": {
   "6832097718": {
    "package": "com.compofelice.neatly",
@@ -182,12 +182,40 @@
    "name": "Wanderdeck",
    "versions": [
     {
-     "version": "1.0",
-     "state": "PREPARE_FOR_SUBMISSION",
+     "version": "1.0.0",
+     "state": "READY_FOR_REVIEW",
      "created": "2026-11-19"
     }
    ],
-   "builds": []
+   "builds": [
+    {
+     "version": "17",
+     "state": "VALID",
+     "uploaded": "2026-11-19",
+     "marketing": "1.0.0",
+     "attached": "1.0.0"
+    },
+    {
+     "version": "16",
+     "state": "VALID",
+     "uploaded": "2026-11-19"
+    },
+    {
+     "version": "15",
+     "state": "VALID",
+     "uploaded": "2026-11-19"
+    },
+    {
+     "version": "14",
+     "state": "VALID",
+     "uploaded": "2026-11-19"
+    },
+    {
+     "version": "13",
+     "state": "VALID",
+     "uploaded": "2026-11-19"
+    }
+   ]
   }
  }
 }
