@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-18T16:17:09Z",
+ "generated": "2026-11-19T14:57:59Z",
  "fx": {
   "2026-10-31": {
    "CAD": 0.715871,
@@ -81,6 +81,9 @@
   "2026-11-17": {
    "NOK": 0.10391,
    "EUR": 1.098901
+  },
+  "2026-11-18": {
+   "EUR": 1.096804
   }
  },
  "periods": [
@@ -505,7 +508,7 @@
  ],
  "open": {
   "start": "2026-11-01",
-  "through": "2026-11-17",
+  "through": "2026-11-18",
   "missing": [],
   "days": {
    "2026-11-01": [
@@ -1480,6 +1483,48 @@
      "units": 1,
      "amount": 11.04,
      "usd": 11.04
+    }
+   ],
+   "2026-11-18": [
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "2x Boost 24h",
+     "sku": "com.centricfiber.cosmica.boost_2x_24hr",
+     "currency": "USD",
+     "units": 1,
+     "amount": 1.69,
+     "usd": 1.69
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Time Warp 8h",
+     "sku": "com.centricfiber.cosmica.timewarp_8h",
+     "currency": "USD",
+     "units": 1,
+     "amount": 1.69,
+     "usd": 1.69
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Ultimate Bundle",
+     "sku": "com.centricfiber.cosmica.ultimate_bundle",
+     "currency": "EUR",
+     "units": 1,
+     "amount": 10.71,
+     "usd": 11.75
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Ultimate Bundle",
+     "sku": "com.centricfiber.cosmica.ultimate_bundle",
+     "currency": "USD",
+     "units": 2,
+     "amount": 22.08,
+     "usd": 22.08
     }
    ]
   }
