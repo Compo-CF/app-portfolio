@@ -1,13 +1,13 @@
 {
- "generated": "2026-11-18T21:44:54+00:00",
+ "generated": "2026-11-19T12:47:25+00:00",
  "play": {
   "6832097718": {
    "package": "com.compofelice.neatly",
    "tracks": {
     "alpha": {
-     "name": "1.1.1",
+     "name": "1.1.2",
      "status": "completed",
-     "versionCode": "36",
+     "versionCode": "37",
      "fraction": null
     },
     "internal": {
@@ -122,8 +122,15 @@
   },
   "6836013729": {
    "package": "com.compofelice.loopandbloom",
-   "tracks": {},
-   "error": "not on Play yet"
+   "tracks": {
+    "internal": {
+     "name": "25 (1.0.0)",
+     "status": "completed",
+     "versionCode": "25",
+     "fraction": null
+    }
+   },
+   "unanswered": 0
   }
  },
  "ios": {
@@ -171,7 +178,7 @@
    "versions": [
     {
      "version": "1.0.0",
-     "state": "PREPARE_FOR_SUBMISSION",
+     "state": "WAITING_FOR_REVIEW",
      "created": "2026-11-17"
     }
    ],

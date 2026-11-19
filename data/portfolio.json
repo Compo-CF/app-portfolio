@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-18T21:44:33+00:00",
+ "generated": "2026-11-19T12:47:04+00:00",
  "admob": {
   "2026-06-03": 0.0,
   "2026-06-04": 0.0,
@@ -167,7 +167,8 @@
   "2026-11-15": 3.27,
   "2026-11-16": 2.69,
   "2026-11-17": 3.75,
-  "2026-11-18": 1.43
+  "2026-11-18": 2.08,
+  "2026-11-19": 0.35
  },
  "payouts": [
   {
@@ -1412,6 +1413,14 @@
       "avg": 4.92,
       "count": 12
      }
+    },
+    "2026-11-19": {
+     "avg": 4.92,
+     "count": 12,
+     "us": {
+      "avg": 4.92,
+      "count": 12
+     }
     }
    },
    "reviewRating": {
@@ -1619,6 +1628,10 @@
      "count": 7
     },
     "2026-11-18": {
+     "avg": 5.0,
+     "count": 7
+    },
+    "2026-11-19": {
      "avg": 5.0,
      "count": 7
     }
@@ -3197,17 +3210,17 @@
    },
    "android": null,
    "rating": {
-    "average": 4.26,
-    "count": 35,
+    "average": 4.3,
+    "count": 37,
     "source": "itunes-lookup",
     "storefronts": {
      "US": {
-      "average": 4.12,
-      "count": 17
+      "average": 4.17,
+      "count": 18
      },
      "GB": {
       "average": 5.0,
-      "count": 8
+      "count": 9
      },
      "CA": {
       "average": 3.67,
@@ -3355,17 +3368,25 @@
       "avg": 4.12,
       "count": 17
      }
+    },
+    "2026-11-19": {
+     "avg": 4.3,
+     "count": 37,
+     "us": {
+      "avg": 4.17,
+      "count": 18
+     }
     }
    },
    "reviewRating": {
-    "average": 3.83,
-    "count": 6,
+    "average": 4.0,
+    "count": 7,
     "histogram": {
      "1": 0,
      "2": 1,
      "3": 2,
      "4": 0,
-     "5": 3
+     "5": 4
     }
    },
    "reviewRatingHistory": {
@@ -3564,9 +3585,21 @@
     "2026-11-18": {
      "avg": 3.83,
      "count": 6
+    },
+    "2026-11-19": {
+     "avg": 4.0,
+     "count": 7
     }
    },
    "reviews": [
+    {
+     "rating": 5,
+     "title": "Not Bad But Glitch Kills The Game",
+     "body": "The game is not bad and I actually think I would enjoy it a lot. However it has been days now and I have not even been able to big bang once. I gave all my generators the special attribute that gives 4x offline generation. However regardless of how long I\u2019m away from the game it always says I\u2019ve only been gone for 0s and gives me like 300k when I make over a million per second.\n\nEdit:Problem has b",
+     "nickname": "IdleGameEnthusiast",
+     "date": "2026-11-17",
+     "territory": "USA"
+    },
     {
      "rating": 5,
      "title": "Good game",
@@ -5187,6 +5220,14 @@
      }
     },
     "2026-11-18": {
+     "avg": 4.56,
+     "count": 9,
+     "us": {
+      "avg": 4.56,
+      "count": 9
+     }
+    },
+    "2026-11-19": {
      "avg": 4.56,
      "count": 9,
      "us": {
@@ -6974,6 +7015,14 @@
       "avg": 1.0,
       "count": 1
      }
+    },
+    "2026-11-19": {
+     "avg": 1.0,
+     "count": 1,
+     "us": {
+      "avg": 1.0,
+      "count": 1
+     }
     }
    },
    "reviewRating": {
@@ -7077,6 +7126,10 @@
      "count": 1
     },
     "2026-11-18": {
+     "avg": 1.0,
+     "count": 1
+    },
+    "2026-11-19": {
      "avg": 1.0,
      "count": 1
     }
@@ -8049,6 +8102,11 @@
      "avg": 5.0,
      "count": 1,
      "us": null
+    },
+    "2026-11-19": {
+     "avg": 5.0,
+     "count": 1,
+     "us": null
     }
    },
    "reviewRating": null,
@@ -8057,7 +8115,7 @@
    "versions": [
     {
      "version": "1.0.3",
-     "state": "IN_REVIEW",
+     "state": "READY_FOR_SALE",
      "created": "2026-11-18"
     },
     {
@@ -8180,6 +8238,11 @@
    "reviews": [],
    "versions": [
     {
+     "version": "1.1.2",
+     "state": "WAITING_FOR_REVIEW",
+     "created": "2026-11-19"
+    },
+    {
      "version": "1.1.1",
      "state": "READY_FOR_SALE",
      "created": "2026-11-13"
@@ -8197,11 +8260,16 @@
    ],
    "builds": [
     {
+     "version": "37",
+     "state": "VALID",
+     "uploaded": "2026-11-19",
+     "marketing": "1.1.2",
+     "attached": "1.1.2"
+    },
+    {
      "version": "35",
      "state": "VALID",
-     "uploaded": "2026-11-13",
-     "marketing": "1.1.1",
-     "attached": "1.1.1"
+     "uploaded": "2026-11-13"
     },
     {
      "version": "30",
@@ -8217,11 +8285,6 @@
      "version": "24",
      "state": "VALID",
      "uploaded": "2026-11-10"
-    },
-    {
-     "version": "23",
-     "state": "VALID",
-     "uploaded": "2026-11-09"
     }
    ]
   }
