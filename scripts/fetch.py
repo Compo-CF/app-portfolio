@@ -64,6 +64,7 @@ APPS = [
     ("6832097718", "Neatly: Cozy Organizing"),
     ("6836013729", "Loop & Bloom"),
     ("6836989068", "Tong Shu: Chinese Almanac"),
+    ("6836925909", "Wanderdeck: Solitaire Tour"),
 ]
 
 

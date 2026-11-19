@@ -37,7 +37,6 @@ PLAY = {
 # so they are asked for here. Move an app to fetch.py's APPS when it ships.
 PRELAUNCH = {
     "6796323432": "Houston BBQ Guide",
-    "6836925909": "Wanderdeck",
 }
 
 
