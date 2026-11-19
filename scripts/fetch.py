@@ -63,6 +63,7 @@ APPS = [
     ("6830660705", "Ghostline: Idle Racer"),
     ("6832097718", "Neatly: Cozy Organizing"),
     ("6836013729", "Loop & Bloom"),
+    ("6836989068", "Tong Shu: Chinese Almanac"),
 ]
 
 

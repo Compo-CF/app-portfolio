@@ -61,6 +61,8 @@ APPS = {
     # Bundle com.compofelice.neatly, so the segment is "neatly" like the rest.
     "neatly": ("6832097718", "Neatly"),
     "loopandbloom": ("6836013729", "Loop & Bloom"),
+    # Bundle com.centricfiber.tongshu (free, no IAPs yet).
+    "tongshu": ("6836989068", "Tong Shu"),
     # Not released yet; listed so its first sales resolve to a name.
     "wanderdeck": ("6836925909", "Wanderdeck"),
 }

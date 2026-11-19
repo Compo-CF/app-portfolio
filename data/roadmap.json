@@ -61,6 +61,10 @@
   "6836925909": {
    "ios": true,
    "android": null
+  },
+  "6836989068": {
+   "ios": true,
+   "android": null
   }
  },
  "items": [
@@ -447,6 +451,34 @@
    "date": "2026-11-24",
    "title": "First TestFlight build to testers",
    "who": "auto",
+   "status": "todo"
+  },
+  {
+   "app": "6836989068",
+   "date": "2026-11-18",
+   "title": "Almanac engine built from the classical Qing text; 1950-2100 day records + English glossary",
+   "who": "auto",
+   "status": "done"
+  },
+  {
+   "app": "6836989068",
+   "date": "2026-11-19",
+   "title": "SwiftUI app + home/lock-screen widgets; CI signing; first TestFlight build",
+   "who": "auto",
+   "status": "done"
+  },
+  {
+   "app": "6836989068",
+   "date": "2026-11-19",
+   "title": "Listing, screenshots, privacy and pricing by API; 1.0.0 submitted",
+   "who": "auto",
+   "status": "done"
+  },
+  {
+   "app": "6836989068",
+   "date": "2026-11-19",
+   "title": "1.0.0 in App Review",
+   "who": "apple",
    "status": "todo"
   }
  ]

@@ -441,6 +441,18 @@ function stateColour(s = "") {
   return "var(--soft)";
 }
 
+// App Store states in words, for the version pills on each card.
+function stateLabel(s = "") {
+  const words = {
+    READY_FOR_SALE: "Live", WAITING_FOR_REVIEW: "In review", IN_REVIEW: "In review",
+    PENDING_DEVELOPER_RELEASE: "Approved, not released", PENDING_APPLE_RELEASE: "Approved, releasing",
+    PROCESSING_FOR_APP_STORE: "Approved, processing", PREPARE_FOR_SUBMISSION: "Draft",
+    REJECTED: "Rejected", METADATA_REJECTED: "Metadata rejected", DEVELOPER_REJECTED: "Pulled from review",
+    DEVELOPER_REMOVED_FROM_SALE: "Removed from sale", REMOVED_FROM_SALE: "Removed from sale",
+  };
+  return words[s] || s.replace(/_/g, " ").toLowerCase();
+}
+
 /** A round step and top-of-scale for a peak, so the gridlines land on
  *  numbers a person would choose: 2, 20, 200 — never 178 or 536.
  *
@@ -2687,7 +2699,14 @@ function renderAppCards(all_apps) {
 
   $("#apps").innerHTML = apps.map((a) => {
     const dl = a.downloads || {};
-    const live = (a.versions || [])[0];
+    // The live version, and beside it whatever newer version is in flight
+    // (in review, pending release, rejected...). A draft that has not been
+    // submitted is left off a live app: it is noise until it is sent.
+    const vs = a.versions || [];
+    const live = vs.find((v) => v.state === "READY_FOR_SALE");
+    const top = vs[0];
+    const flight = top && top !== live && !(live && top.state === "PREPARE_FOR_SUBMISSION") ? top : null;
+    const pills = [live, flight].filter(Boolean);
     const r = a.rating;
     const rev = (a.reviews || [])[0];
     return `
@@ -2703,7 +2722,7 @@ function renderAppCards(all_apps) {
               ? `<span title="App Analytics first-time downloads, UTC days — matches the App Analytics pages.${a.downloadsAnalyticsFrom ? " App Analytics covers this app from " + a.downloadsAnalyticsFrom + "; everything before that is the daily sales report (Pacific days)." : ""}${(a.downloadsProvisional || []).length ? " Still filling in: " + a.downloadsProvisional.join(", ") + "." : ""}${(a.downloadsGapsFromSales || []).length ? " Not yet delivered by App Analytics, shown from the sales report (Pacific days): " + a.downloadsGapsFromSales.join(", ") + "." : ""}">· UTC days</span>`
               : `<span title="Daily sales report, Pacific-time days. Switches to App Analytics UTC days once Apple delivers the first reports.">· Pacific days</span>`}
             ${r ? ` · <span title="All App Store star ratings, every storefront. ${storefronts(r)}">★ ${r.average} (${fmt(r.count)})</span>` : " · no ratings yet"}
-            ${live ? ` <span class="pill" style="background:${stateColour(live.state)}">v${live.version} ${live.state}</span>` : ""}
+            ${pills.map((v) => ` <span class="pill" style="background:${stateColour(v.state)}" title="${v.state}">v${v.version} ${stateLabel(v.state)}</span>`).join("")}
           </div>
         </div>
         ${chart(
