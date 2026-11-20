@@ -1426,10 +1426,10 @@ function nextPeriod(newest) {
   };
 }
 
-/** How far ahead the deposit calendar projects: to the end of the month after
- *  next. Every projected figure is rebuilt from the latest data on each daily
+/** How far ahead the deposit calendar projects: to the end of the third month
+ *  out (in November that is February). Every projected figure is rebuilt from the latest data on each daily
  *  refresh, so the estimates move as the sales and AdMob reports come in. */
-const DEP_HORIZON_MONTHS = 2;
+const DEP_HORIZON_MONTHS = 3;
 
 /** Google Play's payout minimum for a US bank, in dollars. Earnings under it
  *  roll into the next month, the same way AdMob's $100 does. */
