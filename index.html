@@ -1638,7 +1638,9 @@ function renderDeposits(data) {
       const cssSrc = p.src === "apple" ? "ios" : p.src;
       if (isReported(p)) return `<span class="src ios">${(p.foreign || 0) >= 0.005 ? "≈" : ""}${money2(v)}</span>`;
       return `<span class="src ${cssSrc}">${v == null ? '<i class="wait">expected</i>'
-        : `<i class="wait">est.</i> ${money2(v)}`}</span>`;
+        // Whole dollars with a tilde: a guess does not earn cents, and the
+        // "est." label clipped four-figure amounts at the decimal on a cell.
+        : `~$${Math.round(v).toLocaleString()}`}</span>`;
     });
 
     cells.push(`<div class="${cls}" title="${d} — ${tips.join(" · ") || ""}">
@@ -1680,7 +1682,7 @@ function renderDeposits(data) {
       few dollars. Dated ${PAY_LAG_DAYS} days after each period closes (the observed
       pattern; Apple's terms promise only "within 45 days").
       <b>${money2(paidSoFar)}</b> from Apple should have landed so far.
-      Cells marked <i>est.</i> are our estimates, not anything a payer has published,
+      Figures marked ~ (whole dollars, dashed cells) are our estimates, not anything a payer has published,
       and are kept out of the month total: Apple periods not yet reported (sales so
       far in the period from the daily report, plus the last two weeks' rate for the
       rest), AdMob (pays around the 21st of the month after its balance clears
