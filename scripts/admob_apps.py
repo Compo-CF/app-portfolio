@@ -52,8 +52,9 @@ def main():
     end = date.today() - timedelta(days=1)
     start = end - timedelta(days=6)
     fill = {}
-    for r in report(pub, token, start, end, ["APP"]):
-        fill[r["APP"]] = r
+    # Same display name on iOS and Android, so key by name + platform.
+    for r in report(pub, token, start, end, ["APP", "PLATFORM"]):
+        fill[(r["APP"], r["PLATFORM"].upper())] = r
 
     rows = []
     for a in apps:
@@ -61,7 +62,7 @@ def main():
         name = linked.get("displayName") or (a.get("manualAppInfo") or {}).get("displayName") or "?"
         state = a.get("appApprovalState") or "UNKNOWN"
         store = linked.get("appStoreId") or "NOT LINKED"
-        f = fill.get(name)
+        f = fill.get((name, (a.get("platform") or "").upper()))
         req = int(f["AD_REQUESTS"]) if f else 0
         m = f"{f['MATCHED_REQUESTS'] / f['AD_REQUESTS'] * 100:.0f}%" if f and f["AD_REQUESTS"] else "-"
         imp = int(f["IMPRESSIONS"]) if f else 0
