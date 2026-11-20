@@ -1398,7 +1398,6 @@ const addDays = (iso, n) => {
   return d.toISOString().slice(0, 10);
 };
 
-/** One expected deposit per closed fiscal period, keyed by the day it lands. */
 /** The fiscal period after the newest one Apple has published.
  *
  *  Apple's quarter runs five weeks then four then four — read off the three
@@ -1427,22 +1426,93 @@ function nextPeriod(newest) {
   };
 }
 
+/** How far ahead the deposit calendar projects: to the end of the month after
+ *  next. Every projected figure is rebuilt from the latest data on each daily
+ *  refresh, so the estimates move as the sales and AdMob reports come in. */
+const DEP_HORIZON_MONTHS = 2;
+
+/** Google Play's payout minimum for a US bank, in dollars. Earnings under it
+ *  roll into the next month, the same way AdMob's $100 does. */
+const PLAY_MIN_USD = 1;
+
+const monthEndOf = (ym) => `${ym}-${String(monthParts(ym).len).padStart(2, "0")}`;
+const addMonths = (ym, n) => {
+  const [y, m] = ym.split("-").map(Number);
+  const t = y * 12 + (m - 1) + n;
+  return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, "0")}`;
+};
+/** Banks do not pay at weekends: a payment due on one moves to the Monday. */
+const nextWeekday = (iso) => {
+  const d = new Date(iso + "T00:00:00Z");
+  while (d.getUTCDay() === 0 || d.getUTCDay() === 6) d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+};
+const spanDays = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5) + 1;
+
+/** Earnings for a span of days: the days already reported, plus a run rate
+ *  for the days not reported yet. `through` is the last reported day; the
+ *  rate is the average over the `window` days ending there. */
+function estimateSpan(daily, start, end, through, window) {
+  const have = Object.keys(daily);
+  const upto = through < end ? through : end;
+  const sofar = have.filter((d) => d >= start && d <= upto).reduce((s, d) => s + daily[d], 0);
+  const from = addDays(through, -(window - 1));
+  const rate = have.filter((d) => d >= from && d <= through)
+                   .reduce((s, d) => s + daily[d], 0) / window;
+  const firstMissing = through >= start ? addDays(through, 1) : start;
+  const left = firstMissing > end ? 0 : spanDays(firstMissing, end);
+  return { estimate: sofar + rate * left, sofar, rate, left, through };
+}
+
+/** A monthly payer with a minimum: AdMob and Google Play both pay a month's
+ *  balance around a set day of the next month, but only once the balance
+ *  clears the minimum; under it, the balance rolls on. Walked month by month
+ *  from the first earnings to the horizon, reported days as reported and the
+ *  rest at the recent rate. Returns the payouts and what is still rolling. */
+function monthlyPayouts(daily, through, { min, payDay, horizonYm, window }) {
+  const days = Object.keys(daily).filter((d) => daily[d]).sort();
+  if (!days.length || !through) return { payouts: [], carry: 0, carryFrom: null };
+  const payouts = [];
+  let ym = days[0].slice(0, 7), bal = 0, from = null, sofar = 0, est = false, rate = 0;
+  while (ym <= horizonYm) {
+    const s = `${ym}-01`, e = monthEndOf(ym);
+    const m = estimateSpan(daily, s, e, through, window);
+    bal += m.estimate; sofar += m.sofar; rate = m.rate;
+    if (m.left) est = true;
+    from = from || s;
+    if (bal >= min) {
+      payouts.push({
+        day: nextWeekday(`${addMonths(ym, 1)}-${String(payDay).padStart(2, "0")}`),
+        amount: bal, start: from, end: e, sofar, rate, projected: est, through,
+      });
+      bal = 0; from = null; sofar = 0; est = false;
+    }
+    ym = addMonths(ym, 1);
+  }
+  return { payouts, carry: bal, carryFrom: from, rate };
+}
+
 /** Expected deposits, keyed by the day they should land.
  *
- *  Published periods carry their settled figure. The next one does not exist
- *  yet, and is shown anyway with no amount: the date is derivable from the
- *  fiscal calendar even when the money is not, and without it the calendar
- *  simply stopped after the last report — which read as "no more payments"
- *  rather than "none reported yet". Periods are four or five weeks, so a
- *  five-week one steps over a whole calendar month: nothing pays in November
- *  2026 at all, between 29 October and 3 December.
+ *  Apple: every published period carries its settled figure. The periods
+ *  after it do not exist yet; their dates come from the fiscal calendar and
+ *  their amounts are estimated from the daily sales report (reported days in
+ *  the period, plus the last two weeks' rate for the rest). For FY2027 P01
+ *  that method gave $471 against $490 settled. Projected to the horizon.
+ *
+ *  AdMob and Google Play: modelled month by month with their minimums.
+ *  Nothing from either has a figure the payer published, so every one of
+ *  their cells is an estimate and none reaches the month total.
  */
 function deposits(data) {
   const out = {};
+  const put = (day, p) => (out[day] = out[day] || []).push(p);
+  const today = new Date().toISOString().slice(0, 10);
+  const horizonYm = addMonths(today.slice(0, 7), DEP_HORIZON_MONTHS);
+  const horizonEnd = monthEndOf(horizonYm);
+
   // One entry per closed period: every currency Apple settled, converted at
   // the ECB rate on the period's last day (fetch.py builds data.settled).
-  // Counting the USD row alone left out about $146 of FY2027 P01's euros,
-  // pounds and won. Data written before that fix falls back to the USD rows.
   const periods = (data.settled || []).length
     ? data.settled.map((s) => ({
         period: s.period, start: s.start, end: s.end, amount: s.apple,
@@ -1450,251 +1520,170 @@ function deposits(data) {
       }))
     : (data.payouts || []).filter((p) => p.currency === "USD");
   const paid = periods.filter((p) => p.amount >= APPLE_MIN_USD);
-  for (const p of paid) {
-    const day = addDays(p.end, PAY_LAG_DAYS);
-    (out[day] = out[day] || []).push(p);
-  }
+  for (const p of paid) put(addDays(p.end, PAY_LAG_DAYS), { ...p, src: "apple" });
+
   if (paid.length) {
-    const newest = paid.reduce((a, b) => (a.end > b.end ? a : b));
-    const soon = nextPeriod(newest);
-    // An estimate for it from the daily sales report, which runs ahead of the
-    // finance reports: the days of the period already in hand, plus the last
-    // two weeks' run rate for the days still to come. For FY2027 P01 the
-    // same sales-report sum came to $471 against $490 settled, so it is close
-    // but marked as an estimate and kept out of every total.
     const daily = proceedsUSD(data.apps || [], data.fx).usd;
-    const have = Object.keys(daily).sort();
-    const through = have.length ? have[have.length - 1] : null;
-    if (through && through >= soon.start) {
-      const upto = through < soon.end ? through : soon.end;
-      const sofar = have.filter((d) => d >= soon.start && d <= upto)
-                        .reduce((s, d) => s + daily[d], 0);
-      const from = addDays(upto, -13);
-      const rate = have.filter((d) => d >= from && d <= upto)
-                       .reduce((s, d) => s + daily[d], 0) / 14;
-      const left = Math.max(Math.round((Date.parse(soon.end) - Date.parse(upto)) / 864e5), 0);
-      Object.assign(soon, { estimate: sofar + rate * left, sofar, rate, left, through: upto });
+    const through = Object.keys(daily).sort().pop();
+    let prev = paid.reduce((a, b) => (a.end > b.end ? a : b));
+    for (let i = 0; i < 6; i++) {
+      const p = nextPeriod(prev);
+      const day = addDays(p.end, PAY_LAG_DAYS);
+      if (day > horizonEnd) break;
+      if (through) Object.assign(p, estimateSpan(daily, p.start, p.end, through, 14));
+      put(day, { ...p, src: "apple" });
+      prev = p;
     }
-    const day = addDays(soon.end, PAY_LAG_DAYS);
-    (out[day] = out[day] || []).push(soon);
   }
-  const ads = admobPayout(data);
-  if (ads) (out[ads.day] = out[ads.day] || []).push(ads);
-  return out;
-}
 
-/** AdMob's one predictable date, projected.
- *
- *  Google pays monthly, but only once the balance clears the threshold: if it
- *  does so by the end of a month, payment issues on or around the 21st of the
- *  following month, moved to the next weekday when the 21st falls at a
- *  weekend. Under the threshold the balance simply rolls on, which is why
- *  this account has never been paid at all.
- *
- *  Nothing here is a figure AdMob has published. The date comes from that
- *  rule and the amount from the recent run rate, so both are drawn as a
- *  projection and neither is added to the month total.
- */
-function admobPayout(data) {
   const ad = data.admob || {};
-  const days = Object.keys(ad).sort();
-  if (!days.length) return null;
+  const ads = monthlyPayouts(ad, Object.keys(ad).sort().pop(),
+    { min: ADMOB_THRESHOLD, payDay: 21, horizonYm, window: 30 });
+  for (const p of ads.payouts) if (p.day <= horizonEnd) put(p.day, { ...p, src: "ads" });
 
-  const last = days[days.length - 1];
-  const balance = days.reduce((n, d) => n + (ad[d] || 0), 0);
-  // Thirty days of run rate: long enough to ride out a quiet week, short
-  // enough to follow a portfolio that keeps adding apps.
-  const since = addDays(last, -29);
-  const recent = days.filter((d) => d >= since);
-  const rate = recent.reduce((n, d) => n + (ad[d] || 0), 0) / Math.max(recent.length, 1);
+  const play = proceedsUSD(
+    (data.apps || []).map((a) => ({ revenue: (a.android || {}).revenue })), data.fx).usd;
+  const playThrough = (data.play || {}).revenueThrough;
+  const gp = monthlyPayouts(play, playThrough,
+    { min: PLAY_MIN_USD, payDay: 15, horizonYm, window: 30 });
+  for (const p of gp.payouts) if (p.day <= horizonEnd) put(p.day, { ...p, src: "play" });
 
-  // Where the balance first clears the threshold: historically if it already
-  // has, otherwise carried forward at that rate.
-  let run = 0, cross = null;
-  for (const d of days) { run += ad[d] || 0; if (run >= ADMOB_THRESHOLD) { cross = d; break; } }
-  let projected = false;
-  if (!cross) {
-    // A flat line never arrives. Better to show nothing than a date built on
-    // dividing by zero.
-    if (rate <= 0) return null;
-    projected = true;
-    cross = addDays(last, Math.ceil((ADMOB_THRESHOLD - balance) / rate));
-  }
-
-  const [cy, cm] = cross.split("-").map(Number);
-  const pay = new Date(Date.UTC(cm === 12 ? cy + 1 : cy, cm === 12 ? 0 : cm, 21));
-  while (pay.getUTCDay() === 0 || pay.getUTCDay() === 6) pay.setUTCDate(pay.getUTCDate() + 1);
-
-  // AdMob pays the balance standing at the end of the clearing month, not the
-  // threshold that triggered it, so carry the rate out to that month end.
-  const ym = cross.slice(0, 7);
-  const monthEnd = `${ym}-${String(monthParts(ym).len).padStart(2, "0")}`;
-  const ahead = Math.max(Math.round((Date.parse(monthEnd) - Date.parse(last)) / 864e5), 0);
-
-  return {ads: true, day: pay.toISOString().slice(0, 10), amount: balance + rate * ahead,
-          balance, rate, cross, projected, monthEnd, through: last};
+  out._meta = { ads, play: gp, horizonEnd };
+  return out;
 }
 
 let DEP_MONTH = null;
 
 /** When the money actually turns up, as against when it was earned.
  *
- *  Built on Apple's financial reports rather than the daily sales estimate,
- *  because those are the settlement figures, after adjustments. They are
- *  settled per region in that region's currency; Apple converts them only
- *  when it pays, at its own rate, and may hold a small regional balance until
- *  it clears that region's minimum. So a period with foreign sales is shown
- *  converted at the ECB period-end rate and marked approximate.
- *
- *  AdMob gets a cell too, but a projected one. It pays only once the balance
- *  passes $100 and gives no date before then, so the date comes from its
- *  published rule and the amount from the recent run rate. It is drawn
- *  dashed, in Google's colour, and kept out of the month total, so it cannot
- *  be mistaken for a deposit anyone has actually confirmed.
+ *  Apple's settled figures come from its financial reports, the settlement
+ *  figures after adjustments. Everything else on the calendar is ours:
+ *  Apple's unpublished periods, AdMob and Google Play are estimates, drawn
+ *  as "est." and kept out of the month total, which counts only what Apple
+ *  has reported. A cell can hold more than one payer, one line each, led by
+ *  the same coloured rule as the Money calendar.
  */
 function renderDeposits(data) {
   const host = $("#deposits");
   if (!host) return;
 
   const due = deposits(data);
+  const meta = due._meta; delete due._meta;
   const days = Object.keys(due).sort();
   if (!days.length) { host.innerHTML = ""; return; }
 
   const today = new Date().toISOString().slice(0, 10);
   const thisMonth = today.slice(0, 7);
   const first = days[0].slice(0, 7);
-  // The last month worth paging to is whichever is later: the month holding
-  // the furthest expected deposit, or this one. Stopping at the newest
-  // deposit would hide a month with none, and stopping at this month would
-  // hide the payment that is already scheduled for next.
   const last = [days[days.length - 1].slice(0, 7), thisMonth].sort().pop();
 
   if (!DEP_MONTH) DEP_MONTH = thisMonth;
   if (DEP_MONTH > last) DEP_MONTH = last;
   if (DEP_MONTH < first) DEP_MONTH = first;
 
+  const isReported = (p) => p.src === "apple" && !p.pending;
+  const NAME = { apple: "Apple", ads: "AdMob", play: "Google Play" };
+  const span = (p) => {
+    if (p.period) {
+      const [fy, per] = p.period.split("-");
+      return `FY${fy} period ${Number(per)} sales, ${p.start} to ${p.end}`;
+    }
+    return `earnings ${p.start} to ${p.end}`;
+  };
+  const how = (p) => p.left || p.projected
+    ? `${money2(p.sofar)} reported through ${p.through}, the rest at the recent `
+      + `${money2(p.rate)} a day`
+    : `all ${money2(p.sofar != null ? p.sofar : p.amount)} already reported`;
+
   const { len } = monthParts(DEP_MONTH);
   const cells = [];
-  let monthTotal = 0, allPast = true, pendingThisMonth = false, adsThisMonth = null;
+  let monthTotal = 0, monthEst = 0, allPast = true;
   for (let n = 1; n <= len; n++) {
     const d = `${DEP_MONTH}-${String(n).padStart(2, "0")}`;
     const here = due[d] || [];
-    // A projected period has no figure, so it must not reach the month total
-    // or the total would silently read as complete when it is not. The AdMob
-    // projection does have a figure, but it is ours rather than Google's, so
-    // it is kept out of the total for the same reason.
-    const settled = here.filter((p) => !p.pending && !p.ads);
-    const waiting = here.filter((p) => p.pending && !p.ads);
-    const adsDue = here.find((p) => p.ads);
-    const amount = settled.reduce((s, p) => s + p.amount, 0);
-    const foreign = settled.reduce((s, p) => s + (p.foreign || 0), 0);
-    const approx = foreign >= 0.005 ? "≈" : "";
+    const reported = here.filter(isReported);
+    const est = here.filter((p) => !isReported(p));
+    const amount = reported.reduce((s, p) => s + p.amount, 0);
     monthTotal += amount;
-    const landed = settled.length && d <= today;
-    if (settled.length && !landed) allPast = false;
-    if (waiting.length) pendingThisMonth = true;
-    if (adsDue) adsThisMonth = adsDue;
+    const landed = d <= today;
+    if (reported.length && !landed) allPast = false;
+    const val = (p) => (isReported(p) ? p.amount : p.src === "apple" ? p.estimate : p.amount);
+    for (const p of est) if (val(p) != null) monthEst += val(p);
 
-    // Apple's state wins the cell when both land on one day, so a real
-    // deposit is never dressed as a projection; the AdMob note still rides
-    // along in the tooltip.
     const cls = ["day", d === today ? "today" : "",
-                 settled.length ? (landed ? "paid" : "due")
-                 : waiting.length ? "waiting"
-                 : adsDue ? "ads" : "future"]
-                .filter(Boolean).join(" ");
-    const span = (p) => {
-      const [fy, per] = p.period.split("-");
-      return `FY${fy} period ${Number(per)} sales, ${p.start} to ${p.end}`;
-    };
-    const tip = settled.length
-      ? `${d} — ${approx}${money2(amount)} ${landed ? "should have landed" : "expected"}`
-        + settled.map((p) => `; ${span(p)}`).join("")
-        + (approx ? `; includes about ${money2(foreign)} settled in foreign `
-            + "currencies, converted here at ECB rates. Apple converts at its "
-            + "own rate when it pays." : "")
-      : waiting.length
-        ? `${d} — payment expected. ${span(waiting[0])}. `
-          + "Apple has not published the finance report for this period yet. "
-          + (waiting[0].estimate != null
-              ? `Estimated about ${money2(waiting[0].estimate)} from the daily sales report: `
-                + `${money2(waiting[0].sofar)} through ${waiting[0].through}`
-                + (waiting[0].left ? ` plus ${waiting[0].left} more days at the last two weeks' `
-                    + `${money2(waiting[0].rate)} a day` : "")
-                + ". Not in the month total."
-              : "There is a date but no figure yet.")
-        : d;
-    const adsTip = adsDue
-      ? `AdMob, projected: about ${money2(adsDue.amount)} on or around the 21st. `
-        + `Google pays monthly once the balance clears ${money2(ADMOB_THRESHOLD)}; `
-        + (adsDue.projected
-            ? `at the last 30 days' rate of ${money2(adsDue.rate)} a day the `
-              + `balance of ${money2(adsDue.balance)} reaches it around ${adsDue.cross}, `
-            : `the balance cleared it on ${adsDue.cross}, `)
-        + `so the payment follows in the next month. Neither the date nor the `
-        + `amount is confirmed by Google.`
-      : "";
+                 reported.length ? (landed ? "paid" : "due")
+                 : est.length ? "waiting" : "future"].filter(Boolean).join(" ");
 
-    cells.push(`<div class="${cls}" title="${adsTip ? (settled.length || waiting.length
-        ? tip + " — also: " + adsTip : adsTip) : tip}">
+    const tips = here.map((p) => {
+      const v = val(p);
+      if (isReported(p)) {
+        const approx = (p.foreign || 0) >= 0.005;
+        return `Apple ${approx ? "≈" : ""}${money2(p.amount)} ${landed ? "should have landed" : "expected"}`
+          + ` (${span(p)}${approx ? `; includes about ${money2(p.foreign)} settled in foreign `
+            + "currencies, converted at ECB rates" : ""})`;
+      }
+      if (p.src === "apple") {
+        return v == null ? `Apple, amount not known yet (${span(p)})`
+          : `Apple, estimated ${money2(v)} (${span(p)}; not published yet; ${how(p)})`;
+      }
+      const rule = p.src === "ads"
+        ? `paid around the 21st once the balance clears ${money2(ADMOB_THRESHOLD)}`
+        : `paid around the 15th once the balance clears ${money2(PLAY_MIN_USD)}`;
+      return `${NAME[p.src]}, estimated ${money2(v)} ${landed ? "should have landed" : "expected"}`
+        + ` (${span(p)}; ${how(p)}; ${rule})`;
+    });
+
+    const lines = here.map((p) => {
+      const v = val(p);
+      const cssSrc = p.src === "apple" ? "ios" : p.src;
+      if (isReported(p)) return `<span class="src ios">${(p.foreign || 0) >= 0.005 ? "≈" : ""}${money2(v)}</span>`;
+      return `<span class="src ${cssSrc}">${v == null ? '<i class="wait">expected</i>'
+        : `<i class="wait">est.</i> ${money2(v)}`}</span>`;
+    });
+
+    cells.push(`<div class="${cls}" title="${d} — ${tips.join(" · ") || ""}">
       <span class="n">${n}</span>
-      <span class="amt">${settled.length ? approx + money2(amount)
-        : waiting.length ? (waiting[0].estimate != null
-            ? `<i class="wait">est. ~${money2(waiting[0].estimate)}</i>`
-            : '<i class="wait">expected</i>')
-        : adsDue ? "≈" + money2(adsDue.amount) : ""}</span>
+      <span class="amt">${lines.join("")}</span>
     </div>`);
   }
 
-  // Settled periods only. A projected one has no amount, and adding
-  // undefined here would turn the whole figure into NaN.
   const paidSoFar = days.filter((d) => d <= today).reduce(
-    (s, d) => s + due[d].filter((p) => !p.pending)
-                        .reduce((t, p) => t + p.amount, 0), 0);
-  const ads = Object.values(data.admob || {}).reduce((n, v) => n + v, 0);
-  const adsPlan = admobPayout(data);
+    (s, d) => s + due[d].filter(isReported).reduce((t, p) => t + p.amount, 0), 0);
+  const adsBal = Object.values(data.admob || {}).reduce((n, v) => n + v, 0);
+  const rolling = (m, name, min) => m.carry > 0.005
+    ? ` ${name} earnings from ${m.carryFrom} (about ${money2(m.carry)} by the end of
+        the horizon) stay under the ${money2(min)} minimum and roll forward to a later
+        payment.` : "";
 
   host.innerHTML = `<div class="section">Deposits</div>` + calShell({
     month: DEP_MONTH,
     earliest: first,
     latest: last,
-    totalHtml: monthTotal === 0 && pendingThisMonth
-      // "$0.00 due this month" is wrong when a payment is expected and only
-      // its size is unknown. Saying nothing about an amount beats saying zero.
-      ? `<b>&mdash;</b> one payment expected, amount not published yet`
-      : monthTotal === 0 && adsThisMonth
-      // Same again for a month whose only entry is the AdMob projection: a
-      // cell showing a figure above a total reading $0.00 contradicts itself.
-      ? `<b>&mdash;</b> AdMob projected, about ${money2(adsThisMonth.amount)}`
-      : `<b>${money2(monthTotal)}</b> ${
-          monthTotal === 0 ? "due this month"
-            : allPast ? "due by now this month" : "expected this month"}`,
+    totalHtml: monthTotal === 0 && monthEst > 0
+      ? `<b>&mdash;</b> nothing reported, about ${money2(monthEst)} estimated`
+      : `<b>${money2(monthTotal)}</b> ${monthTotal === 0 ? "due this month"
+          : allPast ? "due by now this month" : "expected this month"}${monthEst > 0
+          ? ` <span class="conv">+ about ${money2(monthEst)} estimated</span>` : ""}`,
     cells,
-    caveat: `One payment per closed fiscal period, from Apple's financial
-      reports. Apple settles each region in its own currency (dollars, euros,
-      pounds, won&hellip;) and converts only when it pays, at its own rate; a
-      small regional balance can be held back until it clears that region's
-      minimum. Amounts marked &asymp; include foreign currency converted at the
-      European Central Bank's rate on the period's last day, so the deposit
-      will differ by a few dollars. Dated ${PAY_LAG_DAYS} days after each period closes,
-      which is the observed pattern; Apple's own terms promise only "within 45
-      days", and none of these is confirmation the money arrived.
-      <b>${money2(paidSoFar)}</b> should have landed so far.
-      The last cell is the next period's payment: Apple has not published its
-      finance report, so the date is derived from the fiscal calendar and the
-      amount marked "est." is our estimate from the daily sales report (sales so
-      far in the period plus the recent daily rate), left out of the month
-      total. Periods run four or five weeks, so a
-      five-week one steps over a whole calendar month — nothing at all pays in
-      November 2026, between 29 October and 3 December.
-      AdMob now has a cell of its own, in Google's colour and dashed because it
-      is a projection rather than a date Google has given: it holds earnings
-      until ${money2(ADMOB_THRESHOLD)}, then pays on or around the 21st of the
-      month after the balance clears. The balance is ${money2(ads)}${adsPlan
-        ? `, rising about ${money2(adsPlan.rate)} a day, so on that rate it
-      clears around ${adsPlan.cross} and pays about ${money2(adsPlan.amount)}
-      on ${adsPlan.day}` : ""}. That cell is left out of the month total above,
-      which counts only what Apple has actually reported.`,
+    caveat: `<span class="src ios">Apple</span><span class="src ads">AdMob</span><span
+      class="src play">Google Play</span><br>
+      Apple pays one deposit per closed fiscal period. Plain figures are from its
+      financial reports; &asymp; means foreign currency converted at the European
+      Central Bank's rate on the period's last day, so the deposit will differ by a
+      few dollars. Dated ${PAY_LAG_DAYS} days after each period closes (the observed
+      pattern; Apple's terms promise only "within 45 days").
+      <b>${money2(paidSoFar)}</b> from Apple should have landed so far.
+      Cells marked <i>est.</i> are our estimates, not anything a payer has published,
+      and are kept out of the month total: Apple periods not yet reported (sales so
+      far in the period from the daily report, plus the last two weeks' rate for the
+      rest), AdMob (pays around the 21st of the month after its balance clears
+      ${money2(ADMOB_THRESHOLD)}; balance now ${money2(adsBal)}) and Google Play (pays
+      around the 15th of the next month once earnings clear ${money2(PLAY_MIN_USD)};
+      Play sales are reported through ${(data.play || {}).revenueThrough || "—"}).
+      All of them are rebuilt from the newest data on every daily refresh, and the
+      calendar projects to ${meta.horizonEnd}.${rolling(meta.ads, "AdMob", ADMOB_THRESHOLD)}${rolling(meta.play, "Google Play", PLAY_MIN_USD)}
+      Periods run four or five weeks, so a five-week one steps over a whole calendar
+      month: Apple pays nothing in November 2026, between 29 October and 3 December.`,
   });
 
   host.querySelectorAll("[data-go]").forEach((b) =>
