@@ -1538,14 +1538,14 @@ function deposits(data) {
 
   const ad = data.admob || {};
   const ads = monthlyPayouts(ad, Object.keys(ad).sort().pop(),
-    { min: ADMOB_THRESHOLD, payDay: 21, horizonYm, window: 30 });
+    { min: ADMOB_THRESHOLD, payDay: 21, horizonYm: addMonths(horizonYm, 1), window: 30 });
   for (const p of ads.payouts) if (p.day <= horizonEnd) put(p.day, { ...p, src: "ads" });
 
   const play = proceedsUSD(
     (data.apps || []).map((a) => ({ revenue: (a.android || {}).revenue })), data.fx).usd;
   const playThrough = (data.play || {}).revenueThrough;
   const gp = monthlyPayouts(play, playThrough,
-    { min: PLAY_MIN_USD, payDay: 15, horizonYm, window: 30 });
+    { min: PLAY_MIN_USD, payDay: 15, horizonYm: addMonths(horizonYm, 1), window: 30 });
   for (const p of gp.payouts) if (p.day <= horizonEnd) put(p.day, { ...p, src: "play" });
 
   out._meta = { ads, play: gp, horizonEnd };
@@ -1650,10 +1650,17 @@ function renderDeposits(data) {
   const paidSoFar = days.filter((d) => d <= today).reduce(
     (s, d) => s + due[d].filter(isReported).reduce((t, p) => t + p.amount, 0), 0);
   const adsBal = Object.values(data.admob || {}).reduce((n, v) => n + v, 0);
-  const rolling = (m, name, min) => m.carry > 0.005
-    ? ` ${name} earnings from ${m.carryFrom} (about ${money2(m.carry)} by the end of
+  // What a payer owes past the calendar's last month: a payment already
+  // modelled but landing later, or a balance still under its minimum.
+  const rolling = (m, name, min) => {
+    const later = m.payouts.find((p) => p.day > meta.horizonEnd);
+    if (later) return ` Next ${name} payment after that: about ${money2(later.amount)}
+        on ${later.day}, for earnings ${later.start} to ${later.end}.`;
+    return m.carry > 0.005
+      ? ` ${name} earnings from ${m.carryFrom} (about ${money2(m.carry)} by the end of
         the horizon) stay under the ${money2(min)} minimum and roll forward to a later
         payment.` : "";
+  };
 
   host.innerHTML = `<div class="section">Deposits</div>` + calShell({
     month: DEP_MONTH,
