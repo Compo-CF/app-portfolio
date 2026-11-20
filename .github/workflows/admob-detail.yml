@@ -25,3 +25,11 @@ jobs:
           ADMOB_CLIENT_SECRET: ${{ secrets.ADMOB_CLIENT_SECRET }}
           ADMOB_REFRESH_TOKEN: ${{ secrets.ADMOB_REFRESH_TOKEN }}
         run: python scripts/admob_detail.py
+      - name: AdMob app readiness
+        if: always()
+        env:
+          ADMOB_PUBLISHER_ID: ${{ secrets.ADMOB_PUBLISHER_ID }}
+          ADMOB_CLIENT_ID: ${{ secrets.ADMOB_CLIENT_ID }}
+          ADMOB_CLIENT_SECRET: ${{ secrets.ADMOB_CLIENT_SECRET }}
+          ADMOB_REFRESH_TOKEN: ${{ secrets.ADMOB_REFRESH_TOKEN }}
+        run: python scripts/admob_apps.py
