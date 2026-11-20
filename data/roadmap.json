@@ -1,6 +1,6 @@
 {
  "_doc": "Pipeline tab roadmap. Maintained by the Store Ops hub (~/.claude/portfolio/roadmap.md is the private source; this is the PUBLIC subset: no people's names, client details or budgets). who: auto = automation does it, you = Anthony, apple/google = waiting on review. status: todo | done | blocked.",
- "updated": "2026-11-19",
+ "updated": "2026-11-20",
  "ci": {
   "6784340038": {
    "ios": true,
@@ -399,17 +399,17 @@
   },
   {
    "app": "6832097718",
-   "date": "2026-11-19",
-   "title": "1.1.2 build on TestFlight and the Android closed test; submit when approved",
+   "date": "2026-11-20",
+   "title": "1.1.2 (scene progress kept, real version in Settings) LIVE; on the Android closed test",
    "who": "auto",
-   "status": "todo"
+   "status": "done"
   },
   {
    "app": "6823629432",
-   "date": "2026-11-19",
-   "title": "1.0.1 in App Review",
+   "date": "2026-11-20",
+   "title": "1.0.1 (ATT retry) approved and LIVE",
    "who": "apple",
-   "status": "todo"
+   "status": "done"
   },
   {
    "app": "6823629432",
@@ -441,17 +441,17 @@
   },
   {
    "app": "6836925909",
-   "date": "2026-11-21",
+   "date": "2026-11-19",
    "title": "IAPs, listing and screenshots by API; AdMob apps; privacy site",
    "who": "auto",
-   "status": "todo"
+   "status": "done"
   },
   {
    "app": "6836925909",
-   "date": "2026-11-24",
-   "title": "First TestFlight build to testers",
+   "date": "2026-11-19",
+   "title": "TestFlight build 17 uploaded from CI",
    "who": "auto",
-   "status": "todo"
+   "status": "done"
   },
   {
    "app": "6836989068",
@@ -480,6 +480,20 @@
    "title": "1.0.0 in App Review",
    "who": "apple",
    "status": "todo"
+  },
+  {
+   "app": "6836925909",
+   "date": "2026-11-19",
+   "title": "1.0.0 + 14 IAPs + Atlas Club in App Review",
+   "who": "apple",
+   "status": "todo"
+  },
+  {
+   "app": "6797896315",
+   "date": "2026-11-20",
+   "title": "3.2.1 LIVE (illustrated background, polished breed art)",
+   "who": "auto",
+   "status": "done"
   }
  ]
 }
