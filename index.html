@@ -1457,6 +1457,24 @@ function deposits(data) {
   if (paid.length) {
     const newest = paid.reduce((a, b) => (a.end > b.end ? a : b));
     const soon = nextPeriod(newest);
+    // An estimate for it from the daily sales report, which runs ahead of the
+    // finance reports: the days of the period already in hand, plus the last
+    // two weeks' run rate for the days still to come. For FY2027 P01 the
+    // same sales-report sum came to $471 against $490 settled, so it is close
+    // but marked as an estimate and kept out of every total.
+    const daily = proceedsUSD(data.apps || [], data.fx).usd;
+    const have = Object.keys(daily).sort();
+    const through = have.length ? have[have.length - 1] : null;
+    if (through && through >= soon.start) {
+      const upto = through < soon.end ? through : soon.end;
+      const sofar = have.filter((d) => d >= soon.start && d <= upto)
+                        .reduce((s, d) => s + daily[d], 0);
+      const from = addDays(upto, -13);
+      const rate = have.filter((d) => d >= from && d <= upto)
+                       .reduce((s, d) => s + daily[d], 0) / 14;
+      const left = Math.max(Math.round((Date.parse(soon.end) - Date.parse(upto)) / 864e5), 0);
+      Object.assign(soon, { estimate: sofar + rate * left, sofar, rate, left, through: upto });
+    }
     const day = addDays(soon.end, PAY_LAG_DAYS);
     (out[day] = out[day] || []).push(soon);
   }
@@ -1596,9 +1614,15 @@ function renderDeposits(data) {
             + "currencies, converted here at ECB rates. Apple converts at its "
             + "own rate when it pays." : "")
       : waiting.length
-        ? `${d} — payment expected, amount not known yet. ${span(waiting[0])}. `
-          + "Apple has not published the finance report for this period, so "
-          + "there is a date but no figure."
+        ? `${d} — payment expected. ${span(waiting[0])}. `
+          + "Apple has not published the finance report for this period yet. "
+          + (waiting[0].estimate != null
+              ? `Estimated about ${money2(waiting[0].estimate)} from the daily sales report: `
+                + `${money2(waiting[0].sofar)} through ${waiting[0].through}`
+                + (waiting[0].left ? ` plus ${waiting[0].left} more days at the last two weeks' `
+                    + `${money2(waiting[0].rate)} a day` : "")
+                + ". Not in the month total."
+              : "There is a date but no figure yet.")
         : d;
     const adsTip = adsDue
       ? `AdMob, projected: about ${money2(adsDue.amount)} on or around the 21st. `
@@ -1615,7 +1639,9 @@ function renderDeposits(data) {
         ? tip + " — also: " + adsTip : adsTip) : tip}">
       <span class="n">${n}</span>
       <span class="amt">${settled.length ? approx + money2(amount)
-        : waiting.length ? '<i class="wait">expected</i>'
+        : waiting.length ? (waiting[0].estimate != null
+            ? `<i class="wait">est. ~${money2(waiting[0].estimate)}</i>`
+            : '<i class="wait">expected</i>')
         : adsDue ? "≈" + money2(adsDue.amount) : ""}</span>
     </div>`);
   }
@@ -1656,7 +1682,9 @@ function renderDeposits(data) {
       <b>${money2(paidSoFar)}</b> should have landed so far.
       The last cell is the next period's payment: Apple has not published its
       finance report, so the date is derived from the fiscal calendar and the
-      amount is simply not known yet. Periods run four or five weeks, so a
+      amount marked "est." is our estimate from the daily sales report (sales so
+      far in the period plus the recent daily rate), left out of the month
+      total. Periods run four or five weeks, so a
       five-week one steps over a whole calendar month — nothing at all pays in
       November 2026, between 29 October and 3 December.
       AdMob now has a cell of its own, in Google's colour and dashed because it
