@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-21T17:26:19+00:00",
+ "generated": "2026-11-21T20:25:24+00:00",
  "admob": {
   "2026-06-03": 0.0,
   "2026-06-04": 0.0,
@@ -170,7 +170,7 @@
   "2026-11-18": 2.08,
   "2026-11-19": 1.89,
   "2026-11-20": 1.94,
-  "2026-11-21": 0.57
+  "2026-11-21": 0.73
  },
  "payouts": [
   {
@@ -8765,18 +8765,23 @@
    "reviews": [],
    "versions": [
     {
-     "version": "1.0.0",
-     "state": "REJECTED",
+     "version": "1.0.1",
+     "state": "READY_FOR_SALE",
      "created": "2026-11-19"
     }
    ],
    "builds": [
     {
+     "version": "5",
+     "state": "VALID",
+     "uploaded": "2026-11-21",
+     "marketing": "1.0.1",
+     "attached": "1.0.1"
+    },
+    {
      "version": "4",
      "state": "VALID",
-     "uploaded": "2026-11-20",
-     "marketing": "1.0.1",
-     "attached": null
+     "uploaded": "2026-11-20"
     },
     {
      "version": "3",
