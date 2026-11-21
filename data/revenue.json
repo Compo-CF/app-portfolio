@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-20T13:45:39Z",
+ "generated": "2026-11-21T16:50:12Z",
  "fx": {
   "2026-10-31": {
    "CAD": 0.715871,
@@ -90,6 +90,9 @@
    "CAD": 0.699301,
    "EUR": 1.099203,
    "AUD": 0.671141
+  },
+  "2026-11-20": {
+   "GBP": 1.312474
   }
  },
  "periods": [
@@ -514,7 +517,7 @@
  ],
  "open": {
   "start": "2026-11-01",
-  "through": "2026-11-19",
+  "through": "2026-11-20",
   "missing": [],
   "days": {
    "2026-11-01": [
@@ -1583,6 +1586,38 @@
      "units": 1,
      "amount": 15.45,
      "usd": 10.37
+    }
+   ],
+   "2026-11-20": [
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Deluxe Upgrade",
+     "sku": "com.centricfiber.cosmica.deluxe_upgrade",
+     "currency": "GBP",
+     "units": 1,
+     "amount": 7.06,
+     "usd": 9.27
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Time Warp 8h",
+     "sku": "com.centricfiber.cosmica.timewarp_8h",
+     "currency": "GBP",
+     "units": 2,
+     "amount": 2.82,
+     "usd": 3.7
+    },
+    {
+     "appId": "6830660705",
+     "app": "Ghostline",
+     "product": "Pit Club",
+     "sku": "com.centricfiber.ghostline.club_monthly",
+     "currency": "GBP",
+     "units": 1,
+     "amount": 0.0,
+     "usd": 0.0
     }
    ]
   }
