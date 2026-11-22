@@ -1,6 +1,6 @@
 {
  "_doc": "Pipeline tab roadmap. Maintained by the Store Ops hub (~/.claude/portfolio/roadmap.md is the private source; this is the PUBLIC subset: no people's names, client details or budgets). who: auto = automation does it, you = Anthony, apple/google = waiting on review. status: todo | done | blocked.",
- "updated": "2026-11-20",
+ "updated": "2026-11-22",
  "ci": {
   "6784340038": {
    "ios": true,
@@ -479,14 +479,14 @@
    "date": "2026-11-19",
    "title": "1.0.0 in App Review",
    "who": "apple",
-   "status": "todo"
+   "status": "done"
   },
   {
    "app": "6836925909",
    "date": "2026-11-19",
    "title": "1.0.0 + 14 IAPs + Atlas Club in App Review",
    "who": "apple",
-   "status": "todo"
+   "status": "done"
   },
   {
    "app": "6797896315",
@@ -494,6 +494,27 @@
    "title": "3.2.1 LIVE (illustrated background, polished breed art)",
    "who": "auto",
    "status": "done"
+  },
+  {
+   "app": "6836925909",
+   "date": "2026-11-20",
+   "title": "1.0.0 LIVE with 14 IAPs + Atlas Club; 1.0.1 (review prompt, header art) LIVE",
+   "who": "auto",
+   "status": "done"
+  },
+  {
+   "app": "6836989068",
+   "date": "2026-11-21",
+   "title": "1.0.1 (5) LIVE after the 2.1 Information Needed resubmit",
+   "who": "auto",
+   "status": "done"
+  },
+  {
+   "app": "6836013729",
+   "date": "2026-11-22",
+   "title": "1.0.0 still Waiting for Review (submitted 11-18)",
+   "who": "apple",
+   "status": "todo"
   }
  ]
 }
