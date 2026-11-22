@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-21T16:50:12Z",
+ "generated": "2026-11-22T14:22:20Z",
  "fx": {
   "2026-10-31": {
    "CAD": 0.715871,
@@ -93,6 +93,10 @@
   },
   "2026-11-20": {
    "GBP": 1.312474
+  },
+  "2026-11-21": {
+   "GBP": 1.312474,
+   "EUR": 1.098998
   }
  },
  "periods": [
@@ -517,7 +521,7 @@
  ],
  "open": {
   "start": "2026-11-01",
-  "through": "2026-11-20",
+  "through": "2026-11-21",
   "missing": [],
   "days": {
    "2026-11-01": [
@@ -1618,6 +1622,38 @@
      "units": 1,
      "amount": 0.0,
      "usd": 0.0
+    }
+   ],
+   "2026-11-21": [
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Automation Core",
+     "sku": "com.centricfiber.cosmica.automation_core",
+     "currency": "USD",
+     "units": 2,
+     "amount": 6.78,
+     "usd": 6.78
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Remove Ads",
+     "sku": "com.centricfiber.cosmica.removeads",
+     "currency": "GBP",
+     "units": 1,
+     "amount": 2.11,
+     "usd": 2.77
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Ultimate Bundle",
+     "sku": "com.centricfiber.cosmica.ultimate_bundle",
+     "currency": "EUR",
+     "units": 1,
+     "amount": 10.53,
+     "usd": 11.57
     }
    ]
   }
