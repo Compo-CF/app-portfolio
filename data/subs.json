@@ -1,7 +1,7 @@
 {
- "generated": "2026-11-22T20:37:47Z",
+ "generated": "2026-11-23T18:52:38Z",
  "apple": {
-  "through": "2026-11-21",
+  "through": "2026-11-22",
   "state": {
    "2026-11-15": {
     "6830662100": {
@@ -58,6 +58,14 @@
      "intro": 0,
      "grace": 0
     }
+   },
+   "2026-11-22": {
+    "6830662100": {
+     "active": 0,
+     "trial": 1,
+     "intro": 0,
+     "grace": 0
+    }
    }
   },
   "events": {
@@ -69,6 +77,11 @@
    "2026-11-19": {
     "6830662100": {
      "Start Introductory Offer": 1
+    }
+   },
+   "2026-11-22": {
+    "6830662100": {
+     "Billing Retry from Introductory Offer": 1
     }
    }
   },
