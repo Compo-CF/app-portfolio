@@ -559,11 +559,12 @@ def main():
     import play as _play
     by_app = admob.earnings_by_app(_play.PACKAGES) or {}
     app_ads = prev_app_ads
-    for app_id, series in (by_app.get("apps") or {}).items():
-        app_ads.setdefault(app_id, {}).update(series)
+    # Not `series`: main() already holds the download history under that name.
+    for app_id, ad_days in (by_app.get("apps") or {}).items():
+        app_ads.setdefault(app_id, {}).update(ad_days)
     unlinked_ads = prev_unlinked
-    for name, series in (by_app.get("unlinked") or {}).items():
-        unlinked_ads.setdefault(name, {}).update(series)
+    for name, ad_days in (by_app.get("unlinked") or {}).items():
+        unlinked_ads.setdefault(name, {}).update(ad_days)
 
     # What Apple actually owes, period by period, from the financial reports
     # rather than the daily estimate. Merged onto what is committed for the
