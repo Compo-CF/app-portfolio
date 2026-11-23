@@ -136,6 +136,96 @@ def earnings(days=120):
     return out
 
 
+def _app_ids(publisher, token, packages):
+    """AdMob app id (ca-app-pub-...~n) -> App Store id, from AdMob's own store links.
+
+    Every AdMob app that has been linked to its store listing carries
+    linkedAppInfo.appStoreId: the numeric App Store id on iOS, the package name
+    on Android. That is AdMob's own statement of which store app it is, so no
+    name matching is involved. Android packages are turned into App Store ids
+    with `packages` (play.PACKAGES), because the dashboard keys apps by their
+    App Store id. Unlinked apps map to None and are reported by display name.
+    """
+    out, names, page = {}, {}, None
+    while True:
+        params = {"pageSize": 100}
+        if page:
+            params["pageToken"] = page
+        r = requests.get(f"{API}/accounts/{publisher}/apps", params=params, timeout=60,
+                         headers={"Authorization": f"Bearer {token}"})
+        if r.status_code != 200:
+            print(f"  admob: apps list refused ({r.status_code}) {_error_message(r)[:160]}")
+            return {}, {}
+        body = r.json()
+        for a in body.get("apps", []):
+            linked = (a.get("linkedAppInfo") or {}).get("appStoreId")
+            names[a["appId"]] = ((a.get("linkedAppInfo") or {}).get("displayName")
+                                 or (a.get("manualAppInfo") or {}).get("displayName") or a["appId"])
+            if linked and a.get("platform") == "ANDROID":
+                linked = packages.get(linked)
+            out[a["appId"]] = linked or None
+        page = body.get("nextPageToken")
+        if not page:
+            return out, names
+
+
+def earnings_by_app(packages, days=120):
+    """Estimated earnings per day for each app, keyed by App Store id.
+
+    Returns {"apps": {app_store_id: {"YYYY-MM-DD": usd}},
+             "unlinked": {display_name: {"YYYY-MM-DD": usd}}}, or {} when
+    AdMob is not configured or refuses. iOS and Android earnings of the same
+    app are added together under its App Store id.
+    """
+    publisher = os.environ.get("ADMOB_PUBLISHER_ID")
+    token = _access_token()
+    if not (publisher and token):
+        return {}
+    ids, names = _app_ids(publisher, token, packages)
+    end = date.today()
+    start = end - timedelta(days=days)
+    body = {"reportSpec": {
+        "dateRange": {
+            "startDate": {"year": start.year, "month": start.month, "day": start.day},
+            "endDate": {"year": end.year, "month": end.month, "day": end.day},
+        },
+        "dimensions": ["DATE", "APP"],
+        "metrics": ["ESTIMATED_EARNINGS"],
+    }}
+    try:
+        r = requests.post(f"{API}/accounts/{publisher}/networkReport:generate",
+                          json=body, timeout=60, headers={"Authorization": f"Bearer {token}"})
+    except requests.RequestException as e:
+        print(f"  admob by app: unreachable ({type(e).__name__})")
+        return {}
+    if r.status_code != 200:
+        print(f"  admob by app: report refused ({r.status_code}) {_error_message(r)[:160]}")
+        return {}
+    apps, unlinked = {}, {}
+    for chunk in r.json():
+        row = chunk.get("row")
+        if not row:
+            continue
+        dims = row.get("dimensionValues", {})
+        day = (dims.get("DATE") or {}).get("value")
+        admob_app = (dims.get("APP") or {}).get("value")
+        micros = (row.get("metricValues", {}).get("ESTIMATED_EARNINGS", {}) or {}).get("microsValue")
+        if not day or not admob_app or micros is None:
+            continue
+        key = f"{day[:4]}-{day[4:6]}-{day[6:]}"
+        usd = int(micros) / 1_000_000
+        store_id = ids.get(admob_app)
+        bucket = apps.setdefault(store_id, {}) if store_id else unlinked.setdefault(
+            names.get(admob_app) or (dims.get("APP") or {}).get("displayLabel") or admob_app, {})
+        bucket[key] = bucket.get(key, 0) + usd
+    for series in list(apps.values()) + list(unlinked.values()):
+        for k in series:
+            series[k] = round(series[k], 2)
+    if unlinked:
+        print("  admob by app: not linked to a store listing:", ", ".join(sorted(unlinked)))
+    return {"apps": apps, "unlinked": unlinked}
+
+
 if __name__ == "__main__":
     data = earnings()
     if not data:

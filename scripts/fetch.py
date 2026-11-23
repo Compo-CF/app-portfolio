@@ -544,6 +544,27 @@ def main():
     ads = dict(prev_ads)
     ads.update(admob.earnings())
 
+    # The same earnings per app (2026-11-23). Mapped by AdMob's own store
+    # link (linkedAppInfo.appStoreId), never by name, so an app is credited
+    # only with what AdMob itself says is that app's. Merged onto what is held
+    # for the same reason as the total above.
+    prev_app_ads, prev_unlinked = {}, {}
+    if OUT.exists():
+        try:
+            prev = json.loads(OUT.read_text(encoding="utf-8"))
+            prev_app_ads = {a["id"]: dict(a.get("ads") or {}) for a in prev.get("apps", [])}
+            prev_unlinked = {k: dict(v) for k, v in (prev.get("admobUnlinked") or {}).items()}
+        except (ValueError, KeyError):
+            pass
+    import play as _play
+    by_app = admob.earnings_by_app(_play.PACKAGES) or {}
+    app_ads = prev_app_ads
+    for app_id, series in (by_app.get("apps") or {}).items():
+        app_ads.setdefault(app_id, {}).update(series)
+    unlinked_ads = prev_unlinked
+    for name, series in (by_app.get("unlinked") or {}).items():
+        unlinked_ads.setdefault(name, {}).update(series)
+
     # What Apple actually owes, period by period, from the financial reports
     # rather than the daily estimate. Merged onto what is committed for the
     # same reason as the ads above, and because the probe bounds itself by
@@ -726,6 +747,8 @@ def main():
             "revenue": {c: dict(sorted(d.items())) for c, d in revenue[app_id].items()},
             "iaps": iaps,
             "iapUnits": dict(sorted(iap_units[app_id].items())),
+            # AdMob estimated earnings for this app (iOS + Android), USD per day.
+            "ads": dict(sorted((app_ads.get(app_id) or {}).items())),
             "countries": dict(sorted(countries[app_id].items())),
             # Android lives beside iOS rather than in a parallel app list, and
             # stays absent for apps that are not on Play at all — an empty
@@ -835,6 +858,7 @@ def main():
         json.dumps({
             "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "admob": dict(sorted(ads.items())),
+            "admobUnlinked": {k: dict(sorted(v.items())) for k, v in sorted(unlinked_ads.items())},
             "payouts": payouts,
             "fx": rates,
             "settled": settled,

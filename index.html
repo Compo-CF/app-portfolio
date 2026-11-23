@@ -1011,34 +1011,41 @@ function renderPayDaily(data) {
     + stat("Purchases, 30 days", fmt(sumLast(units, 30)),
            "in-app purchases and subscriptions");
 
-  // Only apps that have taken money. A row of flat zeros for the other ten
-  // says nothing the Installs tab does not already say.
+  // Only apps that have taken money, from purchases or from ads. Ad income is
+  // per app since 2026-11-23 (AdMob's own store links, admob.earnings_by_app)
+  // and is shown beside App Store proceeds, never added into them.
   const earners = apps
-    .map((a) => ({ app: a, usd: proceedsUSD([a], data.fx).usd }))
-    .filter((e) => total(e.usd) > 0)
-    .sort((x, y) => sumLast(y.usd, 30) - sumLast(x.usd, 30));
+    .map((a) => ({ app: a, usd: proceedsUSD([a], data.fx).usd, ads: a.ads || {} }))
+    .filter((e) => total(e.usd) > 0 || total(e.ads) > 0)
+    .sort((x, y) => (sumLast(y.usd, 30) + sumLast(y.ads, 30)) - (sumLast(x.usd, 30) + sumLast(x.ads, 30)));
 
   if (!earners.length) {
     host.innerHTML = '<div class="empty">No app has taken a payment yet.</div>';
     return;
   }
 
-  host.innerHTML = earners.map(({ app, usd }) => `
+  host.innerHTML = earners.map(({ app, usd, ads }) => {
+    const hasStore = total(usd) > 0, hasAds = total(ads) > 0;
+    return `
       <div class="card">
         <div class="head">
           <div class="name"><a href="${app.url}" rel="noopener">${app.name}</a></div>
           <div class="meta">
-            <span class="money">${money2(sumLast(usd, 30))}</span> in 30d ·
+            App Store <span class="money">${money2(sumLast(usd, 30))}</span> in 30d ·
             ${money2(sumLast(usd, 7))} in 7d${
-              app.iapUnits
+              app.iapUnits && hasStore
                 ? ` · <b>${fmt(sumLast(app.iapUnits, 30))}</b> purchases in 30d`
                 : ""}
-            <span title="Proceeds after the store's cut, foreign currencies converted at the European Central Bank rate for the day of each sale.">· USD</span>
+            · Ads <span class="money">${money2(sumLast(ads, 30))}</span> in 30d
+            <span title="App Store: proceeds after the store's cut, foreign currencies converted at the European Central Bank rate for the day of each sale. Ads: AdMob's estimated earnings for this app, iOS and Android together. Shown side by side, not added: they are paid by different companies on different schedules.">· USD</span>
           </div>
         </div>
-        ${chart(daily(usd, from, to), rangeDays(), money2, releaseMarks(app),
-                playMoney(app, data.fx || {}, from, to), true)}
-      </div>`).join("");
+        ${hasStore ? chart(daily(usd, from, to), rangeDays(), money2, releaseMarks(app),
+                playMoney(app, data.fx || {}, from, to), true) : ""}
+        ${hasAds ? `<div class="meta" style="margin:6px 0 2px">Ad income, AdMob estimate</div>`
+                   + chart(daily(ads, from, to), rangeDays(), money2, [], null, true) : ""}
+      </div>`;
+  }).join("");
 }
 
 /* ---- Payments Cumulative: the Cumulative tab, in money ------------------ */
@@ -1088,8 +1095,8 @@ function renderPayCumulative(data) {
   const slots = currencySlots(apps, data.fx || {});
   const earners = apps
     .map((a) => ({ app: a, usd: proceedsUSD([a], data.fx).usd }))
-    .filter((e) => total(e.usd) > 0)
-    .sort((x, y) => total(y.usd) - total(x.usd));
+    .filter((e) => total(e.usd) > 0 || total(e.app.ads) > 0)
+    .sort((x, y) => (total(y.usd) + total(y.app.ads)) - (total(x.usd) + total(x.app.ads)));
 
   host.innerHTML = `
     <div class="card">
@@ -1131,9 +1138,12 @@ function renderPayCumulative(data) {
                     `${total(days).toLocaleString()} ${c}`).join(", ") + `</span>`
                 : ""}
             ${app.iapUnits ? ` · <b>${fmt(total(app.iapUnits))}</b> purchases` : ""}
+            ${total(app.ads) > 0 ? ` · ads <span class="money">${total(app.ads).toFixed(2)} USD</span> (AdMob estimate, not in the figure before it)` : ""}
           </div>
         </div>
-        ${multiChart(currencySeries(app, DATA.fx || {}, slots), from, to)}
+        ${total(appUsd) > 0 ? multiChart(currencySeries(app, DATA.fx || {}, slots), from, to) : ""}
+        ${total(app.ads) > 0 ? `<div class="meta" style="margin:6px 0 2px">Ad income to date, AdMob estimate</div>`
+                               + chart(daily(app.ads, from, to, true), ALL, money0) : ""}
       </div>`;
     }).join("")}`;
 }
