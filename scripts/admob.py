@@ -136,6 +136,15 @@ def earnings(days=120):
     return out
 
 
+# AdMob apps that cannot be store-linked yet (Android apps still in Play closed
+# testing: AdMob only links to a public listing). Keyed by the exact AdMob app
+# id suffix (ca-app-pub-...~<this>), never by name. Remove an entry once that
+# app is public and linked in AdMob.
+MANUAL = {
+    "9629915649": "6832097718",   # Neatly Android (Play closed test, 2026-11-23)
+}
+
+
 def _app_ids(publisher, token, packages):
     """AdMob app id (ca-app-pub-...~n) -> App Store id, from AdMob's own store links.
 
@@ -163,7 +172,7 @@ def _app_ids(publisher, token, packages):
                                  or (a.get("manualAppInfo") or {}).get("displayName") or a["appId"])
             if linked and a.get("platform") == "ANDROID":
                 linked = packages.get(linked)
-            out[a["appId"]] = linked or None
+            out[a["appId"]] = linked or MANUAL.get(a["appId"].split("~")[-1])
         page = body.get("nextPageToken")
         if not page:
             return out, names
