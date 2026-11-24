@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-23T18:52:22+00:00",
+ "generated": "2026-11-24T01:31:08+00:00",
  "admob": {
   "2026-06-03": 0.0,
   "2026-06-04": 0.0,
@@ -172,7 +172,7 @@
   "2026-11-20": 1.94,
   "2026-11-21": 1.56,
   "2026-11-22": 1.4,
-  "2026-11-23": 1.09
+  "2026-11-23": 1.97
  },
  "admobUnlinked": {},
  "payouts": [
@@ -1635,6 +1635,14 @@
       "avg": 4.92,
       "count": 12
      }
+    },
+    "2026-11-24": {
+     "avg": 4.92,
+     "count": 12,
+     "us": {
+      "avg": 4.92,
+      "count": 12
+     }
     }
    },
    "reviewRating": {
@@ -1864,6 +1872,10 @@
     "2026-11-23": {
      "avg": 5.0,
      "count": 7
+    },
+    "2026-11-24": {
+     "avg": 5.0,
+     "count": 7
     }
    },
    "reviews": [
@@ -1978,11 +1990,16 @@
    ],
    "builds": [
     {
-     "version": "205",
+     "version": "206",
      "state": "VALID",
      "uploaded": "2026-11-23",
      "marketing": "3.1.1",
      "attached": "3.1.1"
+    },
+    {
+     "version": "205",
+     "state": "VALID",
+     "uploaded": "2026-11-23"
     },
     {
      "version": "204",
@@ -1998,11 +2015,6 @@
      "version": "202",
      "state": "VALID",
      "uploaded": "2026-11-20"
-    },
-    {
-     "version": "199",
-     "state": "VALID",
-     "uploaded": "2026-10-23"
     }
    ]
   },
@@ -2839,7 +2851,7 @@
     "2026-11-20": 1.91,
     "2026-11-21": 1.54,
     "2026-11-22": 1.34,
-    "2026-11-23": 1.01
+    "2026-11-23": 1.89
    },
    "countries": {
     "2026-07-06": {
@@ -3850,6 +3862,14 @@
       "avg": 4.17,
       "count": 18
      }
+    },
+    "2026-11-24": {
+     "avg": 4.3,
+     "count": 37,
+     "us": {
+      "avg": 4.17,
+      "count": 18
+     }
     }
    },
    "reviewRating": {
@@ -4079,6 +4099,10 @@
     "2026-11-23": {
      "avg": 4.0,
      "count": 7
+    },
+    "2026-11-24": {
+     "avg": 4.0,
+     "count": 7
     }
    },
    "reviews": [
@@ -4141,6 +4165,11 @@
    ],
    "versions": [
     {
+     "version": "4.0.5",
+     "state": "IN_REVIEW",
+     "created": "2026-11-23"
+    },
+    {
      "version": "4.0.4",
      "state": "READY_FOR_SALE",
      "created": "2026-11-23"
@@ -4184,20 +4213,20 @@
      "version": "3.3.1",
      "state": "READY_FOR_SALE",
      "created": "2026-11-01"
-    },
-    {
-     "version": "3.3",
-     "state": "READY_FOR_SALE",
-     "created": "2026-10-24"
     }
    ],
    "builds": [
     {
-     "version": "154",
+     "version": "159",
      "state": "VALID",
      "uploaded": "2026-11-23",
-     "marketing": "4.0.4",
-     "attached": "4.0.4"
+     "marketing": "4.0.5",
+     "attached": "4.0.5"
+    },
+    {
+     "version": "154",
+     "state": "VALID",
+     "uploaded": "2026-11-23"
     },
     {
      "version": "151",
@@ -4211,11 +4240,6 @@
     },
     {
      "version": "136",
-     "state": "VALID",
-     "uploaded": "2026-11-11"
-    },
-    {
-     "version": "129",
      "state": "VALID",
      "uploaded": "2026-11-11"
     }
@@ -5927,6 +5951,14 @@
       "avg": 4.56,
       "count": 9
      }
+    },
+    "2026-11-24": {
+     "avg": 4.56,
+     "count": 9,
+     "us": {
+      "avg": 4.56,
+      "count": 9
+     }
     }
    },
    "reviewRating": null,
@@ -5934,8 +5966,13 @@
    "reviews": [],
    "versions": [
     {
-     "version": "2.1.0",
+     "version": "2.1.1",
      "state": "WAITING_FOR_REVIEW",
+     "created": "2026-11-23"
+    },
+    {
+     "version": "2.1.0",
+     "state": "READY_FOR_SALE",
      "created": "2026-11-23"
     },
     {
@@ -5977,20 +6014,20 @@
      "version": "1.5",
      "state": "READY_FOR_SALE",
      "created": "2026-09-25"
-    },
-    {
-     "version": "1.4",
-     "state": "READY_FOR_SALE",
-     "created": "2026-08-13"
     }
    ],
    "builds": [
     {
-     "version": "88",
+     "version": "90",
      "state": "VALID",
      "uploaded": "2026-11-23",
-     "marketing": "2.1.0",
-     "attached": "2.1.0"
+     "marketing": "2.1.1",
+     "attached": "2.1.1"
+    },
+    {
+     "version": "88",
+     "state": "VALID",
+     "uploaded": "2026-11-23"
     },
     {
      "version": "84",
@@ -6006,11 +6043,6 @@
      "version": "76",
      "state": "VALID",
      "uploaded": "2026-11-05"
-    },
-    {
-     "version": "71",
-     "state": "VALID",
-     "uploaded": "2026-10-26"
     }
    ]
   },
@@ -6731,8 +6763,13 @@
    "reviews": [],
    "versions": [
     {
+     "version": "2.2",
+     "state": "WAITING_FOR_REVIEW",
+     "created": "2026-11-23"
+    },
+    {
      "version": "2.1",
-     "state": "IN_REVIEW",
+     "state": "READY_FOR_SALE",
      "created": "2026-11-23"
     },
     {
@@ -6778,11 +6815,16 @@
    ],
    "builds": [
     {
-     "version": "55",
+     "version": "57",
      "state": "VALID",
      "uploaded": "2026-11-23",
-     "marketing": "2.1",
-     "attached": "2.1"
+     "marketing": "2.2",
+     "attached": "2.2"
+    },
+    {
+     "version": "55",
+     "state": "VALID",
+     "uploaded": "2026-11-23"
     },
     {
      "version": "13",
@@ -6798,11 +6840,6 @@
      "version": "11",
      "state": "VALID",
      "uploaded": "2026-07-31"
-    },
-    {
-     "version": "10",
-     "state": "VALID",
-     "uploaded": "2026-06-29"
     }
    ]
   },
@@ -7364,11 +7401,16 @@
    ],
    "builds": [
     {
-     "version": "44",
+     "version": "46",
      "state": "VALID",
      "uploaded": "2026-11-23",
-     "marketing": "3.3.0",
-     "attached": "3.3.0"
+     "marketing": "3.3.1",
+     "attached": null
+    },
+    {
+     "version": "44",
+     "state": "VALID",
+     "uploaded": "2026-11-23"
     },
     {
      "version": "41",
@@ -7384,11 +7426,6 @@
      "version": "35",
      "state": "VALID",
      "uploaded": "2026-11-16"
-    },
-    {
-     "version": "31",
-     "state": "VALID",
-     "uploaded": "2026-11-10"
     }
    ]
   },
@@ -7943,6 +7980,14 @@
       "avg": 1.0,
       "count": 1
      }
+    },
+    "2026-11-24": {
+     "avg": 1.0,
+     "count": 1,
+     "us": {
+      "avg": 1.0,
+      "count": 1
+     }
     }
    },
    "reviewRating": {
@@ -8068,6 +8113,10 @@
     "2026-11-23": {
      "avg": 1.0,
      "count": 1
+    },
+    "2026-11-24": {
+     "avg": 1.0,
+     "count": 1
     }
    },
    "reviews": [
@@ -8083,7 +8132,7 @@
    "versions": [
     {
      "version": "1.3.0",
-     "state": "WAITING_FOR_REVIEW",
+     "state": "ACCEPTED",
      "created": "2026-11-23"
     },
     {
@@ -8817,11 +8866,16 @@
    ],
    "builds": [
     {
-     "version": "28",
+     "version": "30",
      "state": "VALID",
      "uploaded": "2026-11-23",
-     "marketing": "1.2",
-     "attached": "1.2"
+     "marketing": "1.2.1",
+     "attached": null
+    },
+    {
+     "version": "28",
+     "state": "VALID",
+     "uploaded": "2026-11-23"
     },
     {
      "version": "26",
@@ -8835,11 +8889,6 @@
     },
     {
      "version": "21",
-     "state": "VALID",
-     "uploaded": "2026-10-15"
-    },
-    {
-     "version": "20",
      "state": "VALID",
      "uploaded": "2026-10-15"
     }
@@ -8953,11 +9002,16 @@
    ],
    "builds": [
     {
-     "version": "34",
+     "version": "36",
      "state": "VALID",
      "uploaded": "2026-11-23",
      "marketing": "1.0.2",
      "attached": "1.0.2"
+    },
+    {
+     "version": "34",
+     "state": "VALID",
+     "uploaded": "2026-11-23"
     },
     {
      "version": "32",
@@ -8973,11 +9027,6 @@
      "version": "26",
      "state": "VALID",
      "uploaded": "2026-10-18"
-    },
-    {
-     "version": "25",
-     "state": "VALID",
-     "uploaded": "2026-10-17"
     }
    ]
   },
@@ -9213,6 +9262,11 @@
      "avg": 5.0,
      "count": 1,
      "us": null
+    },
+    "2026-11-24": {
+     "avg": 5.0,
+     "count": 1,
+     "us": null
     }
    },
    "reviewRating": null,
@@ -9221,7 +9275,7 @@
    "versions": [
     {
      "version": "1.0.4",
-     "state": "REJECTED",
+     "state": "WAITING_FOR_REVIEW",
      "created": "2026-11-23"
     },
     {
@@ -9247,11 +9301,21 @@
    ],
    "builds": [
     {
-     "version": "35",
+     "version": "38",
      "state": "VALID",
      "uploaded": "2026-11-23",
-     "marketing": "1.0.4",
-     "attached": "1.0.4"
+     "marketing": "1.0.5",
+     "attached": null
+    },
+    {
+     "version": "36",
+     "state": "VALID",
+     "uploaded": "2026-11-23"
+    },
+    {
+     "version": "35",
+     "state": "VALID",
+     "uploaded": "2026-11-23"
     },
     {
      "version": "33",
@@ -9262,16 +9326,6 @@
      "version": "29",
      "state": "VALID",
      "uploaded": "2026-11-13"
-    },
-    {
-     "version": "27",
-     "state": "VALID",
-     "uploaded": "2026-11-10"
-    },
-    {
-     "version": "25",
-     "state": "VALID",
-     "uploaded": "2026-11-09"
     }
    ]
   },
@@ -9348,7 +9402,7 @@
    "ads": {
     "2026-11-16": 0.01,
     "2026-11-17": 0.0,
-    "2026-11-23": 0.0
+    "2026-11-23": 0.01
    },
    "countries": {
     "2026-11-14": {
@@ -9423,11 +9477,21 @@
    ],
    "builds": [
     {
-     "version": "39",
+     "version": "42",
      "state": "VALID",
      "uploaded": "2026-11-23",
-     "marketing": "1.2.0",
-     "attached": "1.2.0"
+     "marketing": "1.2.1",
+     "attached": null
+    },
+    {
+     "version": "41",
+     "state": "VALID",
+     "uploaded": "2026-11-23"
+    },
+    {
+     "version": "39",
+     "state": "VALID",
+     "uploaded": "2026-11-23"
     },
     {
      "version": "37",
@@ -9438,16 +9502,6 @@
      "version": "35",
      "state": "VALID",
      "uploaded": "2026-11-13"
-    },
-    {
-     "version": "30",
-     "state": "VALID",
-     "uploaded": "2026-11-11"
-    },
-    {
-     "version": "27",
-     "state": "VALID",
-     "uploaded": "2026-11-11"
     }
    ]
   },
@@ -9507,11 +9561,21 @@
    ],
    "builds": [
     {
-     "version": "31",
+     "version": "35",
      "state": "VALID",
      "uploaded": "2026-11-23",
      "marketing": "1.0.1",
      "attached": null
+    },
+    {
+     "version": "33",
+     "state": "VALID",
+     "uploaded": "2026-11-23"
+    },
+    {
+     "version": "31",
+     "state": "VALID",
+     "uploaded": "2026-11-23"
     },
     {
      "version": "22",
@@ -9520,16 +9584,6 @@
     },
     {
      "version": "21",
-     "state": "VALID",
-     "uploaded": "2026-11-18"
-    },
-    {
-     "version": "19",
-     "state": "VALID",
-     "uploaded": "2026-11-18"
-    },
-    {
-     "version": "17",
      "state": "VALID",
      "uploaded": "2026-11-18"
     }
@@ -9712,11 +9766,21 @@
    ],
    "builds": [
     {
-     "version": "24",
+     "version": "27",
      "state": "VALID",
      "uploaded": "2026-11-23",
-     "marketing": "1.0.2",
-     "attached": "1.0.2"
+     "marketing": "1.0.3",
+     "attached": null
+    },
+    {
+     "version": "26",
+     "state": "VALID",
+     "uploaded": "2026-11-23"
+    },
+    {
+     "version": "24",
+     "state": "VALID",
+     "uploaded": "2026-11-23"
     },
     {
      "version": "21",
@@ -9725,16 +9789,6 @@
     },
     {
      "version": "17",
-     "state": "VALID",
-     "uploaded": "2026-11-19"
-    },
-    {
-     "version": "16",
-     "state": "VALID",
-     "uploaded": "2026-11-19"
-    },
-    {
-     "version": "15",
      "state": "VALID",
      "uploaded": "2026-11-19"
     }
