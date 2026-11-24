@@ -1,6 +1,6 @@
 {
   "_doc": "Pipeline tab roadmap. Maintained by the Store Ops hub (~/.claude/portfolio/roadmap.md is the private source; this is the PUBLIC subset: no people's names, client details or budgets). who: auto = automation does it, you = Anthony, apple/google = waiting on review. status: todo | done | blocked.",
-  "updated": "2026-11-23",
+  "updated": "2026-11-24",
   "ci": {
     "6784340038": {
       "ios": true,
@@ -288,7 +288,7 @@
     {
       "app": "6773332173",
       "date": "2027-01-20",
-      "title": "2.1: Field Guide reskin, coordinate fixes, stocking + gauge data",
+      "title": "2.3: Field Guide reskin, coordinate fixes, stocking + gauge data",
       "who": "auto",
       "status": "todo"
     },
@@ -413,8 +413,8 @@
     },
     {
       "app": "6823629432",
-      "date": "2026-11-23",
-      "title": "app-ads.txt still not reachable on the root domain (rechecked 11-23); move it to the fallback hosting",
+      "date": "2026-11-24",
+      "title": "app-ads.txt still not reachable on the root domain (rechecked 11-24); move it to the fallback hosting",
       "who": "you",
       "status": "todo"
     },
@@ -511,8 +511,8 @@
     },
     {
       "app": "6836013729",
-      "date": "2026-11-23",
-      "title": "1.0.0 still Waiting for Review, day 5 (submitted 11-18)",
+      "date": "2026-11-24",
+      "title": "1.0.0 still Waiting for Review, day 6 (submitted 11-18); expedite request due",
       "who": "apple",
       "status": "todo"
     },
@@ -529,6 +529,41 @@
       "title": "3.2 visual refresh: device check light + dark, then submit",
       "who": "you",
       "status": "todo"
+    },
+    {
+      "app": "6823629432",
+      "date": "2026-11-24",
+      "title": "1.0.2 LIVE with the Holiday Cook-Off and Tailgate Cook-Off events approved",
+      "who": "apple",
+      "status": "done"
+    },
+    {
+      "app": "6836989068",
+      "date": "2026-11-24",
+      "title": "1.0.2 (Lunar New Year guide) LIVE on the App Store",
+      "who": "apple",
+      "status": "done"
+    },
+    {
+      "app": "6773501518",
+      "date": "2026-11-24",
+      "title": "3.1.1 LIVE; Best of 2026 and Date Night Tiers events approved",
+      "who": "apple",
+      "status": "done"
+    },
+    {
+      "app": "6773332173",
+      "date": "2026-11-24",
+      "title": "2.1 LIVE with the Winter Crappie Spots event approved",
+      "who": "apple",
+      "status": "done"
+    },
+    {
+      "app": "6773332173",
+      "date": "2026-11-24",
+      "title": "2.2 + White Bass Run event submitted automatically once 2.1 went live",
+      "who": "auto",
+      "status": "done"
     }
   ]
 }
