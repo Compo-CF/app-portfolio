@@ -1,6 +1,6 @@
 {
   "_doc": "Pipeline tab roadmap. Maintained by the Store Ops hub (~/.claude/portfolio/roadmap.md is the private source; this is the PUBLIC subset: no people's names, client details or budgets). who: auto = automation does it, you = Anthony, apple/google = waiting on review. status: todo | done | blocked.",
-  "updated": "2026-11-24",
+  "updated": "2026-11-25",
   "ci": {
     "6784340038": {
       "ios": true,
@@ -413,8 +413,8 @@
     },
     {
       "app": "6823629432",
-      "date": "2026-11-24",
-      "title": "app-ads.txt still not reachable on the root domain (rechecked 11-24); move it to the fallback hosting",
+      "date": "2026-11-25",
+      "title": "app-ads.txt still not reachable on the root domain (rechecked 11-25); move it to the fallback hosting",
       "who": "you",
       "status": "todo"
     },
@@ -511,8 +511,8 @@
     },
     {
       "app": "6836013729",
-      "date": "2026-11-24",
-      "title": "1.0.0 still Waiting for Review, day 6 (submitted 11-18); expedite request due",
+      "date": "2026-11-25",
+      "title": "1.0.0 still Waiting for Review, day 7 (submitted 11-18); expedite request overdue",
       "who": "apple",
       "status": "todo"
     },
@@ -564,6 +564,55 @@
       "title": "2.2 + White Bass Run event submitted automatically once 2.1 went live",
       "who": "auto",
       "status": "done"
+    },
+    {
+      "app": "6784340038",
+      "date": "2026-11-25",
+      "title": "4.0.5, 4.0.6 and 4.0.7 LIVE (Seasonal Trails, holiday labels, ad attribution IDs)",
+      "who": "auto",
+      "status": "done"
+    },
+    {
+      "app": "6832097718",
+      "date": "2026-11-25",
+      "title": "1.2.0 LIVE; New Year Reset event linked to its featuring nomination",
+      "who": "auto",
+      "status": "done"
+    },
+    {
+      "app": "6830660705",
+      "date": "2026-11-25",
+      "title": "1.0.5 LIVE; Winter Time Trials event linked to its featuring nomination",
+      "who": "auto",
+      "status": "done"
+    },
+    {
+      "app": "6797896315",
+      "date": "2026-11-25",
+      "title": "3.3.0 LIVE; New Year Pup Challenge event linked to its featuring nomination",
+      "who": "auto",
+      "status": "done"
+    },
+    {
+      "app": "6821057970",
+      "date": "2026-11-25",
+      "title": "1.2 LIVE; New Year Brew Challenge event approved and linked",
+      "who": "auto",
+      "status": "done"
+    },
+    {
+      "app": "6797896315",
+      "date": "2026-11-25",
+      "title": "3.3.1 + Puppy Love Challenge event submit automatically now that 3.3.0 is live",
+      "who": "auto",
+      "status": "todo"
+    },
+    {
+      "app": "6773332173",
+      "date": "2026-11-25",
+      "title": "2.2 rejected by App Review: read the message, reply, fix and resubmit (event not affected)",
+      "who": "you",
+      "status": "todo"
     }
   ]
 }
