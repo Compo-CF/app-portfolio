@@ -1,7 +1,7 @@
 {
- "generated": "2026-11-25T19:13:06Z",
+ "generated": "2026-11-26T18:28:00Z",
  "apple": {
-  "through": "2026-11-24",
+  "through": "2026-11-25",
   "state": {
    "2026-11-15": {
     "6830662100": {
@@ -82,6 +82,20 @@
      "intro": 0,
      "grace": 0
     }
+   },
+   "2026-11-25": {
+    "6830664380": {
+     "active": 0,
+     "trial": 1,
+     "intro": 0,
+     "grace": 0
+    },
+    "6830662100": {
+     "active": 0,
+     "trial": 1,
+     "intro": 0,
+     "grace": 0
+    }
    }
   },
   "events": {
@@ -99,10 +113,16 @@
     "6830662100": {
      "Billing Retry from Introductory Offer": 1
     }
+   },
+   "2026-11-25": {
+    "6830664380": {
+     "Start Introductory Offer": 1
+    }
    }
   },
   "names": {
-   "6830662100": "Pit Club (Ghostline: Idle Racer)"
+   "6830662100": "Pit Club (Ghostline: Idle Racer)",
+   "6830664380": "Pit Club Yearly (Ghostline: Idle Racer)"
   },
   "unavailable": []
  },

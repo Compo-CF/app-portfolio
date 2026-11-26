@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-25T19:12:58Z",
+ "generated": "2026-11-26T18:27:50Z",
  "fx": {
   "2026-10-31": {
    "CAD": 0.715871,
@@ -104,6 +104,9 @@
   },
   "2026-11-24": {
    "GBP": 1.309792
+  },
+  "2026-11-25": {
+   "GBP": 1.305977
   }
  },
  "periods": [
@@ -528,7 +531,7 @@
  ],
  "open": {
   "start": "2026-11-01",
-  "through": "2026-11-24",
+  "through": "2026-11-25",
   "missing": [],
   "days": {
    "2026-11-01": [
@@ -1696,6 +1699,28 @@
      "units": 2,
      "amount": 7.04,
      "usd": 9.22
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Ultimate Bundle",
+     "sku": "com.centricfiber.cosmica.ultimate_bundle",
+     "currency": "USD",
+     "units": 1,
+     "amount": 11.04,
+     "usd": 11.04
+    }
+   ],
+   "2026-11-25": [
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Remove Ads",
+     "sku": "com.centricfiber.cosmica.removeads",
+     "currency": "GBP",
+     "units": 1,
+     "amount": 2.11,
+     "usd": 2.76
     },
     {
      "appId": "6784340038",
