@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-26T18:27:50Z",
+ "generated": "2026-11-27T14:08:26Z",
  "fx": {
   "2026-10-31": {
    "CAD": 0.715871,
@@ -107,6 +107,9 @@
   },
   "2026-11-25": {
    "GBP": 1.305977
+  },
+  "2026-11-26": {
+   "GBP": 1.310376
   }
  },
  "periods": [
@@ -531,7 +534,7 @@
  ],
  "open": {
   "start": "2026-11-01",
-  "through": "2026-11-25",
+  "through": "2026-11-26",
   "missing": [],
   "days": {
    "2026-11-01": [
@@ -1731,6 +1734,78 @@
      "units": 1,
      "amount": 11.04,
      "usd": 11.04
+    }
+   ],
+   "2026-11-26": [
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Remove Ads",
+     "sku": "com.centricfiber.cosmica.removeads",
+     "currency": "USD",
+     "units": 1,
+     "amount": 2.54,
+     "usd": 2.54
+    },
+    {
+     "appId": "6784340038",
+     "app": "Cosmica",
+     "product": "Ultimate Bundle",
+     "sku": "com.centricfiber.cosmica.ultimate_bundle",
+     "currency": "GBP",
+     "units": 1,
+     "amount": 9.17,
+     "usd": 12.02
+    },
+    {
+     "appId": "6830660705",
+     "app": "Ghostline",
+     "product": "Champion Bundle",
+     "sku": "com.centricfiber.ghostline.champion_bundle",
+     "currency": "GBP",
+     "units": 1,
+     "amount": 4.23,
+     "usd": 5.54
+    },
+    {
+     "appId": "6830660705",
+     "app": "Ghostline",
+     "product": "Crew Chief",
+     "sku": "com.centricfiber.ghostline.crewchief",
+     "currency": "GBP",
+     "units": 1,
+     "amount": 2.11,
+     "usd": 2.76
+    },
+    {
+     "appId": "6830660705",
+     "app": "Ghostline",
+     "product": "Pit Club Yearly",
+     "sku": "com.centricfiber.ghostline.club_yearly",
+     "currency": "GBP",
+     "units": 1,
+     "amount": 0.0,
+     "usd": 0.0
+    },
+    {
+     "appId": "6830660705",
+     "app": "Ghostline",
+     "product": "Remove Ads",
+     "sku": "com.centricfiber.ghostline.removeads",
+     "currency": "GBP",
+     "units": 1,
+     "amount": 2.82,
+     "usd": 3.7
+    },
+    {
+     "appId": "6830660705",
+     "app": "Ghostline",
+     "product": "Supporter Pack",
+     "sku": "com.centricfiber.ghostline.supporter",
+     "currency": "GBP",
+     "units": 1,
+     "amount": 2.11,
+     "usd": 2.76
     }
    ]
   }
