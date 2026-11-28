@@ -1,6 +1,6 @@
 {
   "_doc": "Pipeline tab roadmap. Maintained by the Store Ops hub (~/.claude/portfolio/roadmap.md is the private source; this is the PUBLIC subset: no people's names, client details or budgets). who: auto = automation does it, you = Anthony, apple/google = waiting on review. status: todo | done | blocked.",
-  "updated": "2026-11-26",
+  "updated": "2026-11-28",
   "ci": {
     "6784340038": {
       "ios": true,
@@ -652,8 +652,29 @@
     {
       "app": "6836925909",
       "date": "2026-11-26",
-      "title": "1.0.2 approved; Winter Tour event still in review (card publishes Dec 1)",
+      "title": "1.0.2 approved; Winter Tour event approved",
       "who": "apple",
+      "status": "done"
+    },
+    {
+      "app": "6773332173",
+      "date": "2026-11-28",
+      "title": "2.2 LIVE",
+      "who": "auto",
+      "status": "done"
+    },
+    {
+      "app": "6836925909",
+      "date": "2026-11-28",
+      "title": "1.0.2 Winter Tour LIVE; event published and linked to its featuring nomination",
+      "who": "auto",
+      "status": "done"
+    },
+    {
+      "app": "6836925909",
+      "date": "2026-11-28",
+      "title": "1.0.3 Hearts Tour: update App Privacy tracking answers + rebuild from main, then submit with the Hearts event",
+      "who": "you",
       "status": "todo"
     }
   ]
